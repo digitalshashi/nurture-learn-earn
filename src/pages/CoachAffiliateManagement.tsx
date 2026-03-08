@@ -32,7 +32,7 @@ export default function CoachAffiliateManagement() {
   const loadData = async () => {
     if (!user) return;
 
-    const { data: myCourses } = await supabase.from("courses").select("id, title, price").eq("coach_id", user.id);
+    const { data: myCourses } = await supabase.from("courses").select("id, title, price, service_id").eq("coach_id", user.id);
     setCourses(myCourses || []);
 
     const { data: myServices } = await supabase.from("services").select("id, title, price").eq("coach_id", user.id);
