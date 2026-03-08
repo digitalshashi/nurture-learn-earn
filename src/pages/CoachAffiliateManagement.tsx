@@ -23,7 +23,7 @@ export default function CoachAffiliateManagement() {
   const [services, setServices] = useState<any[]>([]);
   const [allSales, setAllSales] = useState<any[]>([]);
   const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
-  const [newProgram, setNewProgram] = useState({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
+  const [newProgram, setNewProgram] = useState({ course_id: "", service_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
 
   useEffect(() => {
     if (user) loadData();
@@ -38,7 +38,7 @@ export default function CoachAffiliateManagement() {
     const { data: myServices } = await supabase.from("services").select("id, title, price").eq("coach_id", user.id);
     setServices(myServices || []);
 
-    const { data: progs } = await supabase.from("affiliate_programs").select("*, courses(title, price)");
+    const { data: progs } = await supabase.from("affiliate_programs").select("*, courses(title, price), services(title, price)");
     setPrograms(progs || []);
 
     // Load all sales for coach's programs
@@ -57,29 +57,27 @@ export default function CoachAffiliateManagement() {
   };
 
   const createProgram = async () => {
-    if (!newProgram.course_id) {
+    const selectedProductId = newProgram.product_type === "service" ? newProgram.service_id : newProgram.course_id;
+
+    if (!selectedProductId) {
       toast({ title: "Please select a product", variant: "destructive" });
       return;
     }
-    // If service selected, find the course linked to that service
-    let courseId = newProgram.course_id;
-    if (newProgram.product_type === "service") {
-      const linkedCourse = courses.find((c: any) => c.service_id === newProgram.course_id);
-      if (linkedCourse) {
-        courseId = linkedCourse.id;
-      } else {
-        // No course linked to this service — try using first coach course as fallback
-        toast({ title: "Error", description: "No course is linked to this service. Please link a course to the service first.", variant: "destructive" });
-        return;
-      }
-    }
-    const { error } = await supabase.from("affiliate_programs").insert({
-      course_id: courseId,
+
+    const payload = {
+      course_id: newProgram.product_type === "course" ? selectedProductId : null,
+      service_id: newProgram.product_type === "service" ? selectedProductId : null,
       commission_percent: newProgram.commission_percent,
       commission_type: newProgram.commission_type,
-    });
+    };
+
+    const { error } = await supabase.from("affiliate_programs").insert(payload as any);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Affiliate program created!" }); loadData(); setNewProgram({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" }); }
+    else {
+      toast({ title: "Affiliate program created!" });
+      loadData();
+      setNewProgram({ course_id: "", service_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
+    }
   };
 
   const toggleProgram = async (id: string, active: boolean) => {
@@ -105,7 +103,7 @@ export default function CoachAffiliateManagement() {
               <div className="space-y-4 mt-2">
                 <div>
                   <Label>Product Type</Label>
-                  <Select value={newProgram.product_type} onValueChange={(v) => setNewProgram(p => ({ ...p, product_type: v, course_id: "" }))}>
+                  <Select value={newProgram.product_type} onValueChange={(v) => setNewProgram(p => ({ ...p, product_type: v, course_id: "", service_id: "" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="service">Service</SelectItem>
@@ -114,8 +112,17 @@ export default function CoachAffiliateManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Select {newProgram.product_type === "service" ? "Service" : "Course"} {newProgram.product_type === "course" && <span className="text-muted-foreground text-xs">(optional)</span>}</Label>
-                  <Select value={newProgram.course_id} onValueChange={(v) => setNewProgram(p => ({ ...p, course_id: v }))}>
+                  <Label>Select {newProgram.product_type === "service" ? "Service" : "Course"}</Label>
+                  <Select
+                    value={newProgram.product_type === "service" ? newProgram.service_id : newProgram.course_id}
+                    onValueChange={(v) =>
+                      setNewProgram((p) =>
+                        p.product_type === "service"
+                          ? { ...p, service_id: v }
+                          : { ...p, course_id: v }
+                      )
+                    }
+                  >
                     <SelectTrigger><SelectValue placeholder={`Choose a ${newProgram.product_type}`} /></SelectTrigger>
                     <SelectContent>
                       {newProgram.product_type === "service" ? (
@@ -172,7 +179,7 @@ export default function CoachAffiliateManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Course</TableHead>
+                      <TableHead>Product</TableHead>
                       <TableHead>Commission</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
@@ -185,7 +192,7 @@ export default function CoachAffiliateManagement() {
                     ) : (
                       programs.map((p) => (
                         <TableRow key={p.id}>
-                          <TableCell className="font-medium text-sm">{p.courses?.title || "—"}</TableCell>
+                          <TableCell className="font-medium text-sm">{p.services?.title || p.courses?.title || "—"}</TableCell>
                           <TableCell className="text-sm">{p.commission_percent}{p.commission_type === "percentage" ? "%" : " fixed"}</TableCell>
                           <TableCell className="text-sm capitalize">{p.commission_type}</TableCell>
                           <TableCell>

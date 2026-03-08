@@ -142,26 +142,29 @@ export type Database = {
         Row: {
           commission_percent: number
           commission_type: string
-          course_id: string
+          course_id: string | null
           created_at: string
           id: string
           is_active: boolean
+          service_id: string | null
         }
         Insert: {
           commission_percent?: number
           commission_type?: string
-          course_id: string
+          course_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
+          service_id?: string | null
         }
         Update: {
           commission_percent?: number
           commission_type?: string
-          course_id?: string
+          course_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
+          service_id?: string | null
         }
         Relationships: [
           {
@@ -169,6 +172,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_programs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
