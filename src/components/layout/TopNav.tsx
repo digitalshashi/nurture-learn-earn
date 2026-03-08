@@ -80,29 +80,34 @@ export function TopNav() {
     : defaultNavItems;
 
   return (
-    <header className="h-14 border-b border-border bg-card flex items-center px-4 justify-between sticky top-0 z-50">
-      <div className="flex items-center gap-1">
+    <header className="h-14 border-b border-border bg-card flex items-center px-4 sticky top-0 z-50">
+      {/* Left: Logo */}
+      <div className="flex items-center shrink-0">
         <div
-          className="h-8 w-8 bg-primary rounded-lg mr-4 flex items-center justify-center cursor-pointer"
+          className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center cursor-pointer"
           onClick={() => navigate("/dashboard")}
         >
           <span className="text-primary-foreground text-sm font-bold">L</span>
         </div>
-        <nav className="hidden md:flex items-center gap-0">
-          {visibleItems.map((item, i) => (
-            <NavLink
-              key={item.label + i}
-              to={item.link}
-              end={item.link === "/dashboard"}
-              className="flex flex-col items-center px-3 py-1 text-muted-foreground hover:text-accent transition-colors text-xs gap-0.5"
-              activeClassName="text-accent border-b-2 border-accent"
-            >
-              <LucideIcon name={item.icon_name} className="h-5 w-5" />
-              <span className="font-medium uppercase">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
       </div>
+
+      {/* Center: Nav */}
+      <nav className="hidden md:flex items-center justify-center gap-0 flex-1">
+        {visibleItems.map((item, i) => (
+          <NavLink
+            key={item.label + i}
+            to={item.link}
+            end={item.link === "/dashboard"}
+            className="flex flex-col items-center px-3 py-1 text-muted-foreground hover:text-accent transition-colors text-xs gap-0.5"
+            activeClassName="text-accent border-b-2 border-accent"
+          >
+            <LucideIcon name={item.icon_name} className="h-5 w-5" />
+            <span className="font-medium uppercase">{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Right: Actions */}
 
       <div className="flex items-center gap-3">
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
