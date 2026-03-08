@@ -571,6 +571,30 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_at: string | null
+          blocked_by: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_by: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_by?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       challenge_participants: {
         Row: {
           challenge_id: string | null
@@ -1772,6 +1796,45 @@ export type Database = {
         }
         Relationships: []
       }
+      login_sessions: {
+        Row: {
+          browser: string | null
+          created_at: string | null
+          device: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          last_active: string | null
+          location: string | null
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string | null
+          device?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_active?: string | null
+          location?: string | null
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string | null
+          device?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_active?: string | null
+          location?: string | null
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -2081,6 +2144,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reported_content: {
+        Row: {
+          action_taken: string | null
+          content_id: string
+          content_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          content_id: string
+          content_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: []
       }
       reviews: {
         Row: {
