@@ -62,6 +62,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { usePermissions, FeatureKey } from "@/hooks/usePermissions";
 
 // coachOnly: true means only coaches/admins see this section
 const sidebarSections = [
