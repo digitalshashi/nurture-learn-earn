@@ -11,6 +11,7 @@ import {
   Video, FileText, Music, Image, Link, File, Play
 } from "lucide-react";
 import ChapterResources, { type Resource } from "./ChapterResources";
+import ChapterVideoUpload from "./ChapterVideoUpload";
 
 interface Section {
   id?: string;
@@ -28,6 +29,8 @@ interface Chapter {
   content_type: string;
   sort_order: number;
   resources: Resource[];
+  thumbnail_url: string;
+  video_description: string;
 }
 
 const contentTypeIcons: Record<string, any> = {
@@ -74,6 +77,8 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
             content_type: c.content_type || "video",
             sort_order: c.sort_order,
             resources: Array.isArray(c.resources) ? c.resources : [],
+            thumbnail_url: c.thumbnail_url || "",
+            video_description: c.video_description || "",
           })),
       })));
     }
@@ -89,7 +94,7 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
     updated[sIdx].chapters.push({
       title: "", video_url: "", video_type: "direct", content: "",
       content_type: "video", sort_order: updated[sIdx].chapters.length,
-      resources: [],
+      resources: [], thumbnail_url: "", video_description: "",
     });
     setSections(updated);
   };
@@ -143,6 +148,8 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
             video_type: ch.video_type, content: ch.content || null,
             content_type: ch.content_type, sort_order: j,
             resources: JSON.parse(JSON.stringify(ch.resources || [])),
+            thumbnail_url: ch.thumbnail_url || null,
+            video_description: ch.video_description || null,
           };
           if (ch.id) {
             await supabase.from("chapters").update(payload).eq("id", ch.id);
@@ -231,8 +238,27 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
                               <SelectItem value="iframe">Custom Iframe</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
+                          {ch.content_type !== "video" && (
+                            <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
+                          )}
                         </div>
+                        {ch.content_type === "video" && (
+                          <ChapterVideoUpload
+                            videoUrl={ch.video_url}
+                            thumbnailUrl={ch.thumbnail_url}
+                            onVideoChange={(url) => updateChapter(sIdx, cIdx, "video_url", url)}
+                            onThumbnailChange={(url) => {
+                              const updated = [...sections];
+                              updated[sIdx].chapters[cIdx].thumbnail_url = url;
+                              setSections(updated);
+                            }}
+                          />
+                        )}
+                        <Textarea value={ch.video_description} onChange={(e) => {
+                          const updated = [...sections];
+                          updated[sIdx].chapters[cIdx].video_description = e.target.value;
+                          setSections(updated);
+                        }} placeholder="Video description" className="text-sm min-h-[40px]" />
                         <Textarea value={ch.content} onChange={(e) => updateChapter(sIdx, cIdx, "content", e.target.value)} placeholder="Lesson notes / description" className="text-sm min-h-[50px]" />
                         <ChapterResources
                           resources={ch.resources}
