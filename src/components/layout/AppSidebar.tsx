@@ -1,5 +1,10 @@
 import {
   Home,
+  Contact,
+  Kanban,
+  ClipboardCheck,
+  UsersRound,
+  Facebook,
   BarChart3,
   Route,
   BookOpen,
