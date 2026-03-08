@@ -90,6 +90,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/affiliate" element={<ProtectedRoute><StudentAffiliate /></ProtectedRoute>} />
             <Route path="/affiliate/manage" element={<ProtectedRoute><CoachAffiliateManagement /></ProtectedRoute>} />
+            <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
