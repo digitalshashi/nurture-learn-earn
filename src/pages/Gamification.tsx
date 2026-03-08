@@ -93,6 +93,28 @@ export default function Gamification() {
     loadAll();
   };
 
+  const addRule = async () => {
+    if (!newRule.action_name) { toast({ title: "Select an action", variant: "destructive" }); return; }
+    const existing = rules.find(r => r.action_name === newRule.action_name);
+    if (existing) { toast({ title: "This action already exists", variant: "destructive" }); return; }
+    await supabase.from("xp_rules").insert({
+      action_name: newRule.action_name,
+      xp_value: newRule.xp_value,
+      daily_limit: newRule.daily_limit ? Number(newRule.daily_limit) : null,
+    });
+    setRuleDialog(false);
+    setNewRule({ action_name: "", xp_value: 10, daily_limit: "" });
+    loadAll();
+    toast({ title: "XP Rule added" });
+  };
+
+  const deleteRule = async (id: string) => {
+    if (!confirm("Delete this XP rule?")) return;
+    await supabase.from("xp_rules").delete().eq("id", id);
+    loadAll();
+    toast({ title: "XP Rule deleted" });
+  };
+
   const addLevel = async () => {
     await supabase.from("level_definitions").insert(newLevel);
     setLevelDialog(false);
