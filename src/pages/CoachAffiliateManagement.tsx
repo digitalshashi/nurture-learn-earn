@@ -38,7 +38,7 @@ export default function CoachAffiliateManagement() {
     const { data: myServices } = await supabase.from("services").select("id, title, price").eq("coach_id", user.id);
     setServices(myServices || []);
 
-    const { data: progs } = await supabase.from("affiliate_programs").select("*, courses(title, price)");
+    const { data: progs } = await supabase.from("affiliate_programs").select("*, courses(title, price), services(title, price)");
     setPrograms(progs || []);
 
     // Load all sales for coach's programs
