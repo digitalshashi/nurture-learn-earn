@@ -64,7 +64,7 @@ const defaultForm = {
   meeting_type: "custom",
   start_time: "",
   end_time: "",
-  course_id: "",
+  service_id: "",
   // Recurrence
   frequency: "does_not_repeat",
   interval_value: 1,
