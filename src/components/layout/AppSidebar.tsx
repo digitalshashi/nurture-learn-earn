@@ -71,6 +71,12 @@ const sidebarSections = [
     ],
   },
   {
+    label: null,
+    items: [
+      { title: "Services", url: "/services", icon: Megaphone },
+    ],
+  },
+  {
     label: "Products",
     items: [
       { title: "Courses", url: "/courses", icon: BookOpen },
