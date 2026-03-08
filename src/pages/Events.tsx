@@ -119,10 +119,10 @@ export default function Events() {
                 </div>
                 <div><Label>Meeting Link</Label><Input value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })} placeholder="https://..." /></div>
                 <div><Label>Linked Course (optional)</Label>
-                  <Select value={form.course_id} onValueChange={(v) => setForm({ ...form, course_id: v })}>
+                  <Select value={form.course_id || "none"} onValueChange={(v) => setForm({ ...form, course_id: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="None (visible to all)" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
                     </SelectContent>
                   </Select>
