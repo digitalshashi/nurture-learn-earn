@@ -207,7 +207,7 @@ export function CreateCertificateDialog({ open, onOpenChange, onSaved, editId }:
                   <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
                   <SelectContent>
                     {services.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
