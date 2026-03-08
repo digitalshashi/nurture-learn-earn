@@ -27,6 +27,7 @@ interface Chapter {
   content: string;
   content_type: string;
   sort_order: number;
+  resources: Resource[];
 }
 
 const contentTypeIcons: Record<string, any> = {
