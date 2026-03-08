@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Crown } from "lucide-react";
 
 interface LeaderEntry {
   user_id: string;
@@ -12,10 +13,11 @@ interface LeaderEntry {
   avatar_url: string | null;
 }
 
-type TimeFilter = "all" | "month" | "week";
+type TimeFilter = "all" | "month" | "week" | "day";
 
 function formatXP(xp: number): string {
-  if (xp >= 1000) return (xp / 1000).toFixed(2) + "K";
+  if (xp >= 100000) return (xp / 100000).toFixed(2) + "L";
+  if (xp >= 1000) return (xp / 1000).toFixed(1) + "K";
   return String(xp);
 }
 
@@ -27,6 +29,7 @@ function getRankIcon(rank: number) {
 }
 
 export default function LeaderboardWidget() {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderEntry[]>([]);
   const [filter, setFilter] = useState<TimeFilter>("all");
   const [loading, setLoading] = useState(true);
@@ -39,7 +42,11 @@ export default function LeaderboardWidget() {
     setLoading(true);
     let query = supabase.from("xp_transactions").select("user_id, xp_amount");
 
-    if (filter === "week") {
+    const now = new Date();
+    if (filter === "day") {
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      query = query.gte("created_at", dayStart.toISOString());
+    } else if (filter === "week") {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       query = query.gte("created_at", weekAgo.toISOString());
@@ -57,7 +64,6 @@ export default function LeaderboardWidget() {
       return;
     }
 
-    // Aggregate XP by user
     const userXP: Record<string, number> = {};
     xpData.forEach((t: any) => {
       userXP[t.user_id] = (userXP[t.user_id] || 0) + t.xp_amount;
@@ -77,16 +83,17 @@ export default function LeaderboardWidget() {
         avatar_url: profiles?.find((p) => p.id === uid)?.avatar_url || null,
       }))
       .sort((a, b) => b.total_xp - a.total_xp)
-      .slice(0, 10);
+      .slice(0, 5);
 
     setEntries(leaderboard);
     setLoading(false);
   };
 
   const tabs: { key: TimeFilter; label: string }[] = [
+    { key: "day", label: "Daily" },
+    { key: "week", label: "Weekly" },
+    { key: "month", label: "Monthly" },
     { key: "all", label: "All Time" },
-    { key: "month", label: "Month" },
-    { key: "week", label: "Week" },
   ];
 
   const topPerformer = entries[0];
@@ -116,7 +123,6 @@ export default function LeaderboardWidget() {
         </div>
       </CardHeader>
       <CardContent className="space-y-1">
-        {/* Top Performer Card */}
         {topPerformer && (
           <div className="bg-gradient-to-r from-accent/10 to-accent/5 rounded-xl p-3 mb-3 flex items-center gap-3 border border-accent/20">
             <div className="relative">
@@ -148,9 +154,10 @@ export default function LeaderboardWidget() {
           entries.map((entry, idx) => (
             <div
               key={entry.user_id}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                 idx < 3 ? "bg-secondary/50" : "hover:bg-secondary/30"
               }`}
+              onClick={() => navigate(`/profile/${entry.user_id}`)}
             >
               <div className="w-6 flex justify-center shrink-0">
                 {getRankIcon(idx + 1)}
@@ -167,6 +174,14 @@ export default function LeaderboardWidget() {
             </div>
           ))
         )}
+
+        <Button
+          variant="outline"
+          className="w-full mt-3 text-xs"
+          onClick={() => navigate("/leaderboard")}
+        >
+          View All
+        </Button>
       </CardContent>
     </Card>
   );
