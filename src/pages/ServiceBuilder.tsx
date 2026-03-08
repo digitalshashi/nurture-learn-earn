@@ -344,15 +344,7 @@ export default function ServiceBuilder() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs">Currency</Label>
-                    <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INR">INR</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input value="₹ INR" readOnly className="bg-muted text-muted-foreground" />
                   </div>
                   <div>
                     <Label className="text-xs">Selling price</Label>
