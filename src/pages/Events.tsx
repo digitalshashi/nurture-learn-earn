@@ -46,12 +46,13 @@ interface EventRow {
   recurrence_rule: string | null;
   occurrence_number: number | null;
   total_occurrences: number | null;
+  service_id: string | null;
   course_id: string | null;
   status: string;
   meeting_type: string;
 }
 
-interface CourseOption {
+interface ServiceOption {
   id: string;
   title: string;
 }
