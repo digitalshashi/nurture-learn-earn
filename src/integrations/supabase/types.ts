@@ -654,6 +654,53 @@ export type Database = {
           },
         ]
       }
+      coach_subscriptions: {
+        Row: {
+          assigned_by: string
+          coach_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          plan_id: string
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by: string
+          coach_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string
+          coach_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -1259,6 +1306,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saas_plans: {
+        Row: {
+          allowed_modules: string[]
+          billing_type: string
+          commission_percent: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_courses: number | null
+          max_students: number | null
+          monthly_price: number
+          name: string
+          sort_order: number
+          storage_limit_mb: number | null
+          updated_at: string
+          yearly_price: number
+        }
+        Insert: {
+          allowed_modules?: string[]
+          billing_type?: string
+          commission_percent?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_courses?: number | null
+          max_students?: number | null
+          monthly_price?: number
+          name: string
+          sort_order?: number
+          storage_limit_mb?: number | null
+          updated_at?: string
+          yearly_price?: number
+        }
+        Update: {
+          allowed_modules?: string[]
+          billing_type?: string
+          commission_percent?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_courses?: number | null
+          max_students?: number | null
+          monthly_price?: number
+          name?: string
+          sort_order?: number
+          storage_limit_mb?: number | null
+          updated_at?: string
+          yearly_price?: number
+        }
+        Relationships: []
       }
       sections: {
         Row: {
