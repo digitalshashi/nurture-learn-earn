@@ -68,6 +68,23 @@ export default function CrmLeadProfile() {
     loadData();
   };
 
+  const runAiAnalysis = async () => {
+    if (!lead) return;
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-sales-assistant", {
+        body: { lead, notes, follow_ups: followUps },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      setAiAnalysis(data);
+    } catch (e: any) {
+      toast({ title: "AI Analysis failed", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading) return <AppLayout><div className="flex items-center justify-center py-20 text-muted-foreground">Loading...</div></AppLayout>;
   if (!lead) return <AppLayout><div className="flex items-center justify-center py-20 text-muted-foreground">Lead not found</div></AppLayout>;
 
