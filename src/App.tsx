@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { HomeRedirect } from "@/components/HomeRedirect";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import CourseBuilder from "./pages/CourseBuilder";
