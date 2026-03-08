@@ -99,6 +99,7 @@ const App = () => (
             <Route path="/sales/subscriptions" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
             <Route path="/sales/withdrawals" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
             <Route path="/page-builder" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
+            <Route path="/page-builder/ai-landing" element={<ProtectedRoute><AILandingPageBuilder /></ProtectedRoute>} />
             <Route path="/marketing/email" element={<ProtectedRoute><MarketingEmail /></ProtectedRoute>} />
             <Route path="/marketing/broadcasts" element={<ProtectedRoute><Broadcasts /></ProtectedRoute>} />
             <Route path="/marketing/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
