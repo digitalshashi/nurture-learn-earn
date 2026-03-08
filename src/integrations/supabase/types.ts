@@ -1556,6 +1556,254 @@ export type Database = {
         }
         Relationships: []
       }
+      workshop_attendees: {
+        Row: {
+          id: string
+          joined_at: string | null
+          left_at: string | null
+          occurrence_id: string
+          registered_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          occurrence_id: string
+          registered_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          occurrence_id?: string
+          registered_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_attendees_occurrence_id_fkey"
+            columns: ["occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_occurrences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_occurrences: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          meeting_link: string | null
+          occurrence_number: number
+          recording_url: string | null
+          start_time: string
+          status: string
+          total_occurrences: number | null
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          meeting_link?: string | null
+          occurrence_number?: number
+          recording_url?: string | null
+          start_time: string
+          status?: string
+          total_occurrences?: number | null
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          meeting_link?: string | null
+          occurrence_number?: number
+          recording_url?: string | null
+          start_time?: string
+          status?: string
+          total_occurrences?: number | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_occurrences_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_recordings: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          occurrence_id: string
+          recording_url: string | null
+          uploaded_to_course: boolean
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          occurrence_id: string
+          recording_url?: string | null
+          uploaded_to_course?: boolean
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          occurrence_id?: string
+          recording_url?: string | null
+          uploaded_to_course?: boolean
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_recordings_occurrence_id_fkey"
+            columns: ["occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_occurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_recordings_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_recurrence_rules: {
+        Row: {
+          created_at: string
+          days_of_week: string[] | null
+          end_date: string | null
+          end_type: string
+          frequency: string
+          id: string
+          interval_value: number
+          month_day: number | null
+          month_week_day: string | null
+          occurrence_count: number | null
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week?: string[] | null
+          end_date?: string | null
+          end_type?: string
+          frequency?: string
+          id?: string
+          interval_value?: number
+          month_day?: number | null
+          month_week_day?: string | null
+          occurrence_count?: number | null
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: string[] | null
+          end_date?: string | null
+          end_type?: string
+          frequency?: string
+          id?: string
+          interval_value?: number
+          month_day?: number | null
+          month_week_day?: string | null
+          occurrence_count?: number | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_recurrence_rules_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshops: {
+        Row: {
+          auto_recording: boolean
+          auto_upload_to_course: boolean
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_minutes: number
+          enable_waiting_room: boolean
+          id: string
+          is_recurring: boolean
+          linked_course_id: string | null
+          meeting_link: string | null
+          meeting_type: string
+          start_date: string
+          start_time: string
+          status: string
+          timezone: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          auto_recording?: boolean
+          auto_upload_to_course?: boolean
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_minutes?: number
+          enable_waiting_room?: boolean
+          id?: string
+          is_recurring?: boolean
+          linked_course_id?: string | null
+          meeting_link?: string | null
+          meeting_type?: string
+          start_date: string
+          start_time: string
+          status?: string
+          timezone?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          auto_recording?: boolean
+          auto_upload_to_course?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_minutes?: number
+          enable_waiting_room?: boolean
+          id?: string
+          is_recurring?: boolean
+          linked_course_id?: string | null
+          meeting_link?: string | null
+          meeting_type?: string
+          start_date?: string
+          start_time?: string
+          status?: string
+          timezone?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshops_linked_course_id_fkey"
+            columns: ["linked_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       xp_rules: {
         Row: {
           action_name: string
