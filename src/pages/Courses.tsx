@@ -1,72 +1,82 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-const filters = ["All", "In Progress", "Completed", "Expired", "Paid"];
-
-const mockCourses = [
-  { id: "1", title: "Freedom Hackathon 11", author: "Internet Lifestyle Hub", progress: 22, image: "/placeholder.svg", newChapters: 7 },
-  { id: "2", title: "Freedom Business Model", author: "Internet Lifestyle Hub", progress: 96, image: "/placeholder.svg", hasCertificate: true },
-  { id: "3", title: "My Freedom Codex", author: "Internet Lifestyle Hub", progress: 91, image: "/placeholder.svg" },
-  { id: "4", title: "Niche Clarity Codex", author: "Internet Lifestyle Hub", progress: 77, image: "/placeholder.svg" },
-  { id: "5", title: "Curriculum Design Codex", author: "Internet Lifestyle Hub", progress: 22, image: "/placeholder.svg" },
-  { id: "6", title: "AI Content Mastery", author: "Internet Lifestyle Hub", progress: 85, image: "/placeholder.svg" },
-  { id: "7", title: "NalandaX", author: "Internet Lifestyle Hub", progress: 58, image: "/placeholder.svg" },
-  { id: "8", title: "Freedom Budget Blueprint", author: "Internet Lifestyle Hub", progress: 46, image: "/placeholder.svg" },
-  { id: "9", title: "Freedom Leadgen Challenge", author: "Internet Lifestyle Hub", progress: 8, image: "/placeholder.svg" },
-];
+interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  price: number;
+  category: string | null;
+}
 
 export default function Courses() {
+  const navigate = useNavigate();
+  const { hasRole } = useAuth();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
+      if (data) setCourses(data as Course[]);
+      setLoading(false);
+    };
+    fetchCourses();
+  }, []);
+
+  const filtered = courses.filter(c =>
+    c.title.toLowerCase().includes(search.toLowerCase()) ||
+    (c.category || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto py-6 px-6">
-        <h1 className="text-3xl font-bold font-display mb-6">Courses</h1>
-
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="search by course title or description"
-              className="pl-9 bg-card"
-            />
+      <div className="max-w-7xl mx-auto py-6 px-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold font-display">Courses</h1>
+          {isCoachOrAdmin && (
+            <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/course-builder")}>
+              <Plus className="h-4 w-4 mr-1" /> Create Course
+            </Button>
+          )}
+        </div>
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search courses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        </div>
+        {loading ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Loading courses...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            {courses.length === 0 ? "No courses yet" : "No courses match your search"}
           </div>
-          <Select defaultValue="course">
-            <SelectTrigger className="w-40 bg-card">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="course">Course</SelectItem>
-              <SelectItem value="workshop">Workshop</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-2 mb-6 flex-wrap">
-          {filters.map((filter, i) => (
-            <Badge
-              key={filter}
-              variant={i === 0 ? "default" : "outline"}
-              className={`cursor-pointer px-3 py-1 text-sm ${i === 0 ? "bg-accent text-accent-foreground hover:bg-accent/90 border-0" : "hover:bg-secondary"}`}
-            >
-              {filter}
-            </Badge>
-          ))}
-          <Badge variant="outline" className="cursor-pointer px-3 py-1 text-sm hover:bg-secondary">
-            Membership ↓
-          </Badge>
-        </div>
-
-        {/* Course Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {mockCourses.map((course) => (
-            <CourseCard key={course.id} {...course} />
-          ))}
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((course) => (
+              <CourseCard
+                key={course.id}
+                id={course.id}
+                title={course.title}
+                description={course.description || ""}
+                thumbnail={course.thumbnail_url || "/placeholder.svg"}
+                price={course.price}
+                category={course.category || "General"}
+                onClick={() => navigate(`/course-player/${course.id}`)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </AppLayout>
   );

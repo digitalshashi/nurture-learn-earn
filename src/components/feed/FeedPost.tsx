@@ -1,81 +1,68 @@
-import { Heart, MessageCircle, Share2, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 
 interface FeedPostProps {
+  id: string;
   author: string;
   authorAvatar: string;
-  badge: string;
-  badgePoints: string;
-  timeAgo: string;
   content: string;
   image?: string;
+  videoUrl?: string;
+  linkUrl?: string;
+  timeAgo: string;
   likes: number;
   comments: number;
-  shares: number;
 }
 
-function formatCount(n: number): string {
-  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "K";
-  return n.toString();
-}
+export function FeedPost({ author, authorAvatar, content, image, videoUrl, linkUrl, timeAgo, likes, comments }: FeedPostProps) {
+  const getVideoEmbed = (url: string) => {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      const id = url.includes("youtu.be") ? url.split("/").pop() : new URL(url).searchParams.get("v");
+      return `https://www.youtube.com/embed/${id}`;
+    }
+    if (url.includes("loom.com")) return url.replace("/share/", "/embed/");
+    return url;
+  };
 
-export function FeedPost({ author, authorAvatar, badge, badgePoints, timeAgo, content, image, likes, comments, shares }: FeedPostProps) {
   return (
-    <div className="bg-card rounded-lg border border-border card-shadow animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start gap-3 p-4 pb-2">
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={authorAvatar} />
-          <AvatarFallback className="bg-accent/20 text-accent font-semibold text-sm">
-            {author.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm">{author}</span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
-          </div>
-          <div className="flex items-center gap-1 mt-0.5">
-            <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0 h-4">
-              {badge}
-            </Badge>
-            <span className="text-[10px] text-success font-semibold">{badgePoints}</span>
+    <div className="bg-card rounded-xl border border-border card-shadow overflow-hidden">
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={authorAvatar} />
+            <AvatarFallback className="bg-accent/20 text-accent font-semibold text-sm">
+              {author.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate">{author}</p>
+            <p className="text-xs text-muted-foreground">{timeAgo}</p>
           </div>
         </div>
+        {content && <p className="text-sm leading-relaxed mb-3">{content}</p>}
+        {linkUrl && (
+          <a href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline break-all mb-3 block">
+            🔗 {linkUrl}
+          </a>
+        )}
       </div>
-
-      {/* Content */}
-      <div className="px-4 pb-3">
-        <p className="text-sm leading-relaxed">{content}</p>
-      </div>
-
-      {/* Image */}
-      {image && (
-        <div className="px-4 pb-3">
-          <img src={image} alt="" className="w-full rounded-lg bg-secondary aspect-video object-cover" />
+      {image && image !== "/placeholder.svg" && (
+        <img src={image} alt="" className="w-full max-h-96 object-cover" />
+      )}
+      {videoUrl && (
+        <div className="aspect-video">
+          <iframe src={getVideoEmbed(videoUrl)} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
         </div>
       )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-        <div className="flex items-center gap-5">
-          <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors">
-            <Heart className="h-4 w-4" />
-            <span className="text-xs">{formatCount(likes)}</span>
-          </button>
-          <button className="flex items-center gap-1.5 text-muted-foreground hover:text-info transition-colors">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">{formatCount(comments)}</span>
-          </button>
-          <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-            <Share2 className="h-4 w-4" />
-            <span className="text-xs">{formatCount(shares)}</span>
-          </button>
-        </div>
-        <button className="text-muted-foreground hover:text-foreground transition-colors">
-          <Bookmark className="h-4 w-4" />
+      <div className="px-4 py-3 border-t border-border flex items-center gap-6">
+        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm">
+          <Heart className="h-4 w-4" /> {likes > 0 && likes}
+        </button>
+        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm">
+          <MessageCircle className="h-4 w-4" /> {comments > 0 && comments}
+        </button>
+        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm">
+          <Share2 className="h-4 w-4" />
         </button>
       </div>
     </div>
