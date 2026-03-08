@@ -23,7 +23,7 @@ export default function CoachAffiliateManagement() {
   const [services, setServices] = useState<any[]>([]);
   const [allSales, setAllSales] = useState<any[]>([]);
   const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
-  const [newProgram, setNewProgram] = useState({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
+  const [newProgram, setNewProgram] = useState({ course_id: "", service_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
 
   useEffect(() => {
     if (user) loadData();
