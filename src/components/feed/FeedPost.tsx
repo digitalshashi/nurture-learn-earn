@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { extractEmbeds, removeEmbedUrls } from "@/lib/link-embed";
+import { extractEmbeds, removeEmbedUrls, parseEmbed } from "@/lib/link-embed";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
 
 interface FeedPostProps {
