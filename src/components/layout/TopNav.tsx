@@ -132,6 +132,12 @@ export function TopNav() {
                 {roles.join(", ") || "student"}
               </p>
             </div>
+            <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => navigate("/my-account")}>
+              <UserCircle className="h-4 w-4 mr-2" /> My Account
+            </Button>
+            <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => navigate("/messages")}>
+              <MessageCircle className="h-4 w-4 mr-2" /> Messages
+            </Button>
             <Button
               variant="ghost"
               className="w-full justify-start text-sm text-destructive"
