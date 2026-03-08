@@ -28,6 +28,9 @@ import {
   Shield,
   Megaphone,
   LayoutDashboard,
+  Image,
+  Tag,
+  UserMinus,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -93,8 +96,10 @@ const sidebarSections = [
   {
     label: "Marketing",
     items: [
-      { title: "Email Campaigns", url: "/marketing/email", icon: Mail },
       { title: "Broadcasts", url: "/marketing/broadcasts", icon: Send },
+      { title: "Banners", url: "/marketing/banners", icon: Image },
+      { title: "Coupons", url: "/marketing/coupons", icon: Tag },
+      { title: "Unsubscribed Users", url: "/marketing/unsubscribed", icon: UserMinus },
     ],
   },
   {
