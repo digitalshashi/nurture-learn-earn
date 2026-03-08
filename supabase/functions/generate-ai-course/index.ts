@@ -104,8 +104,17 @@ ${instructions ? `Additional Instructions: ${instructions}` : ""}`;
       if (!openaiRes.ok) {
         const errText = await openaiRes.text();
         console.error("OpenAI error:", openaiRes.status, errText);
-        return new Response(JSON.stringify({ error: `OpenAI API error (${openaiRes.status})` }), {
-          status: 500,
+        let userMessage = `OpenAI API error (${openaiRes.status})`;
+        if (openaiRes.status === 429) {
+          const isQuota = errText.includes("insufficient_quota");
+          userMessage = isQuota
+            ? "Your OpenAI API key has exceeded its quota. Please check your OpenAI billing at platform.openai.com and ensure you have credits available."
+            : "OpenAI rate limit reached. Please wait a moment and try again.";
+        } else if (openaiRes.status === 401) {
+          userMessage = "Invalid OpenAI API key. Please check your key in Settings → AI Settings.";
+        }
+        return new Response(JSON.stringify({ error: userMessage }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
