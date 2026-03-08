@@ -238,8 +238,27 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
                               <SelectItem value="iframe">Custom Iframe</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
+                          {ch.content_type !== "video" && (
+                            <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
+                          )}
                         </div>
+                        {ch.content_type === "video" && (
+                          <ChapterVideoUpload
+                            videoUrl={ch.video_url}
+                            thumbnailUrl={ch.thumbnail_url}
+                            onVideoChange={(url) => updateChapter(sIdx, cIdx, "video_url", url)}
+                            onThumbnailChange={(url) => {
+                              const updated = [...sections];
+                              updated[sIdx].chapters[cIdx].thumbnail_url = url;
+                              setSections(updated);
+                            }}
+                          />
+                        )}
+                        <Textarea value={ch.video_description} onChange={(e) => {
+                          const updated = [...sections];
+                          updated[sIdx].chapters[cIdx].video_description = e.target.value;
+                          setSections(updated);
+                        }} placeholder="Video description" className="text-sm min-h-[40px]" />
                         <Textarea value={ch.content} onChange={(e) => updateChapter(sIdx, cIdx, "content", e.target.value)} placeholder="Lesson notes / description" className="text-sm min-h-[50px]" />
                         <ChapterResources
                           resources={ch.resources}
