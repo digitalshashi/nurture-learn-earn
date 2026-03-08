@@ -208,16 +208,20 @@ const sidebarSections = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const { hasRole } = useAuth();
+  const { hasPermission } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = state === "collapsed";
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
 
   const filteredSections = sidebarSections
-    .filter((section) => !section.coachOnly || isCoachOrAdmin)
+    .filter((section) => {
+      if (!section.permissionKey) return true;
+      return hasPermission(section.permissionKey);
+    })
     .map((section) => ({
       ...section,
-      items: section.items.filter((item: any) => !item.coachOnly || isCoachOrAdmin),
+      items: section.items.filter((item: any) => hasPermission(item.permissionKey)),
     }))
     .filter((section) => section.items.length > 0);
 
