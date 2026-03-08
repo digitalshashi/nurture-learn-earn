@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Video, X, Image, Loader2, File, Link2 } from "lucide-react";
+import LessonRecorder from "./LessonRecorder";
 
 interface ChapterVideoUploadProps {
   contentType: string;
@@ -33,9 +34,9 @@ export default function ChapterVideoUpload({
   const [uploadingContent, setUploadingContent] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [sourceMode, setSourceMode] = useState<"upload" | "link">("upload");
+  const [sourceMode, setSourceMode] = useState<"upload" | "link" | "record">("upload");
   const [externalUrl, setExternalUrl] = useState(contentUrl || "");
-
+  const [showRecorder, setShowRecorder] = useState(false);
   const contentRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
 
@@ -114,10 +115,31 @@ export default function ChapterVideoUpload({
           >
             <Link2 className="h-3 w-3" /> External Link
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={sourceMode === "record" ? "secondary" : "ghost"}
+            className="h-6 px-2 text-[10px]"
+            onClick={() => { setSourceMode("record"); setShowRecorder(true); }}
+          >
+            🎥 Record
+          </Button>
         </div>
       </div>
 
-      {sourceMode === "upload" ? (
+      {sourceMode === "record" ? (
+        <LessonRecorder
+          onRecordingComplete={(url) => {
+            onContentChange(url);
+            setSourceMode("upload");
+            setShowRecorder(false);
+          }}
+          onClose={() => {
+            setSourceMode("upload");
+            setShowRecorder(false);
+          }}
+        />
+      ) : sourceMode === "upload" ? (
         <div className="space-y-2 rounded-md border-2 border-dashed border-border bg-background p-3 text-center">
           {contentUrl ? (
             <div className="space-y-2">

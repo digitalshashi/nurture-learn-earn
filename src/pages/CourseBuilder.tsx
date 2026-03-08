@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import LessonRecorder from "@/components/course-manage/LessonRecorder";
 
 interface Section {
   id?: string;
@@ -379,6 +380,7 @@ function ChapterEditor({
   onUploadResource: (s: number, c: number, f: File) => void;
   onRemoveResource: (s: number, c: number, r: number) => void;
 }) {
+  const [showRecorder, setShowRecorder] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
   const resourceInputRef = useRef<HTMLInputElement>(null);
@@ -400,10 +402,11 @@ function ChapterEditor({
       {/* Video Source */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground">Video Source</Label>
-        <Select value={chapter.video_type} onValueChange={v => onUpdate(sIdx, cIdx, "video_type", v)}>
+        <Select value={chapter.video_type} onValueChange={v => { onUpdate(sIdx, cIdx, "video_type", v); if (v === "record") setShowRecorder(true); }}>
           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="upload">📤 Upload Video File</SelectItem>
+            <SelectItem value="record">🎥 Record Lesson</SelectItem>
             <SelectItem value="youtube">▶️ YouTube Link</SelectItem>
             <SelectItem value="vimeo">🎬 Vimeo Link</SelectItem>
             <SelectItem value="loom">🔴 Loom Link</SelectItem>
@@ -411,6 +414,21 @@ function ChapterEditor({
             <SelectItem value="iframe">🌐 Custom Iframe</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Lesson Recorder */}
+        {(chapter.video_type === "record" || showRecorder) && !chapter.video_url && (
+          <LessonRecorder
+            onRecordingComplete={(url) => {
+              onUpdate(sIdx, cIdx, "video_url", url);
+              onUpdate(sIdx, cIdx, "video_type", "upload");
+              setShowRecorder(false);
+            }}
+            onClose={() => {
+              setShowRecorder(false);
+              if (chapter.video_type === "record") onUpdate(sIdx, cIdx, "video_type", "upload");
+            }}
+          />
+        )}
 
         {chapter.video_type === "upload" ? (
           <div className="space-y-2">
