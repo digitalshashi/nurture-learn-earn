@@ -73,6 +73,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
         enable_drm: enableDrm,
         disable_qna: disableQna,
         disable_comments: disableComments,
+        access_level: accessLevel,
         updated_at: new Date().toISOString(),
       }).eq("id", courseId);
       if (error) throw error;
