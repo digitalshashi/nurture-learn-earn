@@ -36,6 +36,8 @@ import Broadcasts from "./pages/Broadcasts";
 import Banners from "./pages/Banners";
 import Coupons from "./pages/Coupons";
 import UnsubscribedUsers from "./pages/UnsubscribedUsers";
+import StudentAffiliate from "./pages/StudentAffiliate";
+import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 
 const queryClient = new QueryClient();
 
