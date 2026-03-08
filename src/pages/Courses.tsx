@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -46,9 +46,14 @@ export default function Courses() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold font-display">Courses</h1>
           {isCoachOrAdmin && (
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/course-builder")}>
-              <Plus className="h-4 w-4 mr-1" /> Create Course
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/ai-course-generator")}>
+                <Sparkles className="h-4 w-4 mr-1" /> Create with AI
+              </Button>
+              <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/course-builder")}>
+                <Plus className="h-4 w-4 mr-1" /> Create Course
+              </Button>
+            </div>
           )}
         </div>
         <div className="relative mb-6">

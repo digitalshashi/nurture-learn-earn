@@ -57,6 +57,7 @@ import Leaderboard from "./pages/Leaderboard";
 import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
 import Messages from "./pages/Messages";
+import AICourseGenerator from "./pages/AICourseGenerator";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
             <Route path="/service-builder" element={<ProtectedRoute><ServiceBuilder /></ProtectedRoute>} />
             <Route path="/service-builder/:id" element={<ProtectedRoute><ServiceBuilder /></ProtectedRoute>} />
+            <Route path="/ai-course-generator" element={<ProtectedRoute><AICourseGenerator /></ProtectedRoute>} />
             <Route path="/course-builder" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-builder/:id" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-player/:id" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
