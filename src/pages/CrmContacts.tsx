@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, UserCheck, Download, Upload, Edit2, Tags } from "lucide-react";
+import { Search, Eye, Trash2, UserCheck, Download, Upload, Edit2, Tags, Sparkles, Loader2 } from "lucide-react";
 import { EditContactDialog } from "@/components/crm/EditContactDialog";
 import { ImportContactsDialog } from "@/components/crm/ImportContactsDialog";
 import { ConvertToCustomerDialog } from "@/components/crm/ConvertToCustomerDialog";
