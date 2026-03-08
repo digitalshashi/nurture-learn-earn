@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MessageCircle, Calendar, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { UserBadges } from "@/components/badges/UserBadges";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
@@ -108,7 +109,10 @@ export default function StudentProfile() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-xl font-bold">{profile.full_name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold">{profile.full_name}</h1>
+                  <UserBadges userId={profile.id} maxVisible={3} size="sm" />
+                </div>
                 <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                   <span className="text-lg font-bold text-accent">{formatXP(totalXP)} XP</span>
                   {getBadge(totalXP)}

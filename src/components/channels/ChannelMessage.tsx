@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { UserBadges } from "@/components/badges/UserBadges";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🔥", "👀", "✅", "💯"];
 
@@ -86,8 +87,9 @@ export function ChannelMessage({
       </Avatar>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-center gap-2">
           <span className="font-semibold text-sm">{name}</span>
+          <UserBadges userId={message.user_id} maxVisible={2} size="sm" />
           <span className="text-xs text-muted-foreground">
             {format(new Date(message.created_at), "h:mm a")}
           </span>

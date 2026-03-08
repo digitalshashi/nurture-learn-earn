@@ -8,6 +8,7 @@ import { LinkEmbed } from "@/components/feed/LinkEmbed";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { UserBadges } from "@/components/badges/UserBadges";
 
 interface Comment {
   id: string;
@@ -21,6 +22,7 @@ interface FeedPostProps {
   id: string;
   author: string;
   authorAvatar: string;
+  authorId?: string;
   content: string;
   image?: string;
   videoUrl?: string;
@@ -30,7 +32,7 @@ interface FeedPostProps {
   comments: number;
 }
 
-export function FeedPost({ id, author, authorAvatar, content, image, videoUrl, linkUrl, timeAgo, likes: initialLikes, comments: initialComments }: FeedPostProps) {
+export function FeedPost({ id, author, authorAvatar, authorId, content, image, videoUrl, linkUrl, timeAgo, likes: initialLikes, comments: initialComments }: FeedPostProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -166,7 +168,10 @@ export function FeedPost({ id, author, authorAvatar, content, image, videoUrl, l
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{author}</p>
+            <div className="flex items-center gap-1">
+              <p className="font-semibold text-sm truncate">{author}</p>
+              {authorId && <UserBadges userId={authorId} maxVisible={2} size="sm" />}
+            </div>
             <p className="text-xs text-muted-foreground">{timeAgo}</p>
           </div>
         </div>

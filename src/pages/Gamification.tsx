@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trophy, Star, Medal, Target, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BadgeManagement } from "@/components/badges/BadgeManagement";
 
 interface XpRule {
   id: string;
@@ -161,9 +162,17 @@ export default function Gamification() {
           <TabsList>
             <TabsTrigger value="xp-rules">XP Rules</TabsTrigger>
             <TabsTrigger value="levels">Levels</TabsTrigger>
-            <TabsTrigger value="badges">Badges</TabsTrigger>
+            <TabsTrigger value="badge-mgmt">Badge Management</TabsTrigger>
+            <TabsTrigger value="badges">Legacy Badges</TabsTrigger>
             <TabsTrigger value="challenges">Challenges</TabsTrigger>
           </TabsList>
+
+          {/* Badge Management (new full system) */}
+          <TabsContent value="badge-mgmt">
+            <div className="mt-4">
+              <BadgeManagement />
+            </div>
+          </TabsContent>
 
           {/* XP Rules */}
           <TabsContent value="xp-rules">

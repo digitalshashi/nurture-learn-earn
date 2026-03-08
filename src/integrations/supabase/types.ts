@@ -556,25 +556,37 @@ export type Database = {
       }
       badges: {
         Row: {
+          assignment_rule: Json | null
+          badge_type: string
           created_at: string | null
+          created_by: string | null
           description: string | null
           icon: string | null
+          icon_url: string | null
           id: string
           name: string
           xp_required: number | null
         }
         Insert: {
+          assignment_rule?: Json | null
+          badge_type?: string
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           icon?: string | null
+          icon_url?: string | null
           id?: string
           name: string
           xp_required?: number | null
         }
         Update: {
+          assignment_rule?: Json | null
+          badge_type?: string
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           icon?: string | null
+          icon_url?: string | null
           id?: string
           name?: string
           xp_required?: number | null
