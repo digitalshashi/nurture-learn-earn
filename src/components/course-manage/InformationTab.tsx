@@ -18,6 +18,7 @@ interface Props {
 }
 
 export default function InformationTab({ courseId, course, onUpdate }: Props) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [title, setTitle] = useState(course.title || "");
   const [description, setDescription] = useState(course.description || "");
@@ -31,6 +32,31 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
   const [disableQna, setDisableQna] = useState(course.disable_qna || false);
   const [disableComments, setDisableComments] = useState(course.disable_comments || false);
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const thumbRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (
+    file: File,
+    folder: string,
+    setUploading: (v: boolean) => void,
+    onDone: (url: string) => void,
+  ) => {
+    if (!user) return;
+    setUploading(true);
+    try {
+      const filePath = `${user.id}/${folder}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("course-videos").upload(filePath, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("course-videos").getPublicUrl(filePath);
+      onDone(data.publicUrl);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
