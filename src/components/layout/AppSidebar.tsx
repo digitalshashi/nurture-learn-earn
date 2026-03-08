@@ -63,9 +63,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
+// coachOnly: true means only coaches/admins see this section
 const sidebarSections = [
   {
     label: "Community",
+    coachOnly: false,
     items: [
       { title: "Feed", url: "/feed", icon: Home },
       { title: "Messages", url: "/messages", icon: MessageSquare },
@@ -76,32 +78,37 @@ const sidebarSections = [
   },
   {
     label: null,
+    coachOnly: true,
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     ],
   },
   {
     label: null,
+    coachOnly: true,
     items: [
       { title: "Analytics", url: "/analytics", icon: BarChart3 },
     ],
   },
   {
     label: null,
+    coachOnly: true,
     items: [
       { title: "Services", url: "/services", icon: Megaphone },
     ],
   },
   {
     label: "Products",
+    coachOnly: false,
     items: [
       { title: "Courses", url: "/courses", icon: BookOpen },
-      { title: "Workshops", url: "/workshops", icon: Video },
-      { title: "Events", url: "/events", icon: Calendar },
+      { title: "Workshops", url: "/workshops", icon: Video, coachOnly: true },
+      { title: "Events", url: "/events", icon: Calendar, coachOnly: true },
     ],
   },
   {
     label: "Sales",
+    coachOnly: true,
     items: [
       { title: "Earnings", url: "/sales/earnings", icon: DollarSign },
       { title: "Transactions", url: "/sales/transactions", icon: CreditCard },
@@ -111,12 +118,14 @@ const sidebarSections = [
   },
   {
     label: null,
+    coachOnly: true,
     items: [
       { title: "Page Builder", url: "/page-builder", icon: Layout },
     ],
   },
   {
     label: "CRM",
+    coachOnly: true,
     items: [
       { title: "CRM", url: "/crm", icon: Contact },
       { title: "Follow-ups", url: "/crm/follow-ups", icon: ClipboardCheck },
@@ -128,6 +137,7 @@ const sidebarSections = [
   },
   {
     label: "Customers",
+    coachOnly: true,
     items: [
       { title: "Customers", url: "/customers", icon: Users },
       { title: "Leads", url: "/leads", icon: UserPlus },
@@ -135,6 +145,7 @@ const sidebarSections = [
   },
   {
     label: "Marketing",
+    coachOnly: true,
     items: [
       { title: "Broadcasts", url: "/marketing/broadcasts", icon: Send },
       { title: "Email Settings", url: "/settings/email", icon: Mail },
@@ -145,6 +156,7 @@ const sidebarSections = [
   },
   {
     label: "Automation",
+    coachOnly: true,
     items: [
       { title: "Path", url: "/automation/path", icon: Route },
       { title: "Email Automation", url: "/automation/email", icon: Mail },
@@ -160,15 +172,17 @@ const sidebarSections = [
   },
   {
     label: null,
+    coachOnly: false,
     items: [
-      { title: "Partnerships", url: "/partnerships", icon: Handshake },
-      { title: "Affiliate", url: "/affiliate", icon: Gift },
-      { title: "Gamification", url: "/gamification", icon: Trophy },
+      { title: "Partnerships", url: "/partnerships", icon: Handshake, coachOnly: true },
+      { title: "Affiliate", url: "/affiliate", icon: Gift, coachOnly: true },
+      { title: "Gamification", url: "/gamification", icon: Trophy, coachOnly: true },
       { title: "LevelUp", url: "/levelup", icon: Trophy },
     ],
   },
   {
     label: "AI Suite",
+    coachOnly: true,
     items: [
       { title: "AI Lead Intelligence", url: "/crm/contacts", icon: Contact },
       { title: "AI Content Generator", url: "/ai/content-generator", icon: Rocket },
@@ -176,14 +190,15 @@ const sidebarSections = [
   },
   {
     label: "Settings",
+    coachOnly: false,
     items: [
-      { title: "Platform Settings", url: "/settings/platform", icon: Settings },
-      { title: "Security", url: "/settings/security", icon: Shield },
-      { title: "Team Management", url: "/settings/team", icon: Users },
-      { title: "Cloud Storage", url: "/settings/cloud", icon: HardDrive },
-      { title: "General Settings", url: "/settings", icon: Settings },
-      { title: "Billing & Plans", url: "/billing", icon: Receipt },
-      { title: "Refer & Earn", url: "/referral", icon: Gift },
+      { title: "Platform Settings", url: "/settings/platform", icon: Settings, coachOnly: true },
+      { title: "Security", url: "/settings/security", icon: Shield, coachOnly: true },
+      { title: "Team Management", url: "/settings/team", icon: Users, coachOnly: true },
+      { title: "Cloud Storage", url: "/settings/cloud", icon: HardDrive, coachOnly: true },
+      { title: "My Settings", url: "/settings", icon: Settings },
+      { title: "Billing & Plans", url: "/billing", icon: Receipt, coachOnly: true },
+      { title: "Refer & Earn", url: "/referral", icon: Gift, coachOnly: true },
     ],
   },
 ];
