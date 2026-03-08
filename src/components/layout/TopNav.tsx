@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
-import { Bell, LogOut, icons, ArrowLeftRight } from "lucide-react";
+import { useEffect, useState, lazy, Suspense } from "react";
+import { Bell, LogOut, LayoutDashboard, icons } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCommunity } from "@/contexts/CommunityContext";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,17 @@ interface NavMenuItem {
   visible_roles: string[];
 }
 
+// Fallback static nav items when no DB items configured
+const defaultNavItems = [
+  { label: "FEED", link: "/feed", icon_name: "users" },
+  { label: "COURSES", link: "/courses", icon_name: "book-open" },
+  { label: "QUEST", link: "/levelup", icon_name: "trophy" },
+  { label: "EVENTS", link: "/student-events", icon_name: "calendar" },
+  { label: "TOOLS", link: "/channels", icon_name: "wrench" },
+];
+
 function LucideIcon({ name, className }: { name: string; className?: string }) {
+  // Convert kebab-case to PascalCase for lucide-react icons lookup
   const pascalName = name
     .split("-")
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -33,20 +42,9 @@ function LucideIcon({ name, className }: { name: string; className?: string }) {
 
 export function TopNav() {
   const { user, signOut, roles } = useAuth();
-  const { activeCommunity } = useCommunity();
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
   const [loaded, setLoaded] = useState(false);
-
-  const prefix = activeCommunity ? `/c/${activeCommunity.slug}` : "";
-
-  const defaultNavItems = [
-    { label: "FEED", link: `${prefix}/feed`, icon_name: "users" },
-    { label: "COURSES", link: `${prefix}/courses`, icon_name: "book-open" },
-    { label: "QUEST", link: `${prefix}/levelup`, icon_name: "trophy" },
-    { label: "EVENTS", link: `${prefix}/student-events`, icon_name: "calendar" },
-    { label: "TOOLS", link: `${prefix}/channels`, icon_name: "wrench" },
-  ];
 
   useEffect(() => {
     loadNav();
@@ -73,39 +71,29 @@ export function TopNav() {
     ? user.user_metadata.full_name.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "U";
 
+  // Filter by user role
   const visibleItems = menuItems.length > 0
     ? menuItems.filter((item) => {
         if (!item.visible_roles || item.visible_roles.length === 0) return true;
         return roles.some((r) => item.visible_roles.includes(r));
-      }).map((item) => ({ ...item, link: `${prefix}${item.link}` }))
+      })
     : defaultNavItems;
 
   return (
     <header className="h-14 border-b border-border bg-card flex items-center px-4 justify-between sticky top-0 z-50">
       <div className="flex items-center gap-1">
         <div
-          className="h-8 w-8 rounded-lg mr-2 flex items-center justify-center cursor-pointer shrink-0"
-          style={{ backgroundColor: activeCommunity?.brand_color || "hsl(var(--primary))" }}
-          onClick={() => navigate(prefix ? `${prefix}/dashboard` : "/communities")}
+          className="h-8 w-8 bg-primary rounded-lg mr-4 flex items-center justify-center cursor-pointer"
+          onClick={() => navigate("/dashboard")}
         >
-          {activeCommunity?.logo_url ? (
-            <img src={activeCommunity.logo_url} alt="" className="h-8 w-8 rounded-lg object-cover" />
-          ) : (
-            <span className="text-primary-foreground text-sm font-bold">
-              {activeCommunity?.name?.charAt(0)?.toUpperCase() || "L"}
-            </span>
-          )}
+          <span className="text-primary-foreground text-sm font-bold">L</span>
         </div>
-        {activeCommunity && (
-          <span className="text-sm font-semibold text-foreground mr-3 hidden sm:inline truncate max-w-[120px]">
-            {activeCommunity.name}
-          </span>
-        )}
         <nav className="hidden md:flex items-center gap-0">
           {visibleItems.map((item, i) => (
             <NavLink
               key={item.label + i}
               to={item.link}
+              end={item.link === "/dashboard"}
               className="flex flex-col items-center px-3 py-1 text-muted-foreground hover:text-accent transition-colors text-xs gap-0.5"
               activeClassName="text-accent border-b-2 border-accent"
             >
@@ -117,15 +105,6 @@ export function TopNav() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs text-muted-foreground"
-          onClick={() => navigate("/communities")}
-          title="Switch Community"
-        >
-          <ArrowLeftRight className="h-4 w-4" />
-        </Button>
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
           <Bell className="h-5 w-5 text-muted-foreground" />
         </button>

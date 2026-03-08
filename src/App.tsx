@@ -4,9 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { CommunityProvider } from "@/contexts/CommunityContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { CommunityRoute } from "@/components/CommunityRoute";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import CourseBuilder from "./pages/CourseBuilder";
@@ -44,7 +42,6 @@ import StudentAffiliate from "./pages/StudentAffiliate";
 import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 import NavigationSettings from "./pages/NavigationSettings";
 import SuperAdmin from "./pages/SuperAdmin";
-import CommunitySelector from "./pages/CommunitySelector";
 
 const queryClient = new QueryClient();
 
@@ -55,62 +52,49 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <CommunityProvider>
-            <Routes>
-              <Route path="/" element={<Navigate to="/communities" replace />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/communities" element={<ProtectedRoute><CommunitySelector /></ProtectedRoute>} />
-
-              {/* Community-scoped routes */}
-              <Route path="/c/:slug/dashboard" element={<CommunityRoute><Dashboard /></CommunityRoute>} />
-              <Route path="/c/:slug/feed" element={<CommunityRoute><Feed /></CommunityRoute>} />
-              <Route path="/c/:slug/courses" element={<CommunityRoute><Courses /></CommunityRoute>} />
-              <Route path="/c/:slug/course-builder" element={<CommunityRoute><CourseBuilder /></CommunityRoute>} />
-              <Route path="/c/:slug/course-builder/:id" element={<CommunityRoute><CourseBuilder /></CommunityRoute>} />
-              <Route path="/c/:slug/course-player/:id" element={<CommunityRoute><CoursePlayer /></CommunityRoute>} />
-              <Route path="/c/:slug/course-manage/:id" element={<CommunityRoute><CourseManage /></CommunityRoute>} />
-              <Route path="/c/:slug/channels" element={<CommunityRoute><Channels /></CommunityRoute>} />
-              <Route path="/c/:slug/analytics" element={<CommunityRoute><Analytics /></CommunityRoute>} />
-              <Route path="/c/:slug/workshops" element={<CommunityRoute><Workshops /></CommunityRoute>} />
-              <Route path="/c/:slug/events" element={<CommunityRoute><Events /></CommunityRoute>} />
-              <Route path="/c/:slug/student-events" element={<CommunityRoute><StudentEvents /></CommunityRoute>} />
-              <Route path="/c/:slug/customers" element={<CommunityRoute><Customers /></CommunityRoute>} />
-              <Route path="/c/:slug/leads" element={<CommunityRoute><Leads /></CommunityRoute>} />
-              <Route path="/c/:slug/sales/earnings" element={<CommunityRoute><SalesEarnings /></CommunityRoute>} />
-              <Route path="/c/:slug/sales/transactions" element={<CommunityRoute><SalesTransactions /></CommunityRoute>} />
-              <Route path="/c/:slug/sales/subscriptions" element={<CommunityRoute><SalesEarnings /></CommunityRoute>} />
-              <Route path="/c/:slug/sales/withdrawals" element={<CommunityRoute><SalesEarnings /></CommunityRoute>} />
-              <Route path="/c/:slug/page-builder" element={<CommunityRoute><PageBuilder /></CommunityRoute>} />
-              <Route path="/c/:slug/marketing/email" element={<CommunityRoute><MarketingEmail /></CommunityRoute>} />
-              <Route path="/c/:slug/marketing/broadcasts" element={<CommunityRoute><Broadcasts /></CommunityRoute>} />
-              <Route path="/c/:slug/marketing/banners" element={<CommunityRoute><Banners /></CommunityRoute>} />
-              <Route path="/c/:slug/marketing/coupons" element={<CommunityRoute><Coupons /></CommunityRoute>} />
-              <Route path="/c/:slug/marketing/unsubscribed" element={<CommunityRoute><UnsubscribedUsers /></CommunityRoute>} />
-              <Route path="/c/:slug/automation/email" element={<CommunityRoute><EmailAutomation /></CommunityRoute>} />
-              <Route path="/c/:slug/automation/certificates" element={<CommunityRoute><Certificates /></CommunityRoute>} />
-              <Route path="/c/:slug/automation/integrations" element={<CommunityRoute><Integrations /></CommunityRoute>} />
-              <Route path="/c/:slug/partnerships" element={<CommunityRoute><Partnerships /></CommunityRoute>} />
-              <Route path="/c/:slug/affiliate" element={<CommunityRoute><StudentAffiliate /></CommunityRoute>} />
-              <Route path="/c/:slug/affiliate/manage" element={<CommunityRoute><CoachAffiliateManagement /></CommunityRoute>} />
-              <Route path="/c/:slug/gamification" element={<CommunityRoute><Gamification /></CommunityRoute>} />
-              <Route path="/c/:slug/levelup" element={<CommunityRoute><LevelUp /></CommunityRoute>} />
-              <Route path="/c/:slug/settings" element={<CommunityRoute><SettingsPage /></CommunityRoute>} />
-              <Route path="/c/:slug/billing" element={<CommunityRoute><Billing /></CommunityRoute>} />
-              <Route path="/c/:slug/referral" element={<CommunityRoute><Referral /></CommunityRoute>} />
-              <Route path="/c/:slug/admin" element={<CommunityRoute><AdminPanel /></CommunityRoute>} />
-              <Route path="/c/:slug/navigation-settings" element={<CommunityRoute><NavigationSettings /></CommunityRoute>} />
-
-              {/* Platform-level routes (no community) */}
-              <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
-
-              {/* Legacy redirects */}
-              <Route path="/dashboard" element={<Navigate to="/communities" replace />} />
-              <Route path="/feed" element={<Navigate to="/communities" replace />} />
-              <Route path="/courses" element={<Navigate to="/communities" replace />} />
-
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </CommunityProvider>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+            <Route path="/course-builder" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
+            <Route path="/course-builder/:id" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
+            <Route path="/course-player/:id" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+            <Route path="/course-manage/:id" element={<ProtectedRoute><CourseManage /></ProtectedRoute>} />
+            <Route path="/channels" element={<ProtectedRoute><Channels /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/workshops" element={<ProtectedRoute><Workshops /></ProtectedRoute>} />
+            <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+            <Route path="/student-events" element={<ProtectedRoute><StudentEvents /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+            <Route path="/sales/earnings" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/sales/transactions" element={<ProtectedRoute><SalesTransactions /></ProtectedRoute>} />
+            <Route path="/sales/subscriptions" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/sales/withdrawals" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/page-builder" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
+            <Route path="/marketing/email" element={<ProtectedRoute><MarketingEmail /></ProtectedRoute>} />
+            <Route path="/marketing/broadcasts" element={<ProtectedRoute><Broadcasts /></ProtectedRoute>} />
+            <Route path="/marketing/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
+            <Route path="/marketing/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
+            <Route path="/marketing/unsubscribed" element={<ProtectedRoute><UnsubscribedUsers /></ProtectedRoute>} />
+            <Route path="/automation/email" element={<ProtectedRoute><EmailAutomation /></ProtectedRoute>} />
+            <Route path="/automation/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
+            <Route path="/automation/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
+            <Route path="/partnerships" element={<ProtectedRoute><Partnerships /></ProtectedRoute>} />
+            <Route path="/gamification" element={<ProtectedRoute><Gamification /></ProtectedRoute>} />
+            <Route path="/levelup" element={<ProtectedRoute><LevelUp /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+            <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+            <Route path="/affiliate" element={<ProtectedRoute><StudentAffiliate /></ProtectedRoute>} />
+            <Route path="/affiliate/manage" element={<ProtectedRoute><CoachAffiliateManagement /></ProtectedRoute>} />
+            <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
+            <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
