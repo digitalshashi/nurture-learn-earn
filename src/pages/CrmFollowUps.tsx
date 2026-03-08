@@ -195,6 +195,7 @@ export default function CrmFollowUps() {
             </DialogContent>
             </Dialog>
           </div>
+        </div>
 
         <div className="grid grid-cols-3 gap-4">
           <Card className="card-shadow"><CardContent className="pt-5 flex items-center gap-3"><Clock className="h-5 w-5 text-amber-500" /><div><p className="text-2xl font-bold">{pending.length}</p><p className="text-xs text-muted-foreground">Pending</p></div></CardContent></Card>
