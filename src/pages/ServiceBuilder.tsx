@@ -403,6 +403,48 @@ export default function ServiceBuilder() {
                 )}
               </div>
 
+              {/* Advanced Features */}
+              <Card className="border border-border">
+                <CardHeader className="py-3"><CardTitle className="text-sm">Advanced Features</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label className="text-xs">Service Tier</Label>
+                    <Select value={serviceTier} onValueChange={setServiceTier}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="diamond">Diamond</SelectItem>
+                        <SelectItem value="elite">Elite</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Community Feed</Label>
+                      <Switch checked={enableCommunity} onCheckedChange={setEnableCommunity} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Leaderboard</Label>
+                      <Switch checked={enableLeaderboard} onCheckedChange={setEnableLeaderboard} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Quests</Label>
+                      <Switch checked={enableQuests} onCheckedChange={setEnableQuests} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Gamification</Label>
+                      <Switch checked={enableGamification} onCheckedChange={setEnableGamification} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold">LevelUp Platform</Label>
+                      <Switch checked={enableLevelup} onCheckedChange={setEnableLevelup} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Link courses & workshops */}
               <Card className="border border-border">
                 <CardHeader className="py-3"><CardTitle className="text-sm">Linked Courses</CardTitle></CardHeader>

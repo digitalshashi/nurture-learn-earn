@@ -26,8 +26,10 @@ const defaultNavItems = [
   { label: "TOOLS", link: "/channels", icon_name: "wrench" },
 ];
 
+// Items that require LevelUp access for students
+const LEVELUP_LINKS = ["/levelup"];
+
 function LucideIcon({ name, className }: { name: string; className?: string }) {
-  // Convert kebab-case to PascalCase for lucide-react icons lookup
   const pascalName = name
     .split("-")
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -45,10 +47,15 @@ export function TopNav() {
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [hasLevelupAccess, setHasLevelupAccess] = useState(false);
 
   useEffect(() => {
     loadNav();
   }, []);
+
+  useEffect(() => {
+    if (user) checkLevelupAccess();
+  }, [user, roles]);
 
   const loadNav = async () => {
     const { data } = await supabase
@@ -62,6 +69,19 @@ export function TopNav() {
     setLoaded(true);
   };
 
+  const checkLevelupAccess = async () => {
+    if (!user) return;
+    // Coaches/admins always have access
+    const isCoachOrAdmin = roles.includes("coach") || roles.includes("admin");
+    if (isCoachOrAdmin) {
+      setHasLevelupAccess(true);
+      return;
+    }
+    // For students, check via RPC
+    const { data, error } = await supabase.rpc("user_has_levelup_access", { _user_id: user.id });
+    setHasLevelupAccess(!!data);
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/login");
@@ -72,12 +92,18 @@ export function TopNav() {
     : user?.email?.charAt(0).toUpperCase() || "U";
 
   // Filter by user role
-  const visibleItems = menuItems.length > 0
+  const roleFiltered = menuItems.length > 0
     ? menuItems.filter((item) => {
         if (!item.visible_roles || item.visible_roles.length === 0) return true;
         return roles.some((r) => item.visible_roles.includes(r));
       })
     : defaultNavItems;
+
+  // Filter LevelUp items for students without access
+  const visibleItems = roleFiltered.filter((item) => {
+    if (LEVELUP_LINKS.includes(item.link) && !hasLevelupAccess) return false;
+    return true;
+  });
 
   return (
     <header className="h-14 border-b border-border bg-card flex items-center px-4 sticky top-0 z-50">
@@ -108,7 +134,6 @@ export function TopNav() {
       </nav>
 
       {/* Right: Actions */}
-
       <div className="flex items-center gap-3">
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
           <Bell className="h-5 w-5 text-muted-foreground" />
