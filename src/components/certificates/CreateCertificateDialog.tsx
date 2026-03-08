@@ -43,7 +43,7 @@ export function CreateCertificateDialog({ open, onOpenChange, onSaved, editId }:
 
   const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
   const [sections, setSections] = useState<{ id: string; title: string; course_id: string }[]>([]);
-  const [services, setServices] = useState<{ id: string; name: string }[]>([]);
+  const [services, setServices] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     if (open) {
