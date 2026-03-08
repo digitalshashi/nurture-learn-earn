@@ -49,6 +49,7 @@ export default function SettingsPage() {
     if (user) {
       loadPaymentSettings();
       loadAiSettings();
+      loadZoomSettings();
     }
   }, [user]);
 
