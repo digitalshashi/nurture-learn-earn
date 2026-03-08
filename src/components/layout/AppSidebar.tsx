@@ -145,6 +145,8 @@ const sidebarSections = [
     items: [
       { title: "Platform Settings", url: "/settings/platform", icon: Settings },
       { title: "Security", url: "/settings/security", icon: Shield },
+      { title: "Team Management", url: "/settings/team", icon: Users },
+      { title: "Cloud Storage", url: "/settings/cloud", icon: HardDrive },
       { title: "General Settings", url: "/settings", icon: Settings },
       { title: "Billing & Plans", url: "/billing", icon: Receipt },
       { title: "Refer & Earn", url: "/referral", icon: Gift },
