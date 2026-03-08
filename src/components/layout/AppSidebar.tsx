@@ -1,17 +1,33 @@
 import {
   Home,
-  MessageSquare,
-  Hash,
-  Star,
-  Trophy,
-  Users,
-  HelpCircle,
-  Diamond,
-  Zap,
+  BarChart3,
   BookOpen,
-  LayoutDashboard,
+  Video,
+  Calendar,
+  Users,
+  UserPlus,
+  DollarSign,
+  CreditCard,
+  ArrowLeftRight,
+  Wallet,
+  Layout,
+  Mail,
+  MessageSquare,
+  Send,
+  Award,
+  Puzzle,
+  Handshake,
+  Trophy,
+  Settings,
+  Receipt,
+  Gift,
+  Search,
+  Rocket,
+  ChevronDown,
+  Hash,
   Shield,
   Megaphone,
+  LayoutDashboard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -25,158 +41,202 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
-const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Feed", url: "/feed", icon: Home },
-  { title: "Channels", url: "/channels", icon: Hash },
-  { title: "Messages", url: "/messages", icon: MessageSquare },
-];
-
-const channelItems = [
-  { title: "Feed", url: "/channels", icon: Hash },
-  { title: "Intros", url: "/channels", icon: Hash },
-  { title: "Share Your Wins", url: "/channels", icon: Star },
-  { title: "Accountability", url: "/channels", icon: Zap },
-  { title: "Support Forum", url: "/channels", icon: HelpCircle },
+const sidebarSections = [
+  {
+    label: null,
+    items: [
+      { title: "Get Started", url: "/dashboard", icon: Rocket },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { title: "Analytics", url: "/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Products",
+    items: [
+      { title: "Courses", url: "/courses", icon: BookOpen },
+      { title: "Workshops", url: "/workshops", icon: Video },
+      { title: "Events", url: "/events", icon: Calendar },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [
+      { title: "Earnings", url: "/sales/earnings", icon: DollarSign },
+      { title: "Transactions", url: "/sales/transactions", icon: CreditCard },
+      { title: "Subscriptions", url: "/sales/subscriptions", icon: ArrowLeftRight },
+      { title: "Withdrawals", url: "/sales/withdrawals", icon: Wallet },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { title: "Page Builder", url: "/page-builder", icon: Layout },
+    ],
+  },
+  {
+    label: "Customers",
+    items: [
+      { title: "Customers", url: "/customers", icon: Users },
+      { title: "Leads", url: "/leads", icon: UserPlus },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { title: "Email Campaigns", url: "/marketing/email", icon: Mail },
+      { title: "Broadcasts", url: "/marketing/broadcasts", icon: Send },
+    ],
+  },
+  {
+    label: "Automation",
+    items: [
+      { title: "Email Automation", url: "/automation/email", icon: Mail },
+      { title: "Certificates", url: "/automation/certificates", icon: Award },
+      { title: "Integrations", url: "/automation/integrations", icon: Puzzle },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { title: "Partnerships", url: "/partnerships", icon: Handshake },
+      { title: "Gamification", url: "/gamification", icon: Trophy },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { title: "Settings", url: "/settings", icon: Settings },
+      { title: "Billing & Plans", url: "/billing", icon: Receipt },
+      { title: "Refer & Earn", url: "/referral", icon: Gift },
+    ],
+  },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const { hasRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const collapsed = state === "collapsed";
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border top-14">
-      <SidebarContent className="pt-3">
-        {/* Create Button with Popover */}
-        {!collapsed && (
-          <div className="px-3 mb-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg">
-                  + Create
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-2" align="start">
-                <button
-                  onClick={() => navigate("/feed")}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left"
-                >
-                  <div className="p-2 rounded-lg bg-accent/10">
-                    <Megaphone className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Post on Feed</p>
-                    <p className="text-xs text-muted-foreground">Share with everyone in your community.</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => navigate("/channels")}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left"
-                >
-                  <div className="p-2 rounded-lg bg-info/10">
-                    <Hash className="h-5 w-5 text-info" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Post in a Channel</p>
-                    <p className="text-xs text-muted-foreground">Engage with a specific audience.</p>
-                  </div>
-                </button>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+      <SidebarContent className="pt-2 gap-0">
+        {sidebarSections.map((section, si) => {
+          if (section.label) {
+            return (
+              <CollapsibleGroup
+                key={si}
+                label={section.label}
+                items={section.items}
+                collapsed={collapsed}
+                currentPath={location.pathname}
+              />
+            );
+          }
+          return (
+            <SidebarGroup key={si} className="py-0.5">
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {section.items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.url}
+                          end={item.url === "/dashboard"}
+                          className="hover:bg-secondary/80 text-sm"
+                          activeClassName="bg-secondary text-foreground font-medium"
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!collapsed && <span>{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
 
-        {/* Main Navigation */}
-        <SidebarGroup>
+        {isCoachOrAdmin && (
+          <SidebarGroup className="py-0.5">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/admin" className="hover:bg-secondary/80 text-sm" activeClassName="bg-secondary text-foreground font-medium">
+                      <Shield className="h-4 w-4" />
+                      {!collapsed && <span>Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+function CollapsibleGroup({
+  label,
+  items,
+  collapsed,
+  currentPath,
+}: {
+  label: string;
+  items: { title: string; url: string; icon: any }[];
+  collapsed: boolean;
+  currentPath: string;
+}) {
+  const isActive = items.some((i) => currentPath.startsWith(i.url));
+  const [open, setOpen] = useState(isActive);
+
+  return (
+    <Collapsible open={collapsed ? false : open} onOpenChange={setOpen}>
+      <SidebarGroup className="py-0.5">
+        <CollapsibleTrigger className="w-full">
+          <SidebarGroupLabel className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center justify-between pr-2">
+            {!collapsed && label}
+            {!collapsed && (
+              <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+            )}
+          </SidebarGroupLabel>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className="hover:bg-secondary/80" activeClassName="bg-secondary text-foreground font-medium">
+                    <NavLink
+                      to={item.url}
+                      className="hover:bg-secondary/80 text-sm"
+                      activeClassName="bg-secondary text-foreground font-medium"
+                    >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {isCoachOrAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/admin" className="hover:bg-secondary/80" activeClassName="bg-secondary text-foreground font-medium">
-                      <Shield className="h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Courses */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Learning
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/courses" className="hover:bg-secondary/80" activeClassName="bg-secondary text-foreground font-medium">
-                    <BookOpen className="h-4 w-4" />
-                    {!collapsed && <span>Courses</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Continue Learning */}
-        {!collapsed && (
-          <div className="px-3 mt-2">
-            <div className="bg-info/10 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <BookOpen className="h-4 w-4 text-info" />
-                <span className="text-xs font-semibold text-info">Continue learning</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">Browse courses to get started</p>
-              <Progress value={0} className="h-1.5" />
-            </div>
-          </div>
-        )}
-
-        {/* Channels quick links */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Channels
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {channelItems.map((item, i) => (
-                <SidebarMenuItem key={i}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className="hover:bg-secondary/80 text-sm" activeClassName="bg-secondary text-foreground font-medium">
-                      <item.icon className="h-3.5 w-3.5" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
