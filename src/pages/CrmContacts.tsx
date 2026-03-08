@@ -202,7 +202,20 @@ export default function CrmContacts() {
                     <TableCell className="font-medium text-sm">{l.name}</TableCell>
                     <TableCell className="text-sm">{l.email || "—"}</TableCell>
                     <TableCell className="text-sm">{l.phone || "—"}</TableCell>
-                    <TableCell className="text-sm">{l.city || "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {l.lead_score > 0 ? (
+                          <Badge variant={l.lead_score_label === "hot" ? "destructive" : l.lead_score_label === "warm" ? "default" : "secondary"} className="text-xs">
+                            {l.lead_score} · {l.lead_score_label === "hot" ? "🔥 Hot" : l.lead_score_label === "warm" ? "🟡 Warm" : "❄️ Cold"}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scoreLead(l)} disabled={scoringId === l.id} title="AI Score">
+                          {scoringId === l.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell><Badge variant="secondary" className="text-xs">{l.source}</Badge></TableCell>
                     <TableCell><div className="flex flex-wrap gap-1">{(l.tags || []).map((t: string) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}</div></TableCell>
                     <TableCell><Badge variant={l.status === "converted" ? "default" : "outline"} className="text-xs">{l.status === "converted" ? "Customer" : l.status}</Badge></TableCell>
