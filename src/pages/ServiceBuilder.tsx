@@ -364,11 +364,11 @@ export default function ServiceBuilder() {
                     </div>
                   </div>
                 </div>
-                {!showInternational ? (
+                {false && !showInternational ? (
                   <Button variant="outline" className="w-full" onClick={() => setShowInternational(true)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add different price for international customers
                   </Button>
-                ) : (
+                ) : false && (
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label className="text-xs">International Currency</Label>
                       <Select value="USD" onValueChange={() => {}}>
