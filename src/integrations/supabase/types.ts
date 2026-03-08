@@ -1036,6 +1036,7 @@ export type Database = {
           is_published: boolean
           linked_services: string[] | null
           price: number
+          service_id: string | null
           show_as_locked: boolean
           thumbnail_url: string | null
           title: string
@@ -1057,6 +1058,7 @@ export type Database = {
           is_published?: boolean
           linked_services?: string[] | null
           price?: number
+          service_id?: string | null
           show_as_locked?: boolean
           thumbnail_url?: string | null
           title: string
@@ -1078,12 +1080,21 @@ export type Database = {
           is_published?: boolean
           linked_services?: string[] | null
           price?: number
+          service_id?: string | null
           show_as_locked?: boolean
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_accounts: {
         Row: {
@@ -1933,6 +1944,254 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          service_id: string
+          sort_order: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          service_id: string
+          sort_order?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          service_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_courses_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_users: {
+        Row: {
+          amount_paid: number | null
+          coupon_code: string | null
+          created_at: string
+          custom_fields_data: Json | null
+          expires_at: string | null
+          id: string
+          payment_method: string | null
+          purchased_at: string
+          service_id: string
+          status: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          coupon_code?: string | null
+          created_at?: string
+          custom_fields_data?: Json | null
+          expires_at?: string | null
+          id?: string
+          payment_method?: string | null
+          purchased_at?: string
+          service_id: string
+          status?: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          coupon_code?: string | null
+          created_at?: string
+          custom_fields_data?: Json | null
+          expires_at?: string | null
+          id?: string
+          payment_method?: string | null
+          purchased_at?: string
+          service_id?: string
+          status?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_users_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_workshops: {
+        Row: {
+          created_at: string
+          id: string
+          service_id: string
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          service_id: string
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          service_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_workshops_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_workshops_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          access_duration_days: number | null
+          advanced_settings: Json | null
+          allow_pay_what_you_want: boolean
+          coach_id: string
+          collect_address: boolean
+          collect_gst: boolean
+          cover_image_url: string | null
+          cover_video_url: string | null
+          created_at: string
+          currency: string
+          custom_fields: Json | null
+          description: string | null
+          discounted_price: number | null
+          drip_enabled: boolean
+          enable_subscription: boolean
+          enable_terms: boolean
+          id: string
+          international_currency: string | null
+          international_price: number | null
+          is_free: boolean
+          linked_community_id: string | null
+          max_seats: number | null
+          min_pay_amount: number | null
+          payment_success_button_text: string | null
+          payment_success_button_url: string | null
+          payment_success_heading: string | null
+          payment_success_message: string | null
+          payment_success_sections: Json | null
+          price: number
+          service_type: string
+          slug: string | null
+          status: string
+          subscription_interval: string | null
+          subscription_price: number | null
+          terms_conditions: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_duration_days?: number | null
+          advanced_settings?: Json | null
+          allow_pay_what_you_want?: boolean
+          coach_id: string
+          collect_address?: boolean
+          collect_gst?: boolean
+          cover_image_url?: string | null
+          cover_video_url?: string | null
+          created_at?: string
+          currency?: string
+          custom_fields?: Json | null
+          description?: string | null
+          discounted_price?: number | null
+          drip_enabled?: boolean
+          enable_subscription?: boolean
+          enable_terms?: boolean
+          id?: string
+          international_currency?: string | null
+          international_price?: number | null
+          is_free?: boolean
+          linked_community_id?: string | null
+          max_seats?: number | null
+          min_pay_amount?: number | null
+          payment_success_button_text?: string | null
+          payment_success_button_url?: string | null
+          payment_success_heading?: string | null
+          payment_success_message?: string | null
+          payment_success_sections?: Json | null
+          price?: number
+          service_type?: string
+          slug?: string | null
+          status?: string
+          subscription_interval?: string | null
+          subscription_price?: number | null
+          terms_conditions?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_duration_days?: number | null
+          advanced_settings?: Json | null
+          allow_pay_what_you_want?: boolean
+          coach_id?: string
+          collect_address?: boolean
+          collect_gst?: boolean
+          cover_image_url?: string | null
+          cover_video_url?: string | null
+          created_at?: string
+          currency?: string
+          custom_fields?: Json | null
+          description?: string | null
+          discounted_price?: number | null
+          drip_enabled?: boolean
+          enable_subscription?: boolean
+          enable_terms?: boolean
+          id?: string
+          international_currency?: string | null
+          international_price?: number | null
+          is_free?: boolean
+          linked_community_id?: string | null
+          max_seats?: number | null
+          min_pay_amount?: number | null
+          payment_success_button_text?: string | null
+          payment_success_button_url?: string | null
+          payment_success_heading?: string | null
+          payment_success_message?: string | null
+          payment_success_sections?: Json | null
+          price?: number
+          service_type?: string
+          slug?: string | null
+          status?: string
+          subscription_interval?: string | null
+          subscription_price?: number | null
+          terms_conditions?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       student_tasks: {
         Row: {

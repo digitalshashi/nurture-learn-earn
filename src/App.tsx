@@ -50,6 +50,8 @@ import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 import NavigationSettings from "./pages/NavigationSettings";
 import SuperAdmin from "./pages/SuperAdmin";
 import EmailSettings from "./pages/EmailSettings";
+import Services from "./pages/Services";
+import ServiceBuilder from "./pages/ServiceBuilder";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +68,9 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+            <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+            <Route path="/service-builder" element={<ProtectedRoute><ServiceBuilder /></ProtectedRoute>} />
+            <Route path="/service-builder/:id" element={<ProtectedRoute><ServiceBuilder /></ProtectedRoute>} />
             <Route path="/course-builder" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-builder/:id" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-player/:id" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
