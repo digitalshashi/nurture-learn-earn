@@ -36,6 +36,15 @@ export default function SettingsPage() {
   const [aiConnected, setAiConnected] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
 
+  // Zoom Settings state
+  const [zoomAccountId, setZoomAccountId] = useState("");
+  const [zoomClientId, setZoomClientId] = useState("");
+  const [zoomClientSecret, setZoomClientSecret] = useState("");
+  const [showZoomSecret, setShowZoomSecret] = useState(false);
+  const [savingZoom, setSavingZoom] = useState(false);
+  const [loadingZoom, setLoadingZoom] = useState(true);
+  const [zoomConnected, setZoomConnected] = useState(false);
+
   useEffect(() => {
     if (user) {
       loadPaymentSettings();
