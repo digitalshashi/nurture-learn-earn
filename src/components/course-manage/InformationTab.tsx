@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Upload, Info } from "lucide-react";
+import { Save, Upload, Info, Loader2 } from "lucide-react";
 
 interface Props {
   courseId: string;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function InformationTab({ courseId, course, onUpdate }: Props) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [title, setTitle] = useState(course.title || "");
   const [description, setDescription] = useState(course.description || "");
@@ -30,6 +32,31 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
   const [disableQna, setDisableQna] = useState(course.disable_qna || false);
   const [disableComments, setDisableComments] = useState(course.disable_comments || false);
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const thumbRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (
+    file: File,
+    folder: string,
+    setUploading: (v: boolean) => void,
+    onDone: (url: string) => void,
+  ) => {
+    if (!user) return;
+    setUploading(true);
+    try {
+      const filePath = `${user.id}/${folder}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("course-videos").upload(filePath, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("course-videos").getPublicUrl(filePath);
+      onDone(data.publicUrl);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -97,7 +124,10 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
         <div>
           <Label className="font-medium">Cover image*</Label>
           <div className="mt-2 flex gap-4 items-start">
-            <div className="w-64 h-36 bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
+            <div
+              className="w-64 aspect-video bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => coverRef.current?.click()}
+            >
               {coverImageUrl ? (
                 <img src={coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
               ) : (
@@ -108,9 +138,29 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
             </div>
             <div className="text-sm text-muted-foreground space-y-2">
               <p>Upload cover image here.</p>
-              <p>Recommended size: 750px X 422px (.jpg, .jpeg, .gif, or .png).</p>
+              <p>Recommended size: <strong>1920×1080px (16:9)</strong> (.jpg, .jpeg, .gif, or .png).</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingCover}
+                onClick={() => coverRef.current?.click()}
+              >
+                {uploadingCover ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Uploading...</> : <><Upload className="h-3 w-3 mr-1" /> Upload Image</>}
+              </Button>
               <Input value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)} placeholder="Image URL" className="mt-1" />
             </div>
+            <input
+              ref={coverRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file, "covers", setUploadingCover, setCoverImageUrl);
+                e.target.value = "";
+              }}
+            />
           </div>
         </div>
 
@@ -118,7 +168,10 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
         <div>
           <Label className="font-medium">Default video thumbnail</Label>
           <div className="mt-2 flex gap-4 items-start">
-            <div className="w-64 h-36 bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
+            <div
+              className="w-64 aspect-video bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => thumbRef.current?.click()}
+            >
               {defaultThumbnailUrl ? (
                 <img src={defaultThumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
               ) : (
@@ -129,10 +182,30 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
             </div>
             <div className="text-sm text-muted-foreground space-y-2">
               <p>Upload your default video chapter thumbnail image here.</p>
-              <p>Recommended size: 750px X 422px (.jpg, .jpeg, .gif, or .png).</p>
-              <p className="text-xs italic">This image will be used as the default thumbnail for all future video chapters.</p>
+              <p>Recommended size: <strong>1920×1080px (16:9)</strong> (.jpg, .jpeg, .gif, or .png).</p>
+              <p className="text-xs italic text-accent">This image will be used as the default thumbnail for all future video chapters.</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingThumb}
+                onClick={() => thumbRef.current?.click()}
+              >
+                {uploadingThumb ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Uploading...</> : <><Upload className="h-3 w-3 mr-1" /> Upload Image</>}
+              </Button>
               <Input value={defaultThumbnailUrl} onChange={(e) => setDefaultThumbnailUrl(e.target.value)} placeholder="Thumbnail URL" className="mt-1" />
             </div>
+            <input
+              ref={thumbRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file, "thumbnails", setUploadingThumb, setDefaultThumbnailUrl);
+                e.target.value = "";
+              }}
+            />
           </div>
         </div>
 
