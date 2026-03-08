@@ -25,6 +25,7 @@ export default function CrmContacts() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSource, setFilterSource] = useState("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [scoringId, setScoringId] = useState<string | null>(null);
 
   const [editContact, setEditContact] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -40,6 +41,32 @@ export default function CrmContacts() {
     setLeads(data || []);
     setLoading(false);
     setSelected(new Set());
+  };
+
+  const scoreLead = async (lead: any) => {
+    setScoringId(lead.id);
+    try {
+      const [{ count: notesCount }, { count: fuCount }] = await Promise.all([
+        supabase.from("crm_lead_notes").select("*", { count: "exact", head: true }).eq("lead_id", lead.id),
+        supabase.from("crm_follow_ups").select("*", { count: "exact", head: true }).eq("lead_id", lead.id),
+      ]);
+      const { data, error } = await supabase.functions.invoke("ai-lead-score", {
+        body: { lead: { ...lead, notes_count: notesCount || 0, follow_ups_count: fuCount || 0 } },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      await supabase.from("crm_leads").update({
+        lead_score: data.score,
+        lead_score_label: data.label,
+        last_scored_at: new Date().toISOString(),
+      }).eq("id", lead.id);
+      toast({ title: `Score: ${data.score} (${data.label})`, description: data.reasoning });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Scoring failed", description: e.message, variant: "destructive" });
+    } finally {
+      setScoringId(null);
+    }
   };
 
   const deleteLead = async (id: string) => {
