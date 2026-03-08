@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Flame, CheckCircle, Target, TrendingUp, ArrowRight, Checkbox } from "lucide-react";
+import { Trophy, Flame, CheckCircle, Target, TrendingUp, ArrowRight } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Area, AreaChart } from "recharts";
 import { Button } from "@/components/ui/button";
 
