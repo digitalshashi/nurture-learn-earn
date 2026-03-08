@@ -40,6 +40,14 @@ export default function ServiceBuilder() {
   const [serviceType, setServiceType] = useState("bundle");
   const [isFree, setIsFree] = useState(false);
   const [enableSubscription, setEnableSubscription] = useState(false);
+
+  // Advanced Features
+  const [serviceTier, setServiceTier] = useState("basic");
+  const [enableLevelup, setEnableLevelup] = useState(false);
+  const [enableGamification, setEnableGamification] = useState(false);
+  const [enableCommunity, setEnableCommunity] = useState(false);
+  const [enableLeaderboard, setEnableLeaderboard] = useState(false);
+  const [enableQuests, setEnableQuests] = useState(false);
   const [subscriptionInterval, setSubscriptionInterval] = useState("monthly");
   const [subscriptionPrice, setSubscriptionPrice] = useState("0");
   const [allowPayWhatYouWant, setAllowPayWhatYouWant] = useState(false);
