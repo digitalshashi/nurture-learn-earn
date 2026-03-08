@@ -279,33 +279,11 @@ export default function CoursePlayer() {
 
               {/* Lesson title + tabs */}
               <div className="flex-1 overflow-auto">
-                <div className="border-b border-border px-6 py-4 flex items-center justify-between">
-                  <h2 className="text-base font-bold">{selectedChapter.title}</h2>
-                  <Tabs defaultValue="description" className="w-auto">
-                    <TabsList className="bg-transparent border-none gap-4 p-0 h-auto">
-                      <TabsTrigger
-                        value="description"
-                        className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-1 bg-transparent text-sm"
-                      >
-                        Description
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="resources"
-                        className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-1 bg-transparent text-sm"
-                      >
-                        Resources
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="qna"
-                        className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-1 bg-transparent text-sm"
-                      >
-                        QnA
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                <div className="border-b border-border px-6 py-4">
+                  <h2 className="text-lg font-bold mb-1">{selectedChapter.title}</h2>
                 </div>
 
-                {/* Tab content using controlled state */}
+                {/* Tab content */}
                 <TabsWrapper
                   chapter={selectedChapter}
                   questions={questions}
@@ -315,6 +293,7 @@ export default function CoursePlayer() {
                   getResources={getResources}
                   completedChapters={completedChapters}
                   markComplete={markComplete}
+                  courseId={id!}
                 />
               </div>
             </>
