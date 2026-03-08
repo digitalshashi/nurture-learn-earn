@@ -28,18 +28,30 @@ interface LevelDef {
   badge_name: string | null;
 }
 
-const LEVEL_ICONS = [Star, Zap, Trophy, Crown, Medal, Target, Flame, Star, Crown, Trophy];
+const LEVEL_ICONS = [Star, Zap, BookOpen, Medal, Trophy, Crown, Target, Flame, Crown, Trophy];
 const LEVEL_COLORS = [
-  "hsl(var(--muted-foreground))",
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
+  "hsl(220 14% 56%)",
+  "hsl(200 80% 50%)",
+  "hsl(160 60% 45%)",
   "hsl(25 95% 53%)",
   "hsl(280 70% 55%)",
+  "hsl(192 70% 43%)",
   "hsl(45 93% 47%)",
-  "hsl(0 72% 51%)",
-  "hsl(200 80% 50%)",
-  "hsl(280 70% 55%)",
+  "hsl(340 75% 55%)",
+  "hsl(260 60% 50%)",
   "hsl(45 93% 47%)",
+];
+const LEVEL_BG = [
+  "hsl(220 14% 56% / 0.15)",
+  "hsl(200 80% 50% / 0.15)",
+  "hsl(160 60% 45% / 0.15)",
+  "hsl(25 95% 53% / 0.15)",
+  "hsl(280 70% 55% / 0.15)",
+  "hsl(192 70% 43% / 0.15)",
+  "hsl(45 93% 47% / 0.15)",
+  "hsl(340 75% 55% / 0.15)",
+  "hsl(260 60% 50% / 0.15)",
+  "hsl(45 93% 47% / 0.15)",
 ];
 
 export default function QuestDashboard() {
