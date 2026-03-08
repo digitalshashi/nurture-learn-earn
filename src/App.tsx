@@ -65,6 +65,13 @@ import SecuritySettings from "./pages/SecuritySettings";
 import TeamManagement from "./pages/TeamManagement";
 import CloudStorage from "./pages/CloudStorage";
 import LevelUpUpgrade from "./pages/LevelUpUpgrade";
+import CrmDashboard from "./pages/CrmDashboard";
+import CrmPipelines from "./pages/CrmPipelines";
+import CrmContacts from "./pages/CrmContacts";
+import CrmFollowUps from "./pages/CrmFollowUps";
+import CrmContactGroups from "./pages/CrmContactGroups";
+import CrmMetaLeads from "./pages/CrmMetaLeads";
+import CrmLeadProfile from "./pages/CrmLeadProfile";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +105,13 @@ const App = () => (
             <Route path="/student-events" element={<ProtectedRoute><StudentEvents /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+            <Route path="/crm" element={<ProtectedRoute><CrmDashboard /></ProtectedRoute>} />
+            <Route path="/crm/pipelines" element={<ProtectedRoute><CrmPipelines /></ProtectedRoute>} />
+            <Route path="/crm/contacts" element={<ProtectedRoute><CrmContacts /></ProtectedRoute>} />
+            <Route path="/crm/follow-ups" element={<ProtectedRoute><CrmFollowUps /></ProtectedRoute>} />
+            <Route path="/crm/contact-groups" element={<ProtectedRoute><CrmContactGroups /></ProtectedRoute>} />
+            <Route path="/crm/meta-leads" element={<ProtectedRoute><CrmMetaLeads /></ProtectedRoute>} />
+            <Route path="/crm/leads/:id" element={<ProtectedRoute><CrmLeadProfile /></ProtectedRoute>} />
             <Route path="/sales/earnings" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
             <Route path="/sales/transactions" element={<ProtectedRoute><SalesTransactions /></ProtectedRoute>} />
             <Route path="/sales/subscriptions" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
