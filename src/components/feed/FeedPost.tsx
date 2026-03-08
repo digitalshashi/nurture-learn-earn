@@ -21,6 +21,7 @@ interface FeedPostProps {
   id: string;
   author: string;
   authorAvatar: string;
+  authorId?: string;
   content: string;
   image?: string;
   videoUrl?: string;
@@ -30,7 +31,7 @@ interface FeedPostProps {
   comments: number;
 }
 
-export function FeedPost({ id, author, authorAvatar, content, image, videoUrl, linkUrl, timeAgo, likes: initialLikes, comments: initialComments }: FeedPostProps) {
+export function FeedPost({ id, author, authorAvatar, authorId, content, image, videoUrl, linkUrl, timeAgo, likes: initialLikes, comments: initialComments }: FeedPostProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
