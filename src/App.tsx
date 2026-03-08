@@ -53,6 +53,7 @@ import EmailSettings from "./pages/EmailSettings";
 import Services from "./pages/Services";
 import ServiceBuilder from "./pages/ServiceBuilder";
 import ServiceCheckout from "./pages/ServiceCheckout";
+import Leaderboard from "./pages/Leaderboard";
 
 const queryClient = new QueryClient();
 
