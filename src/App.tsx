@@ -9,6 +9,7 @@ import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
+import CourseManage from "./pages/CourseManage";
 import Channels from "./pages/Channels";
 import Dashboard from "./pages/Dashboard";
 import AdminPanel from "./pages/AdminPanel";
