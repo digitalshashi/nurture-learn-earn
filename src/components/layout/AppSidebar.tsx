@@ -105,6 +105,7 @@ const sidebarSections = [
       { title: "Courses", url: "/courses", icon: BookOpen, permissionKey: "courses" as FeatureKey },
       { title: "Workshops", url: "/workshops", icon: Video, permissionKey: "workshops" as FeatureKey },
       { title: "Events", url: "/events", icon: Calendar, permissionKey: "events" as FeatureKey },
+      { title: "Video Library", url: "/video-library", icon: Video, permissionKey: "courses" as FeatureKey },
     ],
   },
   {
