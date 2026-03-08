@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -9,42 +10,42 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, Clock, ExternalLink, MoreHorizontal, RefreshCw, Copy, CalendarPlus } from "lucide-react";
+import { Calendar, Clock, ExternalLink, MoreHorizontal, RefreshCw, Copy, CalendarPlus, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format, isBefore, isAfter, parseISO } from "date-fns";
 
-interface EventRow {
+interface OccurrenceWithWorkshop {
   id: string;
-  title: string;
-  description: string | null;
-  meeting_link: string | null;
+  workshop_id: string;
+  occurrence_number: number;
+  total_occurrences: number | null;
   start_time: string;
   end_time: string;
-  recurring: boolean;
-  occurrence_number: number | null;
-  total_occurrences: number | null;
-  course_id: string | null;
-  created_by: string;
   status: string;
-  meeting_type: string;
+  meeting_link: string | null;
+  workshop_title: string;
+  workshop_meeting_type: string;
+  workshop_meeting_link: string | null;
 }
 
 export default function StudentEvents() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [events, setEvents] = useState<EventRow[]>([]);
+  const [events, setEvents] = useState<OccurrenceWithWorkshop[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   const loadEvents = async () => {
     setLoading(true);
+
+    // Load workshop occurrences with workshop info
     let query = supabase
-      .from("events")
-      .select("*")
+      .from("workshop_occurrences")
+      .select("*, workshops(title, meeting_type, meeting_link)")
       .order("start_time", { ascending: true });
 
     if (startDate) query = query.gte("start_time", startDate);
@@ -54,7 +55,20 @@ export default function StudentEvents() {
     if (error) {
       toast({ title: "Error loading events", description: error.message, variant: "destructive" });
     } else {
-      setEvents(data || []);
+      const mapped = (data || []).map((o: any) => ({
+        id: o.id,
+        workshop_id: o.workshop_id,
+        occurrence_number: o.occurrence_number,
+        total_occurrences: o.total_occurrences,
+        start_time: o.start_time,
+        end_time: o.end_time,
+        status: o.status,
+        meeting_link: o.meeting_link,
+        workshop_title: o.workshops?.title || "Untitled Workshop",
+        workshop_meeting_type: o.workshops?.meeting_type || "custom",
+        workshop_meeting_link: o.workshops?.meeting_link || null,
+      }));
+      setEvents(mapped);
     }
     setLoading(false);
   };
@@ -67,8 +81,8 @@ export default function StudentEvents() {
   const upcoming = events.filter((e) => isAfter(parseISO(e.end_time), now));
   const completed = events.filter((e) => isBefore(parseISO(e.end_time), now));
 
-  const groupByDate = (list: EventRow[]) => {
-    const groups: Record<string, EventRow[]> = {};
+  const groupByDate = (list: OccurrenceWithWorkshop[]) => {
+    const groups: Record<string, OccurrenceWithWorkshop[]> = {};
     list.forEach((e) => {
       const day = format(parseISO(e.start_time), "MMM d, yyyy");
       if (!groups[day]) groups[day] = [];
@@ -77,26 +91,41 @@ export default function StudentEvents() {
     return groups;
   };
 
-  const handleJoin = (link: string | null) => {
+  const handleJoin = (ev: OccurrenceWithWorkshop) => {
+    const link = ev.meeting_link || ev.workshop_meeting_link;
     if (link) window.open(link, "_blank");
     else toast({ title: "No meeting link", description: "This event has no meeting link set." });
   };
 
-  const copyLink = (link: string | null) => {
+  const copyLink = (ev: OccurrenceWithWorkshop) => {
+    const link = ev.meeting_link || ev.workshop_meeting_link;
     if (link) {
       navigator.clipboard.writeText(link);
       toast({ title: "Link copied!" });
     }
   };
 
-  const renderEventList = (list: EventRow[], isCompleted: boolean) => {
+  const getStatusBadge = (ev: OccurrenceWithWorkshop) => {
+    const start = parseISO(ev.start_time);
+    const end = parseISO(ev.end_time);
+    if (isBefore(end, now)) return <Badge variant="secondary" className="text-xs">Completed</Badge>;
+    if (isAfter(start, now)) return <Badge className="bg-success text-success-foreground text-xs">Upcoming</Badge>;
+    return <Badge className="bg-destructive text-destructive-foreground text-xs animate-pulse">Live</Badge>;
+  };
+
+  const renderEventList = (list: OccurrenceWithWorkshop[], isCompleted: boolean) => {
     if (list.length === 0) {
-      return <p className="text-sm text-muted-foreground py-8 text-center">No events found.</p>;
+      return (
+        <div className="text-center py-12">
+          <Calendar className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-40" />
+          <p className="text-sm text-muted-foreground">No events found.</p>
+        </div>
+      );
     }
     const groups = groupByDate(list);
     return Object.entries(groups).map(([date, items]) => (
       <div key={date}>
-        <div className="bg-muted/50 px-4 py-1.5 text-xs font-semibold text-destructive">{date}</div>
+        <div className="bg-muted/50 px-4 py-1.5 text-xs font-semibold text-accent">{date}</div>
         {items.map((ev) => (
           <div
             key={ev.id}
@@ -110,23 +139,22 @@ export default function StudentEvents() {
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
               <div className="flex items-center gap-3 mt-0.5">
-                <span className="font-semibold text-sm">{ev.title}</span>
-                <span className="text-xs text-muted-foreground">({ev.meeting_type === "custom" ? "Custom meeting" : ev.meeting_type})</span>
+                <span className="font-semibold text-sm">{ev.workshop_title}</span>
+                <span className="text-xs text-muted-foreground">({ev.workshop_meeting_type === "custom" ? "Custom meeting" : ev.workshop_meeting_type})</span>
               </div>
-              {ev.recurring && ev.occurrence_number && ev.total_occurrences && (
+              {ev.total_occurrences && ev.total_occurrences > 1 && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Occurrence {ev.occurrence_number} of {ev.total_occurrences}
                 </p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {isCompleted ? (
-                <Badge variant="secondary" className="text-xs">Completed</Badge>
-              ) : (
+              {getStatusBadge(ev)}
+              {!isCompleted && (
                 <Button
                   size="sm"
-                  className="rounded-full bg-muted text-foreground hover:bg-muted-foreground/20 text-xs h-7 px-4"
-                  onClick={() => handleJoin(ev.meeting_link)}
+                  className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 text-xs h-7 px-4"
+                  onClick={() => handleJoin(ev)}
                 >
                   Join
                 </Button>
@@ -138,13 +166,13 @@ export default function StudentEvents() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <ExternalLink className="h-3.5 w-3.5 mr-2" /> View event details
+                  <DropdownMenuItem onClick={() => handleJoin(ev)}>
+                    <ExternalLink className="h-3.5 w-3.5 mr-2" /> Open meeting
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <CalendarPlus className="h-3.5 w-3.5 mr-2" /> Add to calendar
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => copyLink(ev.meeting_link)}>
+                  <DropdownMenuItem onClick={() => copyLink(ev)}>
                     <Copy className="h-3.5 w-3.5 mr-2" /> Copy event link
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -163,11 +191,11 @@ export default function StudentEvents() {
 
         <Tabs defaultValue="upcoming">
           <TabsList className="mb-4">
-            <TabsTrigger value="upcoming" className="data-[state=active]:text-destructive data-[state=active]:border-b-2 data-[state=active]:border-destructive rounded-none">
-              Upcoming
+            <TabsTrigger value="upcoming" className="data-[state=active]:text-accent data-[state=active]:border-b-2 data-[state=active]:border-accent rounded-none">
+              Upcoming ({upcoming.length})
             </TabsTrigger>
             <TabsTrigger value="completed" className="rounded-none">
-              Completed
+              Completed ({completed.length})
             </TabsTrigger>
           </TabsList>
 
