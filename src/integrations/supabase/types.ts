@@ -743,6 +743,80 @@ export type Database = {
           },
         ]
       }
+      communities: {
+        Row: {
+          brand_color: string | null
+          created_at: string
+          custom_domain: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          owner_id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          brand_color?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          brand_color?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["community_role"]
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["community_role"]
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["community_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           access_duration_days: number | null
@@ -1551,6 +1625,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "coach" | "student"
+      community_role: "owner" | "moderator" | "student" | "affiliate"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1679,6 +1754,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "coach", "student"],
+      community_role: ["owner", "moderator", "student", "affiliate"],
     },
   },
 } as const
