@@ -2425,6 +2425,47 @@ export type Database = {
         }
         Relationships: []
       }
+      partnership_requests: {
+        Row: {
+          created_at: string
+          custom_commission: number | null
+          id: string
+          message: string | null
+          program_id: string
+          requester_id: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          custom_commission?: number | null
+          id?: string
+          message?: string | null
+          program_id: string
+          requester_id: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          custom_commission?: number | null
+          id?: string
+          message?: string | null
+          program_id?: string
+          requester_id?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_requests_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           brand_name: string | null
@@ -2600,6 +2641,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          niche: string | null
           service_level: string
           updated_at: string
         }
@@ -2610,6 +2652,7 @@ export type Database = {
           email?: string
           full_name?: string
           id: string
+          niche?: string | null
           service_level?: string
           updated_at?: string
         }
@@ -2620,6 +2663,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          niche?: string | null
           service_level?: string
           updated_at?: string
         }
