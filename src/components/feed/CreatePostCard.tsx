@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Image, Video, Link2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { extractEmbeds } from "@/lib/link-embed";
+import { LinkEmbed } from "@/components/feed/LinkEmbed";
 
 interface CreatePostCardProps {
   onPostCreated: () => void;
@@ -22,6 +24,9 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
   const [linkUrl, setLinkUrl] = useState("");
   const [showMedia, setShowMedia] = useState<"image" | "video" | "link" | null>(null);
   const [posting, setPosting] = useState(false);
+
+  // Real-time link detection from content
+  const detectedEmbeds = useMemo(() => extractEmbeds(content), [content]);
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !linkUrl) return;
@@ -54,11 +59,23 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
     <Card className="card-shadow border-border">
       <CardContent className="pt-4 pb-3">
         <Textarea
-          placeholder="Share something with the community..."
+          placeholder="Share something with the community... Paste YouTube, Instagram, or other links for auto-embed"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="min-h-[60px] resize-none border-0 px-0 focus-visible:ring-0 text-sm"
         />
+
+        {/* Real-time embed previews */}
+        {detectedEmbeds.length > 0 && (
+          <div className="space-y-2 mt-2">
+            {detectedEmbeds
+              .filter((e) => e.type !== "generic")
+              .slice(0, 3)
+              .map((embed, idx) => (
+                <LinkEmbed key={`${embed.url}-${idx}`} embed={embed} lazy={false} />
+              ))}
+          </div>
+        )}
 
         {showMedia === "image" && (
           <Input placeholder="Image URL (jpg, png, gif)" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-2 text-sm" />
