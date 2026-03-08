@@ -224,7 +224,7 @@ export default function ServiceBuilder() {
     setSelectedWorkshops(prev => prev.includes(wid) ? prev.filter(x => x !== wid) : [...prev, wid]);
   };
 
-  const currencySymbol = currency === "INR" ? "₹" : "$";
+  const currencySymbol = "₹";
 
   return (
     <AppLayout>
@@ -344,15 +344,7 @@ export default function ServiceBuilder() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs">Currency</Label>
-                    <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INR">INR</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input value="₹ INR" readOnly className="bg-muted text-muted-foreground" />
                   </div>
                   <div>
                     <Label className="text-xs">Selling price</Label>
@@ -372,11 +364,11 @@ export default function ServiceBuilder() {
                     </div>
                   </div>
                 </div>
-                {!showInternational ? (
+                {false && !showInternational ? (
                   <Button variant="outline" className="w-full" onClick={() => setShowInternational(true)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add different price for international customers
                   </Button>
-                ) : (
+                ) : false && (
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label className="text-xs">International Currency</Label>
                       <Select value="USD" onValueChange={() => {}}>
