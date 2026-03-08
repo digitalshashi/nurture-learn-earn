@@ -24,7 +24,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signIn(email, password);
-      navigate("/feed");
+      navigate("/communities");
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
     } finally {
