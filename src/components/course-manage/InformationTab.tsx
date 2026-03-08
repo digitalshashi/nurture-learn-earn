@@ -123,6 +123,22 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
           </div>
         </div>
 
+        <div>
+          <Label className="font-medium">Course Access Level</Label>
+          <p className="text-xs text-muted-foreground mb-2">Choose which service tier can access this course.</p>
+          <Select value={accessLevel} onValueChange={setAccessLevel}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="silver">Silver</SelectItem>
+              <SelectItem value="gold">Gold</SelectItem>
+              <SelectItem value="diamond">Diamond</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Cover Image */}
         <div>
           <Label className="font-medium">Cover image*</Label>
