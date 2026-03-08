@@ -167,9 +167,31 @@ export default function Gamification() {
 
           {/* XP Rules */}
           <TabsContent value="xp-rules">
-            <Card className="card-shadow mt-4">
-              <CardHeader><CardTitle className="text-sm">XP Rules</CardTitle></CardHeader>
-              <CardContent>
+            <div className="flex justify-end mt-4 mb-3">
+              <Dialog open={ruleDialog} onOpenChange={setRuleDialog}>
+                <DialogTrigger asChild><Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4 mr-1" /> Add XP Rule</Button></DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Add XP Rule</DialogTitle></DialogHeader>
+                  <div className="space-y-3">
+                    <div><Label>Action</Label>
+                      <Select value={newRule.action_name} onValueChange={v => setNewRule({ ...newRule, action_name: v })}>
+                        <SelectTrigger><SelectValue placeholder="Select action..." /></SelectTrigger>
+                        <SelectContent>
+                          {XP_ACTION_OPTIONS.filter(a => !rules.find(r => r.action_name === a)).map(a => (
+                            <SelectItem key={a} value={a}>{a.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>XP Value</Label><Input type="number" value={newRule.xp_value} onChange={e => setNewRule({ ...newRule, xp_value: Number(e.target.value) })} /></div>
+                    <div><Label>Daily Limit (leave empty for unlimited)</Label><Input type="number" placeholder="∞" value={newRule.daily_limit} onChange={e => setNewRule({ ...newRule, daily_limit: e.target.value })} /></div>
+                    <Button onClick={addRule} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Add Rule</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <Card className="card-shadow">
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -177,23 +199,29 @@ export default function Gamification() {
                       <TableHead>XP Value</TableHead>
                       <TableHead>Daily Limit</TableHead>
                       <TableHead>Enabled</TableHead>
+                      <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rules.map((r) => (
+                    {rules.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No XP rules yet. Add your first rule!</TableCell></TableRow>
+                    ) : rules.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="font-medium capitalize">{r.action_name.replace(/_/g, " ")}</TableCell>
                         <TableCell>
-                          <Input type="number" className="w-20" defaultValue={r.xp_value}
+                          <Input type="number" className="w-20 h-8" defaultValue={r.xp_value}
                             onBlur={(e) => updateRule(r.id, "xp_value", Number(e.target.value))} />
                         </TableCell>
                         <TableCell>
-                          <Input type="number" className="w-20" defaultValue={r.daily_limit || ""}
+                          <Input type="number" className="w-20 h-8" defaultValue={r.daily_limit || ""}
                             placeholder="∞"
                             onBlur={(e) => updateRule(r.id, "daily_limit", e.target.value ? Number(e.target.value) : null)} />
                         </TableCell>
                         <TableCell>
                           <Switch checked={r.is_enabled} onCheckedChange={(v) => updateRule(r.id, "is_enabled", v)} />
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRule(r.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </TableCell>
                       </TableRow>
                     ))}
