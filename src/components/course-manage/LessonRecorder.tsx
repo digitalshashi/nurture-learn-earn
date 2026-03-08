@@ -108,6 +108,7 @@ export default function LessonRecorder({ onRecordingComplete, onClose }: LessonR
         // Show camera preview
         if (cameraVideoRef.current) {
           cameraVideoRef.current.srcObject = camStream;
+          cameraVideoRef.current.play().catch(() => {});
         }
       }
 
@@ -123,6 +124,7 @@ export default function LessonRecorder({ onRecordingComplete, onClose }: LessonR
       // Show preview
       if (previewVideoRef.current) {
         previewVideoRef.current.srcObject = combinedStream;
+        previewVideoRef.current.play().catch(() => {});
       }
 
       // MediaRecorder
