@@ -58,9 +58,20 @@ export default function Gamification() {
   const [newLevel, setNewLevel] = useState({ level_number: 0, xp_required: 0, badge_name: "" });
   const [newBadge, setNewBadge] = useState({ name: "", description: "", icon: "🏆", xp_required: 0 });
   const [newChallenge, setNewChallenge] = useState({ title: "", description: "", duration_days: 7, xp_reward: 100 });
+  const [newRule, setNewRule] = useState({ action_name: "", xp_value: 10, daily_limit: "" as string });
   const [levelDialog, setLevelDialog] = useState(false);
   const [badgeDialog, setBadgeDialog] = useState(false);
   const [challengeDialog, setChallengeDialog] = useState(false);
+  const [ruleDialog, setRuleDialog] = useState(false);
+
+  const XP_ACTION_OPTIONS = [
+    "login", "complete_lesson", "complete_chapter", "complete_course", "complete_quiz",
+    "post_content", "comment", "like_post", "share_post", "reply_comment",
+    "attend_event", "daily_habit", "task_completed", "challenge_completed",
+    "refer_friend", "profile_complete", "streak_bonus", "first_purchase",
+    "review_course", "upload_assignment", "join_community", "watch_video",
+    "read_article", "earn_certificate", "charity_donation",
+  ];
 
   useEffect(() => { loadAll(); }, []);
 
