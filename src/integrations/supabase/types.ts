@@ -230,6 +230,39 @@ export type Database = {
           },
         ]
       }
+      ai_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          max_tokens: number
+          model: string
+          openai_api_key: string | null
+          temperature: number
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          max_tokens?: number
+          model?: string
+          openai_api_key?: string | null
+          temperature?: number
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          max_tokens?: number
+          model?: string
+          openai_api_key?: string | null
+          temperature?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assignment_submissions: {
         Row: {
           answer: string | null
