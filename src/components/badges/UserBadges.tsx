@@ -24,18 +24,43 @@ export function UserBadges({ userId, maxVisible = 3, size = "sm" }: UserBadgesPr
   useEffect(() => {
     if (!userId) return;
     const load = async () => {
-      const { data } = await supabase
+      // 1. Get manually awarded badges from user_badges
+      const { data: manualData } = await supabase
         .from("user_badges" as any)
         .select("badge_id")
         .eq("user_id", userId);
-      if (!data || data.length === 0) return;
+      const manualBadgeIds = (manualData as any[] || []).map((ub) => ub.badge_id);
 
-      const badgeIds = (data as any[]).map((ub) => ub.badge_id);
-      const { data: badgeData } = await supabase
+      // 2. Get user's enrolled services from service_users
+      const { data: userServices } = await supabase
+        .from("service_users")
+        .select("service_id")
+        .eq("user_id", userId)
+        .eq("status", "active");
+      const enrolledServiceIds = (userServices || []).map((su) => su.service_id);
+
+      // 3. Get all service-level badges to check which ones match
+      const { data: allBadges } = await supabase
         .from("badges")
-        .select("id, name, description, icon, icon_url, badge_type")
-        .in("id", badgeIds);
-      if (badgeData) setBadges(badgeData as any as BadgeData[]);
+        .select("id, name, description, icon, icon_url, badge_type, assignment_rule");
+
+      if (!allBadges) return;
+
+      const serviceBadgeIds = (allBadges as any[])
+        .filter(
+          (b) =>
+            b.badge_type === "service" &&
+            b.assignment_rule?.service_id &&
+            enrolledServiceIds.includes(b.assignment_rule.service_id)
+        )
+        .map((b) => b.id);
+
+      // 4. Combine unique badge IDs
+      const allBadgeIds = [...new Set([...manualBadgeIds, ...serviceBadgeIds])];
+      if (allBadgeIds.length === 0) return;
+
+      const matched = (allBadges as BadgeData[]).filter((b) => allBadgeIds.includes(b.id));
+      setBadges(matched);
     };
     load();
   }, [userId]);

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Upload, Medal, Award, Users, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Medal, Award, Users } from "lucide-react";
 
 interface BadgeDef {
   id: string;
@@ -25,12 +25,9 @@ interface BadgeDef {
   created_by: string | null;
 }
 
-interface UserBadgeRow {
+interface ServiceOption {
   id: string;
-  user_id: string;
-  badge_id: string;
-  awarded_at: string;
-  profile?: { full_name: string };
+  title: string;
 }
 
 const RULE_TRIGGERS = [
@@ -51,6 +48,7 @@ export function BadgeManagement() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<Record<string, number>>({});
+  const [services, setServices] = useState<ServiceOption[]>([]);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -60,14 +58,24 @@ export function BadgeManagement() {
     xp_required: 0,
     rule_trigger: "manual",
     rule_value: "",
+    service_id: "",
   });
 
   useEffect(() => { loadBadges(); }, []);
 
+  useEffect(() => {
+    if (form.badge_type === "service" && user) {
+      supabase
+        .from("services")
+        .select("id, title")
+        .eq("coach_id", user.id)
+        .then(({ data }) => setServices((data as ServiceOption[]) || []));
+    }
+  }, [form.badge_type, user]);
+
   const loadBadges = async () => {
     const { data } = await supabase.from("badges").select("*").order("created_at", { ascending: false });
     setBadges((data || []) as any as BadgeDef[]);
-    // Load badge award counts
     const { data: ub } = await supabase.from("user_badges" as any).select("badge_id");
     if (ub) {
       const counts: Record<string, number> = {};
@@ -97,7 +105,15 @@ export function BadgeManagement() {
       toast({ title: "Badge name required", variant: "destructive" });
       return;
     }
+    if (form.badge_type === "service" && !form.service_id) {
+      toast({ title: "Please select a service", variant: "destructive" });
+      return;
+    }
     setSaving(true);
+    const rule: any = { trigger: form.badge_type === "service" ? "service_enrollment" : form.rule_trigger, value: form.rule_value || null };
+    if (form.badge_type === "service") {
+      rule.service_id = form.service_id;
+    }
     const payload: any = {
       name: form.name,
       description: form.description || null,
@@ -105,7 +121,7 @@ export function BadgeManagement() {
       icon_url: form.icon_url || null,
       badge_type: form.badge_type,
       xp_required: form.xp_required || null,
-      assignment_rule: { trigger: form.rule_trigger, value: form.rule_value || null },
+      assignment_rule: rule,
       created_by: user?.id,
     };
     const { error } = await supabase.from("badges").insert(payload);
@@ -113,7 +129,7 @@ export function BadgeManagement() {
     else {
       toast({ title: "Badge created!" });
       setDialog(false);
-      setForm({ name: "", description: "", icon: "🏅", icon_url: "", badge_type: "achievement", xp_required: 0, rule_trigger: "manual", rule_value: "" });
+      setForm({ name: "", description: "", icon: "🏅", icon_url: "", badge_type: "achievement", xp_required: 0, rule_trigger: "manual", rule_value: "", service_id: "" });
       loadBadges();
     }
     setSaving(false);
@@ -124,6 +140,13 @@ export function BadgeManagement() {
     await supabase.from("badges").delete().eq("id", id);
     loadBadges();
     toast({ title: "Badge deleted" });
+  };
+
+  const getServiceName = (badge: BadgeDef) => {
+    const sid = badge.assignment_rule?.service_id;
+    if (!sid) return null;
+    const svc = services.find((s) => s.id === sid);
+    return svc?.title || sid.slice(0, 8);
   };
 
   return (
@@ -170,7 +193,7 @@ export function BadgeManagement() {
               </div>
               <div>
                 <Label className="text-xs">Type</Label>
-                <Select value={form.badge_type} onValueChange={(v) => setForm({ ...form, badge_type: v })}>
+                <Select value={form.badge_type} onValueChange={(v) => setForm({ ...form, badge_type: v, service_id: "" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="service">Service Level</SelectItem>
@@ -178,6 +201,30 @@ export function BadgeManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Service selector - only when type is "service" */}
+              {form.badge_type === "service" && (
+                <div>
+                  <Label className="text-xs">Link to Service</Label>
+                  <Select value={form.service_id} onValueChange={(v) => setForm({ ...form, service_id: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.length === 0 && (
+                        <SelectItem value="_none" disabled>No services found</SelectItem>
+                      )}
+                      {services.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Badge will auto-appear for all users enrolled in this service.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <Label className="text-xs">Emoji Icon</Label>
                 <Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} placeholder="🏅" className="w-20" />
@@ -194,23 +241,30 @@ export function BadgeManagement() {
                 <Label className="text-xs">Description</Label>
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Earned when..." />
               </div>
-              <div>
-                <Label className="text-xs">Assignment Rule</Label>
-                <Select value={form.rule_trigger} onValueChange={(v) => setForm({ ...form, rule_trigger: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {RULE_TRIGGERS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {["complete_lessons", "post_messages"].includes(form.rule_trigger) && (
-                <div>
-                  <Label className="text-xs">Count Required</Label>
-                  <Input type="number" value={form.rule_value} onChange={(e) => setForm({ ...form, rule_value: e.target.value })} placeholder="e.g. 10" />
-                </div>
+
+              {/* Assignment rule - only for achievement badges */}
+              {form.badge_type === "achievement" && (
+                <>
+                  <div>
+                    <Label className="text-xs">Assignment Rule</Label>
+                    <Select value={form.rule_trigger} onValueChange={(v) => setForm({ ...form, rule_trigger: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {RULE_TRIGGERS.map((r) => (
+                          <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {["complete_lessons", "post_messages"].includes(form.rule_trigger) && (
+                    <div>
+                      <Label className="text-xs">Count Required</Label>
+                      <Input type="number" value={form.rule_value} onChange={(e) => setForm({ ...form, rule_value: e.target.value })} placeholder="e.g. 10" />
+                    </div>
+                  )}
+                </>
               )}
+
               <Button onClick={saveBadge} disabled={saving} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Create Badge
               </Button>
@@ -253,7 +307,9 @@ export function BadgeManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {b.assignment_rule?.trigger || "manual"}
+                    {b.badge_type === "service"
+                      ? `Service: ${getServiceName(b) || "linked"}`
+                      : (b.assignment_rule?.trigger || "manual")}
                   </TableCell>
                   <TableCell className="text-right text-sm font-medium">{stats[b.id] || 0}</TableCell>
                   <TableCell>
