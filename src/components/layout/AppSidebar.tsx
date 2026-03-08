@@ -38,6 +38,7 @@ import {
   UserMinus,
   Crown,
   Bell,
+  HardDrive,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
