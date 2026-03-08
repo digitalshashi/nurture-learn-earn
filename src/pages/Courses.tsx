@@ -64,16 +64,27 @@ export default function Courses() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((course) => (
-              <CourseCard
-                key={course.id}
-                id={course.id}
-                title={course.title}
-                description={course.description || ""}
-                thumbnail={course.thumbnail_url || "/placeholder.svg"}
-                price={course.price}
-                category={course.category || "General"}
-                onClick={() => navigate(`/course-player/${course.id}`)}
-              />
+              <div key={course.id} className="relative">
+                <CourseCard
+                  id={course.id}
+                  title={course.title}
+                  description={course.description || ""}
+                  thumbnail={course.thumbnail_url || "/placeholder.svg"}
+                  price={course.price}
+                  category={course.category || "General"}
+                  onClick={() => navigate(`/course-player/${course.id}`)}
+                />
+                {isCoachOrAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-2 right-2 text-xs"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/course-manage/${course.id}`); }}
+                  >
+                    Manage
+                  </Button>
+                )}
+              </div>
             ))}
           </div>
         )}

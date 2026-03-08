@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_submissions: {
+        Row: {
+          answer: string | null
+          assignment_id: string
+          graded_at: string | null
+          id: string
+          score: number | null
+          status: string
+          submitted_at: string
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          assignment_id: string
+          graded_at?: string | null
+          id?: string
+          score?: number | null
+          status?: string
+          submitted_at?: string
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          assignment_id?: string
+          graded_at?: string | null
+          id?: string
+          score?: number | null
+          status?: string
+          submitted_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          description: string | null
+          id: string
+          max_retakes: number | null
+          passing_score: number | null
+          title: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_retakes?: number | null
+          passing_score?: number | null
+          title: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_retakes?: number | null
+          passing_score?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channels: {
         Row: {
           channel_type: string
@@ -92,10 +171,15 @@ export type Database = {
       }
       chapters: {
         Row: {
+          assignment_config: Json | null
           content: string | null
+          content_type: string
           created_at: string
+          drip_date: string | null
+          drip_delay_days: number | null
           duration_seconds: number | null
           id: string
+          is_assignment: boolean
           resources: Json | null
           section_id: string
           sort_order: number
@@ -104,10 +188,15 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          assignment_config?: Json | null
           content?: string | null
+          content_type?: string
           created_at?: string
+          drip_date?: string | null
+          drip_delay_days?: number | null
           duration_seconds?: number | null
           id?: string
+          is_assignment?: boolean
           resources?: Json | null
           section_id: string
           sort_order?: number
@@ -116,10 +205,15 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          assignment_config?: Json | null
           content?: string | null
+          content_type?: string
           created_at?: string
+          drip_date?: string | null
+          drip_delay_days?: number | null
           duration_seconds?: number | null
           id?: string
+          is_assignment?: boolean
           resources?: Json | null
           section_id?: string
           sort_order?: number
@@ -133,6 +227,44 @@ export type Database = {
             columns: ["section_id"]
             isOneToOne: false
             referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_questions: {
+        Row: {
+          bot_answer: string | null
+          course_id: string
+          created_at: string
+          id: string
+          is_satisfied: boolean | null
+          question: string
+          user_id: string
+        }
+        Insert: {
+          bot_answer?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          is_satisfied?: boolean | null
+          question: string
+          user_id: string
+        }
+        Update: {
+          bot_answer?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_satisfied?: boolean | null
+          question?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_questions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
@@ -184,11 +316,19 @@ export type Database = {
           access_duration_days: number | null
           category: string | null
           coach_id: string
+          cover_image_url: string | null
           created_at: string
+          default_video_thumbnail_url: string | null
           description: string | null
+          disable_comments: boolean
+          disable_qna: boolean
+          drip_type: string
+          enable_drm: boolean
           id: string
           is_published: boolean
+          linked_services: string[] | null
           price: number
+          show_as_locked: boolean
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -197,11 +337,19 @@ export type Database = {
           access_duration_days?: number | null
           category?: string | null
           coach_id: string
+          cover_image_url?: string | null
           created_at?: string
+          default_video_thumbnail_url?: string | null
           description?: string | null
+          disable_comments?: boolean
+          disable_qna?: boolean
+          drip_type?: string
+          enable_drm?: boolean
           id?: string
           is_published?: boolean
+          linked_services?: string[] | null
           price?: number
+          show_as_locked?: boolean
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -210,11 +358,19 @@ export type Database = {
           access_duration_days?: number | null
           category?: string | null
           coach_id?: string
+          cover_image_url?: string | null
           created_at?: string
+          default_video_thumbnail_url?: string | null
           description?: string | null
+          disable_comments?: boolean
+          disable_qna?: boolean
+          drip_type?: string
+          enable_drm?: boolean
           id?: string
           is_published?: boolean
+          linked_services?: string[] | null
           price?: number
+          show_as_locked?: boolean
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -334,6 +490,50 @@ export type Database = {
         }
         Relationships: []
       }
+      questions: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          answered_by: string | null
+          chapter_id: string
+          created_at: string
+          id: string
+          is_resolved: boolean
+          question: string
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          chapter_id: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          question: string
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          question?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reactions: {
         Row: {
           created_at: string
@@ -366,10 +566,50 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          coach_reply: string | null
+          course_id: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          user_id: string
+        }
+        Insert: {
+          coach_reply?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          user_id: string
+        }
+        Update: {
+          coach_reply?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sections: {
         Row: {
           course_id: string
           created_at: string
+          drip_date: string | null
+          drip_delay_days: number | null
           id: string
           sort_order: number
           title: string
@@ -377,6 +617,8 @@ export type Database = {
         Insert: {
           course_id: string
           created_at?: string
+          drip_date?: string | null
+          drip_delay_days?: number | null
           id?: string
           sort_order?: number
           title: string
@@ -384,6 +626,8 @@ export type Database = {
         Update: {
           course_id?: string
           created_at?: string
+          drip_date?: string | null
+          drip_delay_days?: number | null
           id?: string
           sort_order?: number
           title?: string
