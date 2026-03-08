@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import Workshops from "./pages/Workshops";
 import Events from "./pages/Events";
+import StudentEvents from "./pages/StudentEvents";
 import Customers from "./pages/Customers";
 import Leads from "./pages/Leads";
 import SalesEarnings from "./pages/SalesEarnings";
