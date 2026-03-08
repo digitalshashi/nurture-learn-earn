@@ -57,6 +57,7 @@ import Leaderboard from "./pages/Leaderboard";
 import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
 import Messages from "./pages/Messages";
+import AICourseGenerator from "./pages/AICourseGenerator";
 
 const queryClient = new QueryClient();
 
