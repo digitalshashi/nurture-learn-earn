@@ -37,6 +37,7 @@ import Partnerships from "./pages/Partnerships";
 import Gamification from "./pages/Gamification";
 import LevelUp from "./pages/LevelUp";
 import SettingsPage from "./pages/SettingsPage";
+import PlatformSettings from "./pages/PlatformSettings";
 import Billing from "./pages/Billing";
 import Referral from "./pages/Referral";
 import PageBuilder from "./pages/PageBuilder";
