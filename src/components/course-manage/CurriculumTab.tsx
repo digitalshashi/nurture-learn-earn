@@ -234,6 +234,14 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
                           <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
                         </div>
                         <Textarea value={ch.content} onChange={(e) => updateChapter(sIdx, cIdx, "content", e.target.value)} placeholder="Lesson notes / description" className="text-sm min-h-[50px]" />
+                        <ChapterResources
+                          resources={ch.resources}
+                          onChange={(newResources) => {
+                            const updated = [...sections];
+                            updated[sIdx].chapters[cIdx].resources = newResources;
+                            setSections(updated);
+                          }}
+                        />
                       </div>
                     );
                   })}
