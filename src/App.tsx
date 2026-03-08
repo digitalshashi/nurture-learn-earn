@@ -72,6 +72,7 @@ import CrmFollowUps from "./pages/CrmFollowUps";
 import CrmContactGroups from "./pages/CrmContactGroups";
 import CrmMetaLeads from "./pages/CrmMetaLeads";
 import CrmLeadProfile from "./pages/CrmLeadProfile";
+import QuestDashboard from "./pages/QuestDashboard";
 
 const queryClient = new QueryClient();
 
