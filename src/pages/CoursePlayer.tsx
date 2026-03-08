@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ChevronDown, ChevronRight, ArrowLeft, CheckCircle2, Circle,
-  BookmarkPlus, Video, FileText, Download, Send, ThumbsUp
+  BookmarkPlus, Video, FileText, Download, Send, ThumbsUp, Link as LinkIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
