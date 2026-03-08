@@ -54,6 +54,9 @@ import Services from "./pages/Services";
 import ServiceBuilder from "./pages/ServiceBuilder";
 import ServiceCheckout from "./pages/ServiceCheckout";
 import Leaderboard from "./pages/Leaderboard";
+import StudentProfile from "./pages/StudentProfile";
+import MyAccount from "./pages/MyAccount";
+import Messages from "./pages/Messages";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +121,10 @@ const App = () => (
             <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
             <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
             <Route path="/settings/email" element={<ProtectedRoute><EmailSettings /></ProtectedRoute>} />
+            <Route path="/profile/:userId" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
+            <Route path="/my-account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/messages/:recipientId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
