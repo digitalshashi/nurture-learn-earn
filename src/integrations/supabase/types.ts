@@ -309,6 +309,208 @@ export type Database = {
           },
         ]
       }
+      automation_actions: {
+        Row: {
+          action_config: Json | null
+          action_type: string
+          automation_id: string
+          created_at: string
+          delay_minutes: number | null
+          id: string
+          sort_order: number
+        }
+        Insert: {
+          action_config?: Json | null
+          action_type?: string
+          automation_id: string
+          created_at?: string
+          delay_minutes?: number | null
+          id?: string
+          sort_order?: number
+        }
+        Update: {
+          action_config?: Json | null
+          action_type?: string
+          automation_id?: string
+          created_at?: string
+          delay_minutes?: number | null
+          id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_actions_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_event_toggles: {
+        Row: {
+          channel: string
+          coach_id: string
+          created_at: string
+          event_key: string
+          id: string
+          is_enabled: boolean
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          coach_id: string
+          created_at?: string
+          event_key: string
+          id?: string
+          is_enabled?: boolean
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          coach_id?: string
+          created_at?: string
+          event_key?: string
+          id?: string
+          is_enabled?: boolean
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      automation_logs: {
+        Row: {
+          action_type: string
+          automation_id: string | null
+          channel: string
+          coach_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          status: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action_type: string
+          automation_id?: string | null
+          channel: string
+          coach_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action_type?: string
+          automation_id?: string | null
+          channel?: string
+          coach_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_templates: {
+        Row: {
+          category: string | null
+          channel: string
+          coach_id: string
+          content: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string | null
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          category?: string | null
+          channel?: string
+          coach_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject?: string | null
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          category?: string | null
+          channel?: string
+          coach_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string | null
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: []
+      }
+      automations: {
+        Row: {
+          channel: string
+          coach_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          coach_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          coach_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           created_at: string | null
@@ -1812,6 +2014,96 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_accounts: {
+        Row: {
+          api_key: string | null
+          business_account_id: string | null
+          coach_id: string
+          created_at: string
+          credits_available: number
+          id: string
+          is_connected: boolean
+          phone_number: string | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          business_account_id?: string | null
+          coach_id: string
+          created_at?: string
+          credits_available?: number
+          id?: string
+          is_connected?: boolean
+          phone_number?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          business_account_id?: string | null
+          coach_id?: string
+          created_at?: string
+          credits_available?: number
+          id?: string
+          is_connected?: boolean
+          phone_number?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_templates: {
+        Row: {
+          body_text: string
+          buttons: Json | null
+          category: string | null
+          coach_id: string
+          created_at: string
+          footer_text: string | null
+          header_content: string | null
+          header_type: string | null
+          id: string
+          is_active: boolean
+          name: string
+          status: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          body_text: string
+          buttons?: Json | null
+          category?: string | null
+          coach_id: string
+          created_at?: string
+          footer_text?: string | null
+          header_content?: string | null
+          header_type?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          status?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          body_text?: string
+          buttons?: Json | null
+          category?: string | null
+          coach_id?: string
+          created_at?: string
+          footer_text?: string | null
+          header_content?: string | null
+          header_type?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          status?: string
+          updated_at?: string
+          variables?: Json | null
         }
         Relationships: []
       }
