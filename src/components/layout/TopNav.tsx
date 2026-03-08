@@ -1,5 +1,5 @@
-import { useEffect, useState, lazy, Suspense } from "react";
-import { Bell, LogOut, LayoutDashboard, icons } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, LogOut, LayoutDashboard, icons, UserCircle, MessageCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
