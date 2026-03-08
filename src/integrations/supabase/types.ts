@@ -1159,6 +1159,30 @@ export type Database = {
           },
         ]
       }
+      customer_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          note: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          note: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_accounts: {
         Row: {
           api_domain: string | null
@@ -2076,45 +2100,57 @@ export type Database = {
       }
       service_users: {
         Row: {
+          access_type: string
           amount_paid: number | null
           coupon_code: string | null
           created_at: string
+          created_by: string | null
           custom_fields_data: Json | null
           expires_at: string | null
           id: string
+          notes: string | null
           payment_method: string | null
           purchased_at: string
           service_id: string
           status: string
           transaction_id: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
+          access_type?: string
           amount_paid?: number | null
           coupon_code?: string | null
           created_at?: string
+          created_by?: string | null
           custom_fields_data?: Json | null
           expires_at?: string | null
           id?: string
+          notes?: string | null
           payment_method?: string | null
           purchased_at?: string
           service_id: string
           status?: string
           transaction_id?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
+          access_type?: string
           amount_paid?: number | null
           coupon_code?: string | null
           created_at?: string
+          created_by?: string | null
           custom_fields_data?: Json | null
           expires_at?: string | null
           id?: string
+          notes?: string | null
           payment_method?: string | null
           purchased_at?: string
           service_id?: string
           status?: string
           transaction_id?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
