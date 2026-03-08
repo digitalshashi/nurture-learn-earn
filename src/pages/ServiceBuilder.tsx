@@ -224,7 +224,7 @@ export default function ServiceBuilder() {
     setSelectedWorkshops(prev => prev.includes(wid) ? prev.filter(x => x !== wid) : [...prev, wid]);
   };
 
-  const currencySymbol = currency === "INR" ? "₹" : "$";
+  const currencySymbol = "₹";
 
   return (
     <AppLayout>
