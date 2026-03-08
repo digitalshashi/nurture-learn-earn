@@ -392,6 +392,7 @@ function TabsWrapper({
   getResources,
   completedChapters,
   markComplete,
+  courseId,
 }: {
   chapter: Chapter;
   questions: Question[];
@@ -401,20 +402,82 @@ function TabsWrapper({
   getResources: (ch: Chapter) => any[];
   completedChapters: Set<string>;
   markComplete: () => void;
+  courseId: string;
 }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("description");
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<Record<string, any>>({});
+  const [submissionText, setSubmissionText] = useState("");
+  const [driveLink, setDriveLink] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const resources = getResources(chapter);
   const isComplete = completedChapters.has(chapter.id);
 
+  useEffect(() => {
+    loadAssignments();
+  }, [chapter.id]);
+
+  const loadAssignments = async () => {
+    const { data } = await supabase
+      .from("assignments")
+      .select("*")
+      .eq("chapter_id", chapter.id);
+    if (data) {
+      setAssignments(data);
+      if (user && data.length > 0) {
+        const ids = data.map((a) => a.id);
+        const { data: subs } = await supabase
+          .from("assignment_submissions")
+          .select("*")
+          .in("assignment_id", ids)
+          .eq("user_id", user.id);
+        if (subs) {
+          const map: Record<string, any> = {};
+          subs.forEach((s: any) => (map[s.assignment_id] = s));
+          setSubmissions(map);
+        }
+      }
+    }
+  };
+
+  const handleSubmit = async (assignmentId: string) => {
+    if (!user) return;
+    const answer = driveLink.trim() || submissionText.trim();
+    if (!answer) {
+      toast({ title: "Please enter your submission", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("assignment_submissions").insert({
+      assignment_id: assignmentId,
+      user_id: user.id,
+      answer,
+      status: "submitted",
+    });
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Submission failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Submitted successfully!" });
+      setSubmissionText("");
+      setDriveLink("");
+      loadAssignments();
+    }
+  };
+
+  const tabs = ["description", "resources", "qna", "assignments"];
+
   return (
     <div className="px-6 py-4">
-      {/* Inline tab selector */}
-      <div className="flex gap-6 border-b border-border mb-4">
-        {["description", "resources", "qna"].map((tab) => (
+      {/* Single tab navigation */}
+      <div className="flex gap-5 border-b border-border mb-4">
+        {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors capitalize ${
+            className={`pb-2.5 text-base font-semibold border-b-2 transition-colors capitalize ${
               activeTab === tab
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -444,14 +507,14 @@ function TabsWrapper({
       {activeTab === "description" && (
         <div className="space-y-4">
           {chapter.video_description && (
-            <div className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+            <div className="text-base text-foreground/80 leading-relaxed whitespace-pre-wrap">
               {chapter.video_description}
             </div>
           )}
           {chapter.content ? (
             <div className="prose prose-sm max-w-none">
               <div
-                className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap"
+                className="text-base text-foreground/80 leading-relaxed whitespace-pre-wrap"
                 dangerouslySetInnerHTML={{
                   __html: chapter.content
                     .replace(/\n/g, "<br/>")
@@ -463,7 +526,7 @@ function TabsWrapper({
               />
             </div>
           ) : !chapter.video_description ? (
-            <p className="text-sm text-muted-foreground">No description available for this lesson.</p>
+            <p className="text-base text-muted-foreground">No description available for this lesson.</p>
           ) : null}
         </div>
       )}
@@ -471,7 +534,7 @@ function TabsWrapper({
       {activeTab === "resources" && (
         <div className="space-y-2">
           {resources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No resources attached to this lesson.</p>
+            <p className="text-base text-muted-foreground">No resources attached to this lesson.</p>
           ) : (
             resources.map((res: any, i: number) => {
               const isLink = res.type === "link";
@@ -479,8 +542,8 @@ function TabsWrapper({
                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
                   {isLink ? <LinkIcon className="h-5 w-5 text-primary shrink-0" /> : <FileText className="h-5 w-5 text-primary shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{res.name || `Resource ${i + 1}`}</p>
-                    <p className="text-xs text-muted-foreground">{(res.type || "File").toUpperCase()} {res.size ? `• ${res.size}` : ""}</p>
+                    <p className="text-base font-medium truncate">{res.name || `Resource ${i + 1}`}</p>
+                    <p className="text-sm text-muted-foreground">{(res.type || "File").toUpperCase()} {res.size ? `• ${res.size}` : ""}</p>
                   </div>
                   {res.url && (
                     <a href={res.url} target="_blank" rel="noopener noreferrer" download={!isLink}>
@@ -496,13 +559,12 @@ function TabsWrapper({
 
       {activeTab === "qna" && (
         <div className="space-y-4">
-          {/* Ask question */}
           <div className="flex gap-2">
             <Textarea
               placeholder="Ask a question about this lesson..."
               value={newQuestion}
               onChange={(e) => setNewQuestion(e.target.value)}
-              className="min-h-[60px] text-sm"
+              className="min-h-[60px] text-base"
             />
             <Button
               size="sm"
@@ -513,10 +575,8 @@ function TabsWrapper({
               <Send className="h-4 w-4" />
             </Button>
           </div>
-
-          {/* Questions list */}
           {questions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No questions yet. Be the first to ask!</p>
+            <p className="text-base text-muted-foreground text-center py-6">No questions yet. Be the first to ask!</p>
           ) : (
             questions.map((q) => (
               <div key={q.id} className="border border-border rounded-lg p-4">
@@ -528,21 +588,99 @@ function TabsWrapper({
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{q.profile?.full_name || "User"}</p>
-                      <span className="text-xs text-muted-foreground">{format(new Date(q.created_at), "MMM d, yyyy")}</span>
-                      {q.is_resolved && <Badge variant="outline" className="text-[10px] text-success">Resolved</Badge>}
+                      <p className="text-base font-semibold">{q.profile?.full_name || "User"}</p>
+                      <span className="text-sm text-muted-foreground">{format(new Date(q.created_at), "MMM d, yyyy")}</span>
+                      {q.is_resolved && <Badge variant="outline" className="text-xs text-success">Resolved</Badge>}
                     </div>
-                    <p className="text-sm mt-1">{q.question}</p>
+                    <p className="text-base mt-1">{q.question}</p>
                     {q.answer && (
                       <div className="mt-3 pl-3 border-l-2 border-primary/30">
-                        <p className="text-xs font-semibold text-primary mb-0.5">Coach Answer</p>
-                        <p className="text-sm text-foreground/80">{q.answer}</p>
+                        <p className="text-sm font-semibold text-primary mb-0.5">Coach Answer</p>
+                        <p className="text-base text-foreground/80">{q.answer}</p>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "assignments" && (
+        <div className="space-y-6">
+          {assignments.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-base text-muted-foreground">No assignments for this lesson.</p>
+            </div>
+          ) : (
+            assignments.map((a) => {
+              const sub = submissions[a.id];
+              return (
+                <div key={a.id} className="border border-border rounded-lg p-5 space-y-4">
+                  <div>
+                    <h3 className="text-lg font-bold">{a.title}</h3>
+                    {a.description && (
+                      <p className="text-base text-foreground/80 mt-2 whitespace-pre-wrap">{a.description}</p>
+                    )}
+                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                      {a.passing_score && (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="h-4 w-4" /> Passing score: {a.passing_score}%
+                        </span>
+                      )}
+                      {a.max_retakes != null && a.max_retakes > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" /> Max retakes: {a.max_retakes}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {sub ? (
+                    <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-success" />
+                        <span className="text-base font-semibold">Submitted Successfully</span>
+                        <Badge variant="outline" className="ml-auto capitalize">{sub.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Submitted on {format(new Date(sub.submitted_at), "MMM d, yyyy 'at' h:mm a")}
+                      </p>
+                      {sub.score != null && (
+                        <p className="text-sm font-medium">Score: {sub.score}%</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Textarea
+                        placeholder="Write your answer here..."
+                        value={submissionText}
+                        onChange={(e) => setSubmissionText(e.target.value)}
+                        className="min-h-[100px] text-base"
+                      />
+                      <div className="flex items-center gap-2">
+                        <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <Input
+                          placeholder="Or paste a Google Drive / file link"
+                          value={driveLink}
+                          onChange={(e) => setDriveLink(e.target.value)}
+                          className="text-base"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => handleSubmit(a.id)}
+                        disabled={submitting || (!submissionText.trim() && !driveLink.trim())}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {submitting ? "Submitting..." : "Submit Assignment"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
