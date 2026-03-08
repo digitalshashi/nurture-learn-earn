@@ -733,7 +733,9 @@ export type Database = {
           resources: Json | null
           section_id: string
           sort_order: number
+          thumbnail_url: string | null
           title: string
+          video_description: string | null
           video_type: string | null
           video_url: string | null
         }
@@ -750,7 +752,9 @@ export type Database = {
           resources?: Json | null
           section_id: string
           sort_order?: number
+          thumbnail_url?: string | null
           title: string
+          video_description?: string | null
           video_type?: string | null
           video_url?: string | null
         }
@@ -767,7 +771,9 @@ export type Database = {
           resources?: Json | null
           section_id?: string
           sort_order?: number
+          thumbnail_url?: string | null
           title?: string
+          video_description?: string | null
           video_type?: string | null
           video_url?: string | null
         }
