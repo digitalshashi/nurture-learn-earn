@@ -92,11 +92,33 @@ export default function CoachAffiliateManagement() {
               <DialogHeader><DialogTitle>Create Affiliate Program</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-2">
                 <div>
-                  <Label>Select Course</Label>
-                  <Select onValueChange={(v) => setNewProgram(p => ({ ...p, course_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Choose a course" /></SelectTrigger>
+                  <Label>Product Type</Label>
+                  <Select value={newProgram.product_type} onValueChange={(v) => setNewProgram(p => ({ ...p, product_type: v, course_id: "" }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                      <SelectItem value="service">Service</SelectItem>
+                      <SelectItem value="course">Course</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Select {newProgram.product_type === "service" ? "Service" : "Course"} {newProgram.product_type === "course" && <span className="text-muted-foreground text-xs">(optional)</span>}</Label>
+                  <Select value={newProgram.course_id} onValueChange={(v) => setNewProgram(p => ({ ...p, course_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder={`Choose a ${newProgram.product_type}`} /></SelectTrigger>
+                    <SelectContent>
+                      {newProgram.product_type === "service" ? (
+                        services.length === 0 ? (
+                          <SelectItem value="_none" disabled>No services found</SelectItem>
+                        ) : (
+                          services.map(s => <SelectItem key={s.id} value={s.id}>{s.title} {s.price ? `— ₹${s.price}` : ""}</SelectItem>)
+                        )
+                      ) : (
+                        courses.length === 0 ? (
+                          <SelectItem value="_none" disabled>No courses found</SelectItem>
+                        ) : (
+                          courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title} {c.price ? `— ₹${c.price}` : ""}</SelectItem>)
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
