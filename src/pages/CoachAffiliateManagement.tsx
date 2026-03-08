@@ -179,7 +179,7 @@ export default function CoachAffiliateManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Course</TableHead>
+                      <TableHead>Product</TableHead>
                       <TableHead>Commission</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
@@ -192,7 +192,7 @@ export default function CoachAffiliateManagement() {
                     ) : (
                       programs.map((p) => (
                         <TableRow key={p.id}>
-                          <TableCell className="font-medium text-sm">{p.courses?.title || "—"}</TableCell>
+                          <TableCell className="font-medium text-sm">{p.services?.title || p.courses?.title || "—"}</TableCell>
                           <TableCell className="text-sm">{p.commission_percent}{p.commission_type === "percentage" ? "%" : " fixed"}</TableCell>
                           <TableCell className="text-sm capitalize">{p.commission_type}</TableCell>
                           <TableCell>
