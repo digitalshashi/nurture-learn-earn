@@ -245,14 +245,26 @@ export default function CoursePlayer() {
             <>
               {/* Video Player */}
               {selectedChapter.video_url ? (
-                <div className="relative bg-foreground/95 w-full" style={{ aspectRatio: "16/9", maxHeight: "65vh" }}>
-                  <iframe
-                    src={getVideoEmbed(selectedChapter.video_url, selectedChapter.video_type)}
-                    className="absolute inset-0 w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
-                </div>
+                selectedChapter.video_type === "upload" || selectedChapter.video_url.includes("course-videos") ? (
+                  <div className="relative bg-foreground/95 w-full" style={{ aspectRatio: "16/9", maxHeight: "65vh" }}>
+                    <video
+                      key={selectedChapter.id}
+                      src={selectedChapter.video_url}
+                      poster={selectedChapter.thumbnail_url || undefined}
+                      className="absolute inset-0 w-full h-full"
+                      controls
+                    />
+                  </div>
+                ) : (
+                  <div className="relative bg-foreground/95 w-full" style={{ aspectRatio: "16/9", maxHeight: "65vh" }}>
+                    <iframe
+                      src={getVideoEmbed(selectedChapter.video_url, selectedChapter.video_type)}
+                      className="absolute inset-0 w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  </div>
+                )
               ) : (
                 <div
                   className="bg-secondary flex items-center justify-center"
