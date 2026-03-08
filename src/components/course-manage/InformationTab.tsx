@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Upload, Info, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   courseId: string;
@@ -32,6 +33,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
   const [disableQna, setDisableQna] = useState(course.disable_qna || false);
   const [disableComments, setDisableComments] = useState(course.disable_comments || false);
   const [saving, setSaving] = useState(false);
+  const [accessLevel, setAccessLevel] = useState(course.access_level || "free");
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const coverRef = useRef<HTMLInputElement>(null);
@@ -71,6 +73,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
         enable_drm: enableDrm,
         disable_qna: disableQna,
         disable_comments: disableComments,
+        access_level: accessLevel,
         updated_at: new Date().toISOString(),
       }).eq("id", courseId);
       if (error) throw error;
@@ -118,6 +121,22 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
             <Label className="font-medium">Category</Label>
             <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Business, Tech" className="mt-1" />
           </div>
+        </div>
+
+        <div>
+          <Label className="font-medium">Course Access Level</Label>
+          <p className="text-xs text-muted-foreground mb-2">Choose which service tier can access this course.</p>
+          <Select value={accessLevel} onValueChange={setAccessLevel}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="silver">Silver</SelectItem>
+              <SelectItem value="gold">Gold</SelectItem>
+              <SelectItem value="diamond">Diamond</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Cover Image */}
