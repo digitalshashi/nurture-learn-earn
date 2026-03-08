@@ -309,6 +309,71 @@ export type Database = {
           },
         ]
       }
+      badges: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          xp_required: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          xp_required?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          xp_required?: number | null
+        }
+        Relationships: []
+      }
+      challenge_participants: {
+        Row: {
+          challenge_id: string | null
+          completed_at: string | null
+          id: string
+          is_completed: boolean | null
+          joined_at: string | null
+          progress_percent: number | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id?: string | null
+          completed_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          joined_at?: string | null
+          progress_percent?: number | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string | null
+          completed_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          joined_at?: string | null
+          progress_percent?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channels: {
         Row: {
           channel_type: string
@@ -447,6 +512,36 @@ export type Database = {
           },
         ]
       }
+      charity_logs: {
+        Row: {
+          amount: number | null
+          category: string | null
+          created_at: string | null
+          date: string
+          id: string
+          organization_name: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          organization_name: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          organization_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chatbot_questions: {
         Row: {
           bot_answer: string | null
@@ -481,6 +576,80 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkup_definitions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      checkup_submissions: {
+        Row: {
+          actions_completed: number | null
+          actions_total: number | null
+          checkup_id: string | null
+          id: string
+          notes: string | null
+          score: number | null
+          submitted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actions_completed?: number | null
+          actions_total?: number | null
+          checkup_id?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          submitted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actions_completed?: number | null
+          actions_total?: number | null
+          checkup_id?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          submitted_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkup_submissions_checkup_id_fkey"
+            columns: ["checkup_id"]
+            isOneToOne: false
+            referencedRelation: "checkup_definitions"
             referencedColumns: ["id"]
           },
         ]
@@ -684,6 +853,134 @@ export type Database = {
           },
         ]
       }
+      gamification_challenges: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          duration_days: number | null
+          id: string
+          is_active: boolean | null
+          title: string
+          xp_reward: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          xp_reward?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          completed_date: string
+          created_at: string | null
+          habit_id: string | null
+          id: string
+          user_id: string
+          xp_earned: number | null
+        }
+        Insert: {
+          completed_date?: string
+          created_at?: string | null
+          habit_id?: string | null
+          id?: string
+          user_id: string
+          xp_earned?: number | null
+        }
+        Update: {
+          completed_date?: string
+          created_at?: string | null
+          habit_id?: string | null
+          id?: string
+          user_id?: string
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          time_of_day: string | null
+          user_id: string
+          xp_value: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          time_of_day?: string | null
+          user_id: string
+          xp_value?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          time_of_day?: string | null
+          user_id?: string
+          xp_value?: number | null
+        }
+        Relationships: []
+      }
+      level_definitions: {
+        Row: {
+          badge_name: string | null
+          created_at: string | null
+          id: string
+          level_number: number
+          reward_description: string | null
+          xp_required: number
+        }
+        Insert: {
+          badge_name?: string | null
+          created_at?: string | null
+          id?: string
+          level_number: number
+          reward_description?: string | null
+          xp_required: number
+        }
+        Update: {
+          badge_name?: string | null
+          created_at?: string | null
+          id?: string
+          level_number?: number
+          reward_description?: string | null
+          xp_required?: number
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           channel_id: string | null
@@ -737,6 +1034,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      productivity_data: {
+        Row: {
+          ad_spends: number | null
+          avg_cost_per_lead: number | null
+          created_at: string | null
+          date: string
+          id: string
+          revenue_earned: number | null
+          roas: number | null
+          total_group_size: number | null
+          total_leads: number | null
+          total_paid_customers: number | null
+          user_id: string
+        }
+        Insert: {
+          ad_spends?: number | null
+          avg_cost_per_lead?: number | null
+          created_at?: string | null
+          date: string
+          id?: string
+          revenue_earned?: number | null
+          roas?: number | null
+          total_group_size?: number | null
+          total_leads?: number | null
+          total_paid_customers?: number | null
+          user_id: string
+        }
+        Update: {
+          ad_spends?: number | null
+          avg_cost_per_lead?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          revenue_earned?: number | null
+          roas?: number | null
+          total_group_size?: number | null
+          total_leads?: number | null
+          total_paid_customers?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -920,6 +1259,71 @@ export type Database = {
           },
         ]
       }
+      student_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          name: string
+          user_id: string
+          xp_reward: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name: string
+          user_id: string
+          xp_reward?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name?: string
+          user_id?: string
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string | null
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -935,6 +1339,60 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      xp_rules: {
+        Row: {
+          action_name: string
+          created_at: string | null
+          daily_limit: number | null
+          id: string
+          is_enabled: boolean | null
+          xp_value: number
+        }
+        Insert: {
+          action_name: string
+          created_at?: string | null
+          daily_limit?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          xp_value?: number
+        }
+        Update: {
+          action_name?: string
+          created_at?: string | null
+          daily_limit?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          xp_value?: number
+        }
+        Relationships: []
+      }
+      xp_transactions: {
+        Row: {
+          action: string
+          created_at: string | null
+          description: string | null
+          id: string
+          user_id: string
+          xp_amount: number
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          user_id: string
+          xp_amount: number
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          user_id?: string
+          xp_amount?: number
         }
         Relationships: []
       }
