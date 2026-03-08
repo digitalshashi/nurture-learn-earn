@@ -144,6 +144,7 @@ const sidebarSections = [
     label: "Settings",
     items: [
       { title: "Platform Settings", url: "/settings/platform", icon: Settings },
+      { title: "Security", url: "/settings/security", icon: Shield },
       { title: "General Settings", url: "/settings", icon: Settings },
       { title: "Billing & Plans", url: "/billing", icon: Receipt },
       { title: "Refer & Earn", url: "/referral", icon: Gift },
