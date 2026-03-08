@@ -98,6 +98,7 @@ const sidebarSections = [
     label: "Marketing",
     items: [
       { title: "Broadcasts", url: "/marketing/broadcasts", icon: Send },
+      { title: "Email Settings", url: "/settings/email", icon: Mail },
       { title: "Banners", url: "/marketing/banners", icon: Image },
       { title: "Coupons", url: "/marketing/coupons", icon: Tag },
       { title: "Unsubscribed Users", url: "/marketing/unsubscribed", icon: UserMinus },

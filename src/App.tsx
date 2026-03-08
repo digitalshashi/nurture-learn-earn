@@ -94,6 +94,7 @@ const App = () => (
             <Route path="/affiliate/manage" element={<ProtectedRoute><CoachAffiliateManagement /></ProtectedRoute>} />
             <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
             <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
+            <Route path="/settings/email" element={<ProtectedRoute><EmailSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
