@@ -148,6 +148,8 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
             video_type: ch.video_type, content: ch.content || null,
             content_type: ch.content_type, sort_order: j,
             resources: JSON.parse(JSON.stringify(ch.resources || [])),
+            thumbnail_url: ch.thumbnail_url || null,
+            video_description: ch.video_description || null,
           };
           if (ch.id) {
             await supabase.from("chapters").update(payload).eq("id", ch.id);
