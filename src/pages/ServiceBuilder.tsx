@@ -185,6 +185,12 @@ export default function ServiceBuilder() {
       collect_address: collectAddress,
       collect_gst: collectGst,
       status,
+      service_tier: serviceTier,
+      enable_levelup: enableLevelup,
+      enable_gamification: enableGamification,
+      enable_community: enableCommunity,
+      enable_leaderboard: enableLeaderboard,
+      enable_quests: enableQuests,
     };
 
     let serviceId = id;
