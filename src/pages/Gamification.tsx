@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trophy, Star, Medal, Target } from "lucide-react";
+import { Plus, Trophy, Star, Medal, Target, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface XpRule {
   id: string;
@@ -57,9 +58,20 @@ export default function Gamification() {
   const [newLevel, setNewLevel] = useState({ level_number: 0, xp_required: 0, badge_name: "" });
   const [newBadge, setNewBadge] = useState({ name: "", description: "", icon: "🏆", xp_required: 0 });
   const [newChallenge, setNewChallenge] = useState({ title: "", description: "", duration_days: 7, xp_reward: 100 });
+  const [newRule, setNewRule] = useState({ action_name: "", xp_value: 10, daily_limit: "" as string });
   const [levelDialog, setLevelDialog] = useState(false);
   const [badgeDialog, setBadgeDialog] = useState(false);
   const [challengeDialog, setChallengeDialog] = useState(false);
+  const [ruleDialog, setRuleDialog] = useState(false);
+
+  const XP_ACTION_OPTIONS = [
+    "login", "complete_lesson", "complete_chapter", "complete_course", "complete_quiz",
+    "post_content", "comment", "like_post", "share_post", "reply_comment",
+    "attend_event", "daily_habit", "task_completed", "challenge_completed",
+    "refer_friend", "profile_complete", "streak_bonus", "first_purchase",
+    "review_course", "upload_assignment", "join_community", "watch_video",
+    "read_article", "earn_certificate", "charity_donation",
+  ];
 
   useEffect(() => { loadAll(); }, []);
 
@@ -79,6 +91,28 @@ export default function Gamification() {
   const updateRule = async (id: string, field: string, value: any) => {
     await supabase.from("xp_rules").update({ [field]: value }).eq("id", id);
     loadAll();
+  };
+
+  const addRule = async () => {
+    if (!newRule.action_name) { toast({ title: "Select an action", variant: "destructive" }); return; }
+    const existing = rules.find(r => r.action_name === newRule.action_name);
+    if (existing) { toast({ title: "This action already exists", variant: "destructive" }); return; }
+    await supabase.from("xp_rules").insert({
+      action_name: newRule.action_name,
+      xp_value: newRule.xp_value,
+      daily_limit: newRule.daily_limit ? Number(newRule.daily_limit) : null,
+    });
+    setRuleDialog(false);
+    setNewRule({ action_name: "", xp_value: 10, daily_limit: "" });
+    loadAll();
+    toast({ title: "XP Rule added" });
+  };
+
+  const deleteRule = async (id: string) => {
+    if (!confirm("Delete this XP rule?")) return;
+    await supabase.from("xp_rules").delete().eq("id", id);
+    loadAll();
+    toast({ title: "XP Rule deleted" });
   };
 
   const addLevel = async () => {
@@ -133,9 +167,31 @@ export default function Gamification() {
 
           {/* XP Rules */}
           <TabsContent value="xp-rules">
-            <Card className="card-shadow mt-4">
-              <CardHeader><CardTitle className="text-sm">XP Rules</CardTitle></CardHeader>
-              <CardContent>
+            <div className="flex justify-end mt-4 mb-3">
+              <Dialog open={ruleDialog} onOpenChange={setRuleDialog}>
+                <DialogTrigger asChild><Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4 mr-1" /> Add XP Rule</Button></DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Add XP Rule</DialogTitle></DialogHeader>
+                  <div className="space-y-3">
+                    <div><Label>Action</Label>
+                      <Select value={newRule.action_name} onValueChange={v => setNewRule({ ...newRule, action_name: v })}>
+                        <SelectTrigger><SelectValue placeholder="Select action..." /></SelectTrigger>
+                        <SelectContent>
+                          {XP_ACTION_OPTIONS.filter(a => !rules.find(r => r.action_name === a)).map(a => (
+                            <SelectItem key={a} value={a}>{a.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>XP Value</Label><Input type="number" value={newRule.xp_value} onChange={e => setNewRule({ ...newRule, xp_value: Number(e.target.value) })} /></div>
+                    <div><Label>Daily Limit (leave empty for unlimited)</Label><Input type="number" placeholder="∞" value={newRule.daily_limit} onChange={e => setNewRule({ ...newRule, daily_limit: e.target.value })} /></div>
+                    <Button onClick={addRule} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Add Rule</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <Card className="card-shadow">
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -143,23 +199,29 @@ export default function Gamification() {
                       <TableHead>XP Value</TableHead>
                       <TableHead>Daily Limit</TableHead>
                       <TableHead>Enabled</TableHead>
+                      <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rules.map((r) => (
+                    {rules.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No XP rules yet. Add your first rule!</TableCell></TableRow>
+                    ) : rules.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="font-medium capitalize">{r.action_name.replace(/_/g, " ")}</TableCell>
                         <TableCell>
-                          <Input type="number" className="w-20" defaultValue={r.xp_value}
+                          <Input type="number" className="w-20 h-8" defaultValue={r.xp_value}
                             onBlur={(e) => updateRule(r.id, "xp_value", Number(e.target.value))} />
                         </TableCell>
                         <TableCell>
-                          <Input type="number" className="w-20" defaultValue={r.daily_limit || ""}
+                          <Input type="number" className="w-20 h-8" defaultValue={r.daily_limit || ""}
                             placeholder="∞"
                             onBlur={(e) => updateRule(r.id, "daily_limit", e.target.value ? Number(e.target.value) : null)} />
                         </TableCell>
                         <TableCell>
                           <Switch checked={r.is_enabled} onCheckedChange={(v) => updateRule(r.id, "is_enabled", v)} />
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRule(r.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </TableCell>
                       </TableRow>
                     ))}
