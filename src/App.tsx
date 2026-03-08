@@ -121,6 +121,10 @@ const App = () => (
             <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
             <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
             <Route path="/settings/email" element={<ProtectedRoute><EmailSettings /></ProtectedRoute>} />
+            <Route path="/profile/:userId" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
+            <Route path="/my-account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/messages/:recipientId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
