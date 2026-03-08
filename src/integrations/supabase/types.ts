@@ -2519,6 +2519,11 @@ export type Database = {
           description: string | null
           discounted_price: number | null
           drip_enabled: boolean
+          enable_community: boolean
+          enable_gamification: boolean
+          enable_leaderboard: boolean
+          enable_levelup: boolean
+          enable_quests: boolean
           enable_subscription: boolean
           enable_terms: boolean
           id: string
@@ -2534,6 +2539,7 @@ export type Database = {
           payment_success_message: string | null
           payment_success_sections: Json | null
           price: number
+          service_tier: string | null
           service_type: string
           slug: string | null
           status: string
@@ -2558,6 +2564,11 @@ export type Database = {
           description?: string | null
           discounted_price?: number | null
           drip_enabled?: boolean
+          enable_community?: boolean
+          enable_gamification?: boolean
+          enable_leaderboard?: boolean
+          enable_levelup?: boolean
+          enable_quests?: boolean
           enable_subscription?: boolean
           enable_terms?: boolean
           id?: string
@@ -2573,6 +2584,7 @@ export type Database = {
           payment_success_message?: string | null
           payment_success_sections?: Json | null
           price?: number
+          service_tier?: string | null
           service_type?: string
           slug?: string | null
           status?: string
@@ -2597,6 +2609,11 @@ export type Database = {
           description?: string | null
           discounted_price?: number | null
           drip_enabled?: boolean
+          enable_community?: boolean
+          enable_gamification?: boolean
+          enable_leaderboard?: boolean
+          enable_levelup?: boolean
+          enable_quests?: boolean
           enable_subscription?: boolean
           enable_terms?: boolean
           id?: string
@@ -2612,6 +2629,7 @@ export type Database = {
           payment_success_message?: string | null
           payment_success_sections?: Json | null
           price?: number
+          service_tier?: string | null
           service_type?: string
           slug?: string | null
           status?: string
@@ -3196,6 +3214,7 @@ export type Database = {
         Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
+      user_has_levelup_access: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "coach" | "student"

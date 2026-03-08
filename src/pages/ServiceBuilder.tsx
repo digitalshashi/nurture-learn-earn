@@ -40,6 +40,14 @@ export default function ServiceBuilder() {
   const [serviceType, setServiceType] = useState("bundle");
   const [isFree, setIsFree] = useState(false);
   const [enableSubscription, setEnableSubscription] = useState(false);
+
+  // Advanced Features
+  const [serviceTier, setServiceTier] = useState("basic");
+  const [enableLevelup, setEnableLevelup] = useState(false);
+  const [enableGamification, setEnableGamification] = useState(false);
+  const [enableCommunity, setEnableCommunity] = useState(false);
+  const [enableLeaderboard, setEnableLeaderboard] = useState(false);
+  const [enableQuests, setEnableQuests] = useState(false);
   const [subscriptionInterval, setSubscriptionInterval] = useState("monthly");
   const [subscriptionPrice, setSubscriptionPrice] = useState("0");
   const [allowPayWhatYouWant, setAllowPayWhatYouWant] = useState(false);
@@ -126,6 +134,12 @@ export default function ServiceBuilder() {
     setSuccessButtonUrl(s.payment_success_button_url || "");
     setSuccessSections((s.payment_success_sections as any) || []);
     setStatus(s.status);
+    setServiceTier((s as any).service_tier || "basic");
+    setEnableLevelup((s as any).enable_levelup || false);
+    setEnableGamification((s as any).enable_gamification || false);
+    setEnableCommunity((s as any).enable_community || false);
+    setEnableLeaderboard((s as any).enable_leaderboard || false);
+    setEnableQuests((s as any).enable_quests || false);
 
     // Load linked courses/workshops
     const [{ data: sc }, { data: sw }] = await Promise.all([
@@ -171,6 +185,12 @@ export default function ServiceBuilder() {
       collect_address: collectAddress,
       collect_gst: collectGst,
       status,
+      service_tier: serviceTier,
+      enable_levelup: enableLevelup,
+      enable_gamification: enableGamification,
+      enable_community: enableCommunity,
+      enable_leaderboard: enableLeaderboard,
+      enable_quests: enableQuests,
     };
 
     let serviceId = id;
@@ -382,6 +402,48 @@ export default function ServiceBuilder() {
                   </div>
                 )}
               </div>
+
+              {/* Advanced Features */}
+              <Card className="border border-border">
+                <CardHeader className="py-3"><CardTitle className="text-sm">Advanced Features</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label className="text-xs">Service Tier</Label>
+                    <Select value={serviceTier} onValueChange={setServiceTier}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="diamond">Diamond</SelectItem>
+                        <SelectItem value="elite">Elite</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Community Feed</Label>
+                      <Switch checked={enableCommunity} onCheckedChange={setEnableCommunity} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Leaderboard</Label>
+                      <Switch checked={enableLeaderboard} onCheckedChange={setEnableLeaderboard} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Quests</Label>
+                      <Switch checked={enableQuests} onCheckedChange={setEnableQuests} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Gamification</Label>
+                      <Switch checked={enableGamification} onCheckedChange={setEnableGamification} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold">LevelUp Platform</Label>
+                      <Switch checked={enableLevelup} onCheckedChange={setEnableLevelup} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Link courses & workshops */}
               <Card className="border border-border">
