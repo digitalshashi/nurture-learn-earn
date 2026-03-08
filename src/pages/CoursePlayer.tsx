@@ -475,7 +475,7 @@ function TabsWrapper({
               const isLink = res.type === "link";
               return (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
-                  {isLink ? <Link className="h-5 w-5 text-primary shrink-0" /> : <FileText className="h-5 w-5 text-primary shrink-0" />}
+                  {isLink ? <LinkIcon className="h-5 w-5 text-primary shrink-0" /> : <FileText className="h-5 w-5 text-primary shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{res.name || `Resource ${i + 1}`}</p>
                     <p className="text-xs text-muted-foreground">{(res.type || "File").toUpperCase()} {res.size ? `• ${res.size}` : ""}</p>
