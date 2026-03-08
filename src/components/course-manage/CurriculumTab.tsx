@@ -10,6 +10,7 @@ import {
   Plus, GripVertical, Trash2, ChevronDown, ChevronRight, Save, 
   Video, FileText, Music, Image, Link, File, Play
 } from "lucide-react";
+import ChapterResources, { type Resource } from "./ChapterResources";
 
 interface Section {
   id?: string;
@@ -26,6 +27,7 @@ interface Chapter {
   content: string;
   content_type: string;
   sort_order: number;
+  resources: Resource[];
 }
 
 const contentTypeIcons: Record<string, any> = {
@@ -71,6 +73,7 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
             content: c.content || "",
             content_type: c.content_type || "video",
             sort_order: c.sort_order,
+            resources: Array.isArray(c.resources) ? c.resources : [],
           })),
       })));
     }
@@ -86,6 +89,7 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
     updated[sIdx].chapters.push({
       title: "", video_url: "", video_type: "direct", content: "",
       content_type: "video", sort_order: updated[sIdx].chapters.length,
+      resources: [],
     });
     setSections(updated);
   };
@@ -138,6 +142,7 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
             title: ch.title, video_url: ch.video_url || null,
             video_type: ch.video_type, content: ch.content || null,
             content_type: ch.content_type, sort_order: j,
+            resources: JSON.parse(JSON.stringify(ch.resources || [])),
           };
           if (ch.id) {
             await supabase.from("chapters").update(payload).eq("id", ch.id);
@@ -229,6 +234,14 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
                           <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
                         </div>
                         <Textarea value={ch.content} onChange={(e) => updateChapter(sIdx, cIdx, "content", e.target.value)} placeholder="Lesson notes / description" className="text-sm min-h-[50px]" />
+                        <ChapterResources
+                          resources={ch.resources}
+                          onChange={(newResources) => {
+                            const updated = [...sections];
+                            updated[sIdx].chapters[cIdx].resources = newResources;
+                            setSections(updated);
+                          }}
+                        />
                       </div>
                     );
                   })}

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ChevronDown, ChevronRight, ArrowLeft, CheckCircle2, Circle,
-  BookmarkPlus, Video, FileText, Download, Send, ThumbsUp
+  BookmarkPlus, Video, FileText, Download, Send, ThumbsUp, Link as LinkIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -471,20 +471,23 @@ function TabsWrapper({
           {resources.length === 0 ? (
             <p className="text-sm text-muted-foreground">No resources attached to this lesson.</p>
           ) : (
-            resources.map((res: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
-                <FileText className="h-5 w-5 text-primary shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{res.name || `Resource ${i + 1}`}</p>
-                  <p className="text-xs text-muted-foreground">{res.type || "File"}</p>
+            resources.map((res: any, i: number) => {
+              const isLink = res.type === "link";
+              return (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
+                  {isLink ? <LinkIcon className="h-5 w-5 text-primary shrink-0" /> : <FileText className="h-5 w-5 text-primary shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{res.name || `Resource ${i + 1}`}</p>
+                    <p className="text-xs text-muted-foreground">{(res.type || "File").toUpperCase()} {res.size ? `• ${res.size}` : ""}</p>
+                  </div>
+                  {res.url && (
+                    <a href={res.url} target="_blank" rel="noopener noreferrer" download={!isLink}>
+                      <Button size="sm" variant="ghost"><Download className="h-4 w-4" /></Button>
+                    </a>
+                  )}
                 </div>
-                {res.url && (
-                  <a href={res.url} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="ghost"><Download className="h-4 w-4" /></Button>
-                  </a>
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
