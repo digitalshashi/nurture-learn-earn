@@ -428,7 +428,7 @@ function ChapterEditor({
               if (chapter.video_type === "record") onUpdate(sIdx, cIdx, "video_type", "upload");
             }}
           />
-        )
+        )}
 
         {chapter.video_type === "upload" ? (
           <div className="space-y-2">
