@@ -40,6 +40,7 @@ import Coupons from "./pages/Coupons";
 import UnsubscribedUsers from "./pages/UnsubscribedUsers";
 import StudentAffiliate from "./pages/StudentAffiliate";
 import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
+import NavigationSettings from "./pages/NavigationSettings";
 
 const queryClient = new QueryClient();
 
