@@ -52,6 +52,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import EmailSettings from "./pages/EmailSettings";
 import Services from "./pages/Services";
 import ServiceBuilder from "./pages/ServiceBuilder";
+import ServiceCheckout from "./pages/ServiceCheckout";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
