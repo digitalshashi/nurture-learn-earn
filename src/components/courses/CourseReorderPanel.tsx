@@ -1,24 +1,7 @@
 import { useState } from "react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { GripVertical, Save, Loader2 } from "lucide-react";
+import { GripVertical, Save, Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,43 +19,11 @@ interface Props {
   onReordered: () => void;
 }
 
-function SortableItem({ course, index }: { course: Course; index: number }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: course.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card ${isDragging ? "shadow-lg opacity-90" : ""}`}
-    >
-      <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <span className="text-xs font-mono text-muted-foreground w-6">{String(index + 1).padStart(2, "0")}</span>
-      {course.thumbnail_url && (
-        <img src={course.thumbnail_url} alt="" className="w-10 h-7 rounded object-cover bg-secondary" />
-      )}
-      <span className="text-sm font-medium flex-1 truncate">{course.title}</span>
-    </div>
-  );
-}
-
 export function CourseReorderPanel({ open, onOpenChange, courses, onReordered }: Props) {
   const { toast } = useToast();
   const [items, setItems] = useState<Course[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  // Sync when opening
   const handleOpenChange = (v: boolean) => {
     if (v) {
       setItems([...courses].sort((a, b) => a.display_order - b.display_order));
@@ -80,15 +31,14 @@ export function CourseReorderPanel({ open, onOpenChange, courses, onReordered }:
     onOpenChange(v);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setItems((prev) => {
-        const oldIndex = prev.findIndex((i) => i.id === active.id);
-        const newIndex = prev.findIndex((i) => i.id === over.id);
-        return arrayMove(prev, oldIndex, newIndex);
-      });
-    }
+  const moveItem = (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= items.length) return;
+    setItems((prev) => {
+      const next = [...prev];
+      [next[index], next[newIndex]] = [next[newIndex], next[index]];
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -118,16 +68,44 @@ export function CourseReorderPanel({ open, onOpenChange, courses, onReordered }:
             Save
           </Button>
         </SheetHeader>
-        <p className="text-xs text-muted-foreground mb-4">Drag courses to set the order students see them.</p>
+        <p className="text-xs text-muted-foreground mb-4">Use the arrows to reorder courses.</p>
 
         <div className="flex-1 overflow-auto space-y-2">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-              {items.map((course, idx) => (
-                <SortableItem key={course.id} course={course} index={idx} />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {items.map((course, idx) => (
+            <div
+              key={course.id}
+              className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card"
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-xs font-mono text-muted-foreground w-6 shrink-0">
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+              {course.thumbnail_url && (
+                <img src={course.thumbnail_url} alt="" className="w-10 h-7 rounded object-cover bg-secondary shrink-0" />
+              )}
+              <span className="text-sm font-medium flex-1 truncate">{course.title}</span>
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={idx === 0}
+                  onClick={() => moveItem(idx, "up")}
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={idx === items.length - 1}
+                  onClick={() => moveItem(idx, "down")}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </SheetContent>
     </Sheet>
