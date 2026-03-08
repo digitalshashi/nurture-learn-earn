@@ -76,6 +76,7 @@ import CrmMetaLeads from "./pages/CrmMetaLeads";
 import CrmLeadProfile from "./pages/CrmLeadProfile";
 import QuestDashboard from "./pages/QuestDashboard";
 import RolePermissions from "./pages/RolePermissions";
+import VideoLibrary from "./pages/VideoLibrary";
 const queryClient = new QueryClient();
 
 const App = () => (
