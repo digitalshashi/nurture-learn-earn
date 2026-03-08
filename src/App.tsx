@@ -65,6 +65,13 @@ import SecuritySettings from "./pages/SecuritySettings";
 import TeamManagement from "./pages/TeamManagement";
 import CloudStorage from "./pages/CloudStorage";
 import LevelUpUpgrade from "./pages/LevelUpUpgrade";
+import CrmDashboard from "./pages/CrmDashboard";
+import CrmPipelines from "./pages/CrmPipelines";
+import CrmContacts from "./pages/CrmContacts";
+import CrmFollowUps from "./pages/CrmFollowUps";
+import CrmContactGroups from "./pages/CrmContactGroups";
+import CrmMetaLeads from "./pages/CrmMetaLeads";
+import CrmLeadProfile from "./pages/CrmLeadProfile";
 
 const queryClient = new QueryClient();
 

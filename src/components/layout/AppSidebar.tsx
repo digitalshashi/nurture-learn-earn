@@ -106,6 +106,17 @@ const sidebarSections = [
     ],
   },
   {
+    label: "CRM",
+    items: [
+      { title: "CRM", url: "/crm", icon: Contact },
+      { title: "Follow-ups", url: "/crm/follow-ups", icon: ClipboardCheck },
+      { title: "Contacts", url: "/crm/contacts", icon: UsersRound },
+      { title: "Contact Groups", url: "/crm/contact-groups", icon: Users },
+      { title: "Meta Leads", url: "/crm/meta-leads", icon: Facebook },
+      { title: "Pipelines", url: "/crm/pipelines", icon: Kanban },
+    ],
+  },
+  {
     label: "Customers",
     items: [
       { title: "Customers", url: "/customers", icon: Users },
