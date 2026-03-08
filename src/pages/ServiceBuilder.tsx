@@ -134,6 +134,12 @@ export default function ServiceBuilder() {
     setSuccessButtonUrl(s.payment_success_button_url || "");
     setSuccessSections((s.payment_success_sections as any) || []);
     setStatus(s.status);
+    setServiceTier((s as any).service_tier || "basic");
+    setEnableLevelup((s as any).enable_levelup || false);
+    setEnableGamification((s as any).enable_gamification || false);
+    setEnableCommunity((s as any).enable_community || false);
+    setEnableLeaderboard((s as any).enable_leaderboard || false);
+    setEnableQuests((s as any).enable_quests || false);
 
     // Load linked courses/workshops
     const [{ data: sc }, { data: sw }] = await Promise.all([
