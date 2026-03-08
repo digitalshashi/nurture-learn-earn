@@ -25,6 +25,8 @@ export default function CrmLeadProfile() {
   const [newNote, setNewNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => { if (user && id) loadData(); }, [user, id]);
 
