@@ -51,6 +51,33 @@ export default function CrmFollowUps() {
     loadData();
   };
 
+  // AI Email Writer state
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ course_name: "", audience: "", offer: "", goal: "conversion", tone: "friendly", lead_name: "" });
+  const [emailResult, setEmailResult] = useState<any>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const generateEmail = async () => {
+    setEmailLoading(true);
+    setEmailResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-email-writer", { body: emailForm });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      setEmailResult(data);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const copyEmail = () => {
+    if (!emailResult) return;
+    navigator.clipboard.writeText(`Subject: ${emailResult.subject}\n\n${emailResult.body}\n\n[${emailResult.cta_text}]`);
+    toast({ title: "Email copied to clipboard" });
+  };
+
   const pending = followUps.filter(f => f.status === "pending");
   const completed = followUps.filter(f => f.status === "completed");
   const overdue = pending.filter(f => new Date(f.due_date) < new Date());
