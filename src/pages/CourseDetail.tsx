@@ -95,7 +95,7 @@ export default function CourseDetail() {
               <span className="text-sm text-muted-foreground">Rate this course</span>
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className="h-5 w-5 text-border hover:text-amber-400 cursor-pointer transition-colors" />
+                  <Star key={star} className="h-5 w-5 text-border hover:text-accent cursor-pointer transition-colors" />
                 ))}
               </div>
             </div>
