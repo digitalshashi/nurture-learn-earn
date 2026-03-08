@@ -47,6 +47,17 @@ const contentTypeIcons: Record<string, any> = {
   iframe: Video,
 };
 
+const contentTypeOptions = [
+  { value: "video", label: "Video", icon: Video },
+  { value: "youtube", label: "YouTube", icon: Play },
+  { value: "audio", label: "Audio", icon: Music },
+  { value: "pdf", label: "PDF", icon: File },
+  { value: "image", label: "Image", icon: Image },
+  { value: "link", label: "Link", icon: Link },
+  { value: "text", label: "Text", icon: FileText },
+  { value: "iframe", label: "Iframe", icon: Video },
+];
+
 export default function CurriculumTab({ courseId }: { courseId: string }) {
   const { toast } = useToast();
   const [sections, setSections] = useState<Section[]>([]);
