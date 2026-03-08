@@ -34,9 +34,9 @@ export default function ChapterVideoUpload({
   const [uploadingContent, setUploadingContent] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [sourceMode, setSourceMode] = useState<"upload" | "link">("upload");
+  const [sourceMode, setSourceMode] = useState<"upload" | "link" | "record">("upload");
   const [externalUrl, setExternalUrl] = useState(contentUrl || "");
-
+  const [showRecorder, setShowRecorder] = useState(false);
   const contentRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
 
