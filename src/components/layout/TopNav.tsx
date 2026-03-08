@@ -106,7 +106,7 @@ export function TopNav() {
   });
 
   return (
-    <header className="h-14 border-b border-border bg-card flex items-center px-4 sticky top-0 z-50">
+    <header className="h-16 border-b border-border bg-card flex items-center px-6 sticky top-0 z-50">
       {/* Left: Logo */}
       <div className="flex items-center shrink-0">
         <div
