@@ -61,6 +61,7 @@ import Messages from "./pages/Messages";
 import AICourseGenerator from "./pages/AICourseGenerator";
 import AILandingPageBuilder from "./pages/AILandingPageBuilder";
 import WorkshopLandingPage from "./pages/WorkshopLandingPage";
+import SecuritySettings from "./pages/SecuritySettings";
 
 const queryClient = new QueryClient();
 
