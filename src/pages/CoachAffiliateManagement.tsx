@@ -20,9 +20,10 @@ export default function CoachAffiliateManagement() {
   const { toast } = useToast();
   const [programs, setPrograms] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [allSales, setAllSales] = useState<any[]>([]);
   const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
-  const [newProgram, setNewProgram] = useState({ course_id: "", commission_percent: 10, commission_type: "percentage" });
+  const [newProgram, setNewProgram] = useState({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
 
   useEffect(() => {
     if (user) loadData();
@@ -33,6 +34,9 @@ export default function CoachAffiliateManagement() {
 
     const { data: myCourses } = await supabase.from("courses").select("id, title, price").eq("coach_id", user.id);
     setCourses(myCourses || []);
+
+    const { data: myServices } = await supabase.from("services").select("id, title, price").eq("coach_id", user.id);
+    setServices(myServices || []);
 
     const { data: progs } = await supabase.from("affiliate_programs").select("*, courses(title, price)");
     setPrograms(progs || []);
@@ -54,7 +58,7 @@ export default function CoachAffiliateManagement() {
 
   const createProgram = async () => {
     if (!newProgram.course_id) {
-      toast({ title: "Please select a course", variant: "destructive" });
+      toast({ title: "Please select a product", variant: "destructive" });
       return;
     }
     const { error } = await supabase.from("affiliate_programs").insert({
@@ -63,7 +67,7 @@ export default function CoachAffiliateManagement() {
       commission_type: newProgram.commission_type,
     });
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Affiliate program created!" }); loadData(); }
+    else { toast({ title: "Affiliate program created!" }); loadData(); setNewProgram({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" }); }
   };
 
   const toggleProgram = async (id: string, active: boolean) => {
@@ -88,11 +92,33 @@ export default function CoachAffiliateManagement() {
               <DialogHeader><DialogTitle>Create Affiliate Program</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-2">
                 <div>
-                  <Label>Select Course</Label>
-                  <Select onValueChange={(v) => setNewProgram(p => ({ ...p, course_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Choose a course" /></SelectTrigger>
+                  <Label>Product Type</Label>
+                  <Select value={newProgram.product_type} onValueChange={(v) => setNewProgram(p => ({ ...p, product_type: v, course_id: "" }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                      <SelectItem value="service">Service</SelectItem>
+                      <SelectItem value="course">Course</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Select {newProgram.product_type === "service" ? "Service" : "Course"} {newProgram.product_type === "course" && <span className="text-muted-foreground text-xs">(optional)</span>}</Label>
+                  <Select value={newProgram.course_id} onValueChange={(v) => setNewProgram(p => ({ ...p, course_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder={`Choose a ${newProgram.product_type}`} /></SelectTrigger>
+                    <SelectContent>
+                      {newProgram.product_type === "service" ? (
+                        services.length === 0 ? (
+                          <SelectItem value="_none" disabled>No services found</SelectItem>
+                        ) : (
+                          services.map(s => <SelectItem key={s.id} value={s.id}>{s.title} {s.price ? `— ₹${s.price}` : ""}</SelectItem>)
+                        )
+                      ) : (
+                        courses.length === 0 ? (
+                          <SelectItem value="_none" disabled>No courses found</SelectItem>
+                        ) : (
+                          courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title} {c.price ? `— ₹${c.price}` : ""}</SelectItem>)
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
