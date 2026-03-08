@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { 
   Plus, GripVertical, Trash2, ChevronDown, ChevronRight, Save, 
@@ -46,6 +45,17 @@ const contentTypeIcons: Record<string, any> = {
   drive: Video,
   iframe: Video,
 };
+
+const contentTypeOptions = [
+  { value: "video", label: "Video", icon: Video },
+  { value: "youtube", label: "YouTube", icon: Play },
+  { value: "audio", label: "Audio", icon: Music },
+  { value: "pdf", label: "PDF", icon: File },
+  { value: "image", label: "Image", icon: Image },
+  { value: "link", label: "Link", icon: Link },
+  { value: "text", label: "Text", icon: FileText },
+  { value: "iframe", label: "Iframe", icon: Video },
+];
 
 export default function CurriculumTab({ courseId }: { courseId: string }) {
   const { toast } = useToast();
@@ -221,39 +231,41 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <Select value={ch.content_type} onValueChange={(v) => updateChapter(sIdx, cIdx, "content_type", v)}>
-                            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Content type" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="video">Video Upload</SelectItem>
-                              <SelectItem value="youtube">YouTube</SelectItem>
-                              <SelectItem value="drive">Google Drive</SelectItem>
-                              <SelectItem value="loom">Loom</SelectItem>
-                              <SelectItem value="vimeo">Vimeo</SelectItem>
-                              <SelectItem value="audio">Audio</SelectItem>
-                              <SelectItem value="pdf">PDF</SelectItem>
-                              <SelectItem value="image">Image</SelectItem>
-                              <SelectItem value="link">External Link</SelectItem>
-                              <SelectItem value="text">Text Lesson</SelectItem>
-                              <SelectItem value="iframe">Custom Iframe</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {ch.content_type !== "video" && (
-                            <Input value={ch.video_url} onChange={(e) => updateChapter(sIdx, cIdx, "video_url", e.target.value)} placeholder="Content URL" className="h-8 text-sm col-span-2" />
-                          )}
+                        <div className="space-y-2 rounded-lg border border-border bg-secondary/10 p-3">
+                          <p className="text-xs text-muted-foreground">
+                            Select the main type of content. Files and links can be added as resources.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {contentTypeOptions.map((option) => {
+                              const OptionIcon = option.icon;
+                              const selected = ch.content_type === option.value;
+                              return (
+                                <Button
+                                  key={option.value}
+                                  type="button"
+                                  size="sm"
+                                  variant={selected ? "secondary" : "outline"}
+                                  className="h-8 px-2 text-xs"
+                                  onClick={() => updateChapter(sIdx, cIdx, "content_type", option.value)}
+                                >
+                                  <OptionIcon className="h-3.5 w-3.5" /> {option.label}
+                                </Button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        {ch.content_type === "video" && (
-                          <ChapterVideoUpload
-                            videoUrl={ch.video_url}
-                            thumbnailUrl={ch.thumbnail_url}
-                            onVideoChange={(url) => updateChapter(sIdx, cIdx, "video_url", url)}
-                            onThumbnailChange={(url) => {
-                              const updated = [...sections];
-                              updated[sIdx].chapters[cIdx].thumbnail_url = url;
-                              setSections(updated);
-                            }}
-                          />
-                        )}
+
+                        <ChapterVideoUpload
+                          contentType={ch.content_type}
+                          contentUrl={ch.video_url}
+                          thumbnailUrl={ch.thumbnail_url}
+                          onContentChange={(url) => updateChapter(sIdx, cIdx, "video_url", url)}
+                          onThumbnailChange={(url) => {
+                            const updated = [...sections];
+                            updated[sIdx].chapters[cIdx].thumbnail_url = url;
+                            setSections(updated);
+                          }}
+                        />
                         <Textarea value={ch.video_description} onChange={(e) => {
                           const updated = [...sections];
                           updated[sIdx].chapters[cIdx].video_description = e.target.value;
