@@ -33,6 +33,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
   const [disableQna, setDisableQna] = useState(course.disable_qna || false);
   const [disableComments, setDisableComments] = useState(course.disable_comments || false);
   const [saving, setSaving] = useState(false);
+  const [accessLevel, setAccessLevel] = useState(course.access_level || "free");
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const coverRef = useRef<HTMLInputElement>(null);
