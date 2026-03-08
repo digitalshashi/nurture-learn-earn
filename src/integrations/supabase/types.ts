@@ -1229,6 +1229,339 @@ export type Database = {
           },
         ]
       }
+      crm_contact_group_members: {
+        Row: {
+          added_at: string
+          group_id: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          added_at?: string
+          group_id: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          added_at?: string
+          group_id?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contact_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contact_group_members_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contact_groups: {
+        Row: {
+          coach_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      crm_follow_ups: {
+        Row: {
+          assigned_to: string | null
+          coach_id: string
+          completed_at: string | null
+          created_at: string
+          due_date: string
+          follow_up_type: string | null
+          id: string
+          lead_id: string
+          status: string
+          task: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          coach_id: string
+          completed_at?: string | null
+          created_at?: string
+          due_date: string
+          follow_up_type?: string | null
+          id?: string
+          lead_id: string
+          status?: string
+          task: string
+        }
+        Update: {
+          assigned_to?: string | null
+          coach_id?: string
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string
+          follow_up_type?: string | null
+          id?: string
+          lead_id?: string
+          status?: string
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_follow_ups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_lead_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          lead_id: string
+          note_type: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          lead_id: string
+          note_type?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          lead_id?: string
+          note_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_leads: {
+        Row: {
+          assigned_to: string | null
+          city: string | null
+          coach_id: string
+          converted_at: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          pipeline_id: string | null
+          pipeline_value: number | null
+          source: string | null
+          stage_id: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          city?: string | null
+          coach_id: string
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          pipeline_id?: string | null
+          pipeline_value?: number | null
+          source?: string | null
+          stage_id?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          city?: string | null
+          coach_id?: string
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          pipeline_id?: string | null
+          pipeline_value?: number | null
+          source?: string | null
+          stage_id?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_meta_lead_config: {
+        Row: {
+          coach_id: string
+          created_at: string
+          default_pipeline_id: string | null
+          default_stage_id: string | null
+          field_mapping: Json | null
+          id: string
+          is_active: boolean
+          page_id: string | null
+          page_name: string | null
+          updated_at: string
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          default_pipeline_id?: string | null
+          default_stage_id?: string | null
+          field_mapping?: Json | null
+          id?: string
+          is_active?: boolean
+          page_id?: string | null
+          page_name?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          default_pipeline_id?: string | null
+          default_stage_id?: string | null
+          field_mapping?: Json | null
+          id?: string
+          is_active?: boolean
+          page_id?: string | null
+          page_name?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_meta_lead_config_default_pipeline_id_fkey"
+            columns: ["default_pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_meta_lead_config_default_stage_id_fkey"
+            columns: ["default_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipeline_stages: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          pipeline_id: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          pipeline_id: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          pipeline_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_pipeline_stages_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipelines: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       customer_notes: {
         Row: {
           created_at: string
