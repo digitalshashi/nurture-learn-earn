@@ -244,32 +244,43 @@ export default function QuestDashboard() {
             <CardTitle className="text-sm flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" />Achievement Journey</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-1 overflow-x-auto pb-2">
+             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               {levels.map((level, i) => {
                 const unlocked = totalXp >= level.xp_required;
                 const isCurrent = level.id === currentLevel?.id;
                 const Icon = LEVEL_ICONS[i % LEVEL_ICONS.length];
+                const color = LEVEL_COLORS[i % LEVEL_COLORS.length];
+                const bg = LEVEL_BG[i % LEVEL_BG.length];
                 return (
                   <div key={level.id} className="flex items-center shrink-0">
-                    <div className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg transition-all ${isCurrent ? "bg-primary/10 scale-105" : ""}`}>
+                    <div className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl transition-all ${isCurrent ? "scale-110" : ""}`}
+                      style={isCurrent ? { backgroundColor: bg } : undefined}
+                    >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                          unlocked ? "border-primary bg-primary/10" : "border-muted bg-muted/30"
-                        } ${isCurrent ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${
+                          isCurrent ? "ring-2 ring-offset-2 ring-offset-background" : ""
+                        }`}
+                        style={{
+                          borderColor: unlocked ? color : "hsl(var(--muted))",
+                          backgroundColor: unlocked ? bg : "hsl(var(--muted) / 0.3)",
+                          ...(isCurrent ? { ringColor: color } as any : {}),
+                        }}
                       >
                         {unlocked ? (
-                          <Icon className="h-5 w-5 text-primary" />
+                          <Icon className="h-5 w-5" style={{ color }} />
                         ) : (
-                          <Lock className="h-4 w-4 text-muted-foreground" />
+                          <Lock className="h-4 w-4 text-muted-foreground/50" />
                         )}
                       </div>
-                      <span className={`text-[10px] font-medium text-center leading-tight max-w-[60px] ${unlocked ? "text-foreground" : "text-muted-foreground"}`}>
+                      <span className={`text-[11px] font-semibold text-center leading-tight max-w-[64px] ${unlocked ? "" : "text-muted-foreground"}`}
+                        style={unlocked ? { color } : undefined}
+                      >
                         {level.badge_name}
                       </span>
-                      <span className="text-[9px] text-muted-foreground">{level.xp_required.toLocaleString()} XP</span>
+                      <span className="text-[10px] text-muted-foreground">{level.xp_required.toLocaleString()} XP</span>
                     </div>
                     {i < levels.length - 1 && (
-                      <div className={`w-6 h-0.5 ${totalXp >= levels[i + 1].xp_required ? "bg-primary" : "bg-muted"}`} />
+                      <div className="w-8 h-0.5 rounded-full" style={{ backgroundColor: totalXp >= levels[i + 1].xp_required ? color : "hsl(var(--muted))" }} />
                     )}
                   </div>
                 );
@@ -281,7 +292,7 @@ export default function QuestDashboard() {
                   <span className="text-muted-foreground">Next: <strong className="text-foreground">{nextLevel.badge_name}</strong></span>
                   <span className="text-muted-foreground">{xpForNext.toLocaleString()} XP to go</span>
                 </div>
-                <Progress value={Math.min(progressPercent, 100)} className="h-2" />
+                <Progress value={Math.min(progressPercent, 100)} className="h-2.5" />
               </div>
             )}
           </CardContent>
