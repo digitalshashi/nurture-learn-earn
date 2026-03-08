@@ -168,7 +168,10 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{author}</p>
+            <div className="flex items-center gap-1">
+              <p className="font-semibold text-sm truncate">{author}</p>
+              {authorId && <UserBadges userId={authorId} maxVisible={2} size="sm" />}
+            </div>
             <p className="text-xs text-muted-foreground">{timeAgo}</p>
           </div>
         </div>

@@ -221,7 +221,10 @@ export default function Leaderboard() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{entry.full_name}</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm font-semibold truncate">{entry.full_name}</p>
+                          <UserBadges userId={entry.user_id} maxVisible={2} size="sm" />
+                        </div>
                       </div>
                       <div className="shrink-0">{getBadge(entry.total_xp)}</div>
                       <p className="text-sm font-bold tabular-nums shrink-0 w-24 text-right">
