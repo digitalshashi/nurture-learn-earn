@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, CheckCircle2, Zap } from "lucide-react";
+import { Loader2, Eye, EyeOff, CheckCircle2, Zap, Video } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 
@@ -36,10 +36,20 @@ export default function SettingsPage() {
   const [aiConnected, setAiConnected] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
 
+  // Zoom Settings state
+  const [zoomAccountId, setZoomAccountId] = useState("");
+  const [zoomClientId, setZoomClientId] = useState("");
+  const [zoomClientSecret, setZoomClientSecret] = useState("");
+  const [showZoomSecret, setShowZoomSecret] = useState(false);
+  const [savingZoom, setSavingZoom] = useState(false);
+  const [loadingZoom, setLoadingZoom] = useState(true);
+  const [zoomConnected, setZoomConnected] = useState(false);
+
   useEffect(() => {
     if (user) {
       loadPaymentSettings();
       loadAiSettings();
+      loadZoomSettings();
     }
   }, [user]);
 
@@ -136,6 +146,54 @@ export default function SettingsPage() {
     setTestingAi(false);
   };
 
+  const loadZoomSettings = async () => {
+    const { data } = await supabase
+      .from("zoom_settings" as any)
+      .select("*")
+      .eq("coach_id", user!.id)
+      .maybeSingle();
+    if (data) {
+      const d = data as any;
+      setZoomAccountId(d.zoom_account_id || "");
+      setZoomClientId(d.zoom_client_id || "");
+      setZoomClientSecret(d.zoom_client_secret || "");
+      setZoomConnected(!!d.zoom_account_id && !!d.zoom_client_id && !!d.zoom_client_secret);
+    }
+    setLoadingZoom(false);
+  };
+
+  const saveZoomSettings = async () => {
+    if (!user) return;
+    if (!zoomAccountId.trim() || !zoomClientId.trim() || !zoomClientSecret.trim()) {
+      toast({ title: "Error", description: "All Zoom fields are required", variant: "destructive" });
+      return;
+    }
+    setSavingZoom(true);
+    const { error } = await supabase
+      .from("zoom_settings" as any)
+      .upsert({
+        coach_id: user.id,
+        zoom_account_id: zoomAccountId.trim(),
+        zoom_client_id: zoomClientId.trim(),
+        zoom_client_secret: zoomClientSecret.trim(),
+        is_connected: true,
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: "coach_id" });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else { toast({ title: "Zoom settings saved!" }); setZoomConnected(true); }
+    setSavingZoom(false);
+  };
+
+  const disconnectZoom = async () => {
+    if (!user) return;
+    setSavingZoom(true);
+    await supabase.from("zoom_settings" as any).upsert({
+      coach_id: user.id, zoom_account_id: null, zoom_client_id: null, zoom_client_secret: null, is_connected: false, updated_at: new Date().toISOString()
+    } as any, { onConflict: "coach_id" });
+    setZoomAccountId(""); setZoomClientId(""); setZoomClientSecret(""); setZoomConnected(false); setSavingZoom(false);
+    toast({ title: "Zoom disconnected" });
+  };
+
   const maskedKey = aiKey ? "sk-" + "•".repeat(20) + aiKey.slice(-4) : "";
 
   return (
@@ -148,6 +206,7 @@ export default function SettingsPage() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="ai">AI Settings</TabsTrigger>
+            <TabsTrigger value="zoom">Zoom</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -257,6 +316,58 @@ export default function SettingsPage() {
                         </Button>
                       )}
                     </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="zoom">
+            <Card className="card-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2"><Video className="h-4 w-4 text-blue-500" /> Zoom Integration</CardTitle>
+                  {zoomConnected && <span className="flex items-center gap-1 text-xs text-green-600 font-medium"><CheckCircle2 className="h-3.5 w-3.5" /> Connected</span>}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loadingZoom ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Connect your Zoom account for auto-generated meeting links when creating events. Get credentials from{" "}
+                      <a href="https://marketplace.zoom.us/develop/create" target="_blank" className="text-accent underline">Zoom App Marketplace</a> → Create a Server-to-Server OAuth app.
+                    </p>
+                    <div>
+                      <Label className="text-xs">Zoom Account ID</Label>
+                      <Input placeholder="Enter your Zoom Account ID" value={zoomAccountId} onChange={(e) => setZoomAccountId(e.target.value)} className="font-mono text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Zoom Client ID</Label>
+                      <Input placeholder="Enter your Zoom Client ID" value={zoomClientId} onChange={(e) => setZoomClientId(e.target.value)} className="font-mono text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Zoom Client Secret</Label>
+                      <div className="relative">
+                        <Input type={showZoomSecret ? "text" : "password"} placeholder="Enter your Zoom Client Secret" value={zoomClientSecret} onChange={(e) => setZoomClientSecret(e.target.value)} className="font-mono text-xs pr-10" />
+                        <button type="button" onClick={() => setShowZoomSecret(!showZoomSecret)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showZoomSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveZoomSettings} disabled={savingZoom}>
+                        {savingZoom && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{zoomConnected ? "Update Credentials" : "Connect Zoom"}
+                      </Button>
+                      {zoomConnected && <Button variant="outline" onClick={disconnectZoom} disabled={savingZoom}>Disconnect</Button>}
+                    </div>
+                    {zoomConnected && (
+                      <div className="bg-muted/50 rounded-md p-3 text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground mb-1">✅ Zoom is connected</p>
+                        <p>Meeting links will be auto-generated when you create events. Students will receive the Zoom link automatically.</p>
+                      </div>
+                    )}
                   </>
                 )}
               </CardContent>

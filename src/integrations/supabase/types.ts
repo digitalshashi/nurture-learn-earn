@@ -3862,6 +3862,39 @@ export type Database = {
         }
         Relationships: []
       }
+      zoom_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          is_connected: boolean | null
+          updated_at: string
+          zoom_account_id: string | null
+          zoom_client_id: string | null
+          zoom_client_secret: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_connected?: boolean | null
+          updated_at?: string
+          zoom_account_id?: string | null
+          zoom_client_id?: string | null
+          zoom_client_secret?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_connected?: boolean | null
+          updated_at?: string
+          zoom_account_id?: string | null
+          zoom_client_id?: string | null
+          zoom_client_secret?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
