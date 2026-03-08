@@ -24,6 +24,13 @@ import Leads from "./pages/Leads";
 import SalesEarnings from "./pages/SalesEarnings";
 import SalesTransactions from "./pages/SalesTransactions";
 import EmailAutomation from "./pages/EmailAutomation";
+import WhatsAppAutomation from "./pages/WhatsAppAutomation";
+import NotificationAutomation from "./pages/NotificationAutomation";
+import AutomationPath from "./pages/AutomationPath";
+import AutomationTemplates from "./pages/AutomationTemplates";
+import EventsPersonalisation from "./pages/EventsPersonalisation";
+import WhatsAppAccountManagement from "./pages/WhatsAppAccountManagement";
+import AutomationLogs from "./pages/AutomationLogs";
 import Certificates from "./pages/Certificates";
 import Integrations from "./pages/Integrations";
 import Partnerships from "./pages/Partnerships";
@@ -80,7 +87,14 @@ const App = () => (
             <Route path="/marketing/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
             <Route path="/marketing/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
             <Route path="/marketing/unsubscribed" element={<ProtectedRoute><UnsubscribedUsers /></ProtectedRoute>} />
+            <Route path="/automation/path" element={<ProtectedRoute><AutomationPath /></ProtectedRoute>} />
             <Route path="/automation/email" element={<ProtectedRoute><EmailAutomation /></ProtectedRoute>} />
+            <Route path="/automation/whatsapp" element={<ProtectedRoute><WhatsAppAutomation /></ProtectedRoute>} />
+            <Route path="/automation/notifications" element={<ProtectedRoute><NotificationAutomation /></ProtectedRoute>} />
+            <Route path="/automation/templates" element={<ProtectedRoute><AutomationTemplates /></ProtectedRoute>} />
+            <Route path="/automation/events-personalisation" element={<ProtectedRoute><EventsPersonalisation /></ProtectedRoute>} />
+            <Route path="/automation/account-management" element={<ProtectedRoute><WhatsAppAccountManagement /></ProtectedRoute>} />
+            <Route path="/automation/logs" element={<ProtectedRoute><AutomationLogs /></ProtectedRoute>} />
             <Route path="/automation/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
             <Route path="/automation/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
             <Route path="/partnerships" element={<ProtectedRoute><Partnerships /></ProtectedRoute>} />
