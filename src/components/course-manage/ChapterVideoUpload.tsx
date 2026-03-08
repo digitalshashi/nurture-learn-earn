@@ -115,6 +115,15 @@ export default function ChapterVideoUpload({
           >
             <Link2 className="h-3 w-3" /> External Link
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={sourceMode === "record" ? "secondary" : "ghost"}
+            className="h-6 px-2 text-[10px]"
+            onClick={() => { setSourceMode("record"); setShowRecorder(true); }}
+          >
+            🎥 Record
+          </Button>
         </div>
       </div>
 
