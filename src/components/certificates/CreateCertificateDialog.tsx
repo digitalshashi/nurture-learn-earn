@@ -57,7 +57,7 @@ export function CreateCertificateDialog({ open, onOpenChange, onSaved, editId }:
     const [c, sec, svc] = await Promise.all([
       supabase.from("courses").select("id, title").order("title"),
       supabase.from("sections").select("id, title, course_id").order("title"),
-      supabase.from("services").select("id, name").order("name"),
+      supabase.from("services").select("id, title").order("title"),
     ]);
     if (c.data) setCourses(c.data);
     if (sec.data) setSections(sec.data);
