@@ -59,6 +59,7 @@ import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
 import Messages from "./pages/Messages";
 import AICourseGenerator from "./pages/AICourseGenerator";
+import AIContentGenerator from "./pages/AIContentGenerator";
 import AILandingPageBuilder from "./pages/AILandingPageBuilder";
 import WorkshopLandingPage from "./pages/WorkshopLandingPage";
 import SecuritySettings from "./pages/SecuritySettings";
