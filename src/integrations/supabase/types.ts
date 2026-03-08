@@ -1183,6 +1183,36 @@ export type Database = {
         }
         Relationships: []
       }
+      domain_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          domain: string | null
+          id: string
+          status: string | null
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          domain?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          domain?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       email_accounts: {
         Row: {
           api_domain: string | null
@@ -1724,6 +1754,48 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           visible_roles?: string[]
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          brand_name: string | null
+          coach_id: string
+          created_at: string
+          email_logo_url: string | null
+          favicon_url: string | null
+          id: string
+          invoice_logo_url: string | null
+          logo_url: string | null
+          product_name: string | null
+          theme_color: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_name?: string | null
+          coach_id: string
+          created_at?: string
+          email_logo_url?: string | null
+          favicon_url?: string | null
+          id?: string
+          invoice_logo_url?: string | null
+          logo_url?: string | null
+          product_name?: string | null
+          theme_color?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string | null
+          coach_id?: string
+          created_at?: string
+          email_logo_url?: string | null
+          favicon_url?: string | null
+          id?: string
+          invoice_logo_url?: string | null
+          logo_url?: string | null
+          product_name?: string | null
+          theme_color?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2352,6 +2424,36 @@ export type Database = {
           name?: string
           user_id?: string
           xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      support_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          sender_email: string | null
+          support_email: string | null
+          updated_at: string
+          widget_enabled: boolean | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          sender_email?: string | null
+          support_email?: string | null
+          updated_at?: string
+          widget_enabled?: boolean | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          sender_email?: string | null
+          support_email?: string | null
+          updated_at?: string
+          widget_enabled?: boolean | null
         }
         Relationships: []
       }

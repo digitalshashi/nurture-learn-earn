@@ -43,7 +43,6 @@ export default function SettingsPage() {
     }
   }, [user]);
 
-  // ── Payment ──
   const loadPaymentSettings = async () => {
     const { data } = await supabase
       .from("coach_payment_settings" as any)
@@ -81,7 +80,6 @@ export default function SettingsPage() {
     toast({ title: "Disconnected" });
   };
 
-  // ── AI Settings ──
   const loadAiSettings = async () => {
     const { data } = await supabase
       .from("ai_settings" as any)
@@ -148,13 +146,10 @@ export default function SettingsPage() {
         <Tabs defaultValue="profile">
           <TabsList className="mb-4 flex-wrap">
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="branding">Branding</TabsTrigger>
-            <TabsTrigger value="domain">Custom Domain</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="ai">AI Settings</TabsTrigger>
           </TabsList>
 
-          {/* Profile Tab */}
           <TabsContent value="profile">
             <Card className="card-shadow">
               <CardHeader><CardTitle className="text-sm">Profile Settings</CardTitle></CardHeader>
@@ -167,32 +162,6 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          {/* Branding Tab */}
-          <TabsContent value="branding">
-            <Card className="card-shadow">
-              <CardHeader><CardTitle className="text-sm">Branding</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div><Label>Brand Name</Label><Input placeholder="Your brand name" /></div>
-                <div><Label>Brand Color</Label><Input type="color" defaultValue="#f97316" className="h-10 w-20" /></div>
-                <div><Label>Logo URL</Label><Input placeholder="https://..." /></div>
-                <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Save Branding</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Domain Tab */}
-          <TabsContent value="domain">
-            <Card className="card-shadow">
-              <CardHeader><CardTitle className="text-sm">Custom Domain</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div><Label>Custom Domain</Label><Input placeholder="yourdomain.com" /></div>
-                <p className="text-xs text-muted-foreground">Point your domain's CNAME to our servers.</p>
-                <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Verify Domain</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Payments Tab */}
           <TabsContent value="payments">
             <Card className="card-shadow">
               <CardHeader>
@@ -229,7 +198,6 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          {/* AI Settings Tab */}
           <TabsContent value="ai">
             <Card className="card-shadow">
               <CardHeader>
@@ -247,30 +215,20 @@ export default function SettingsPage() {
                       Connect your OpenAI account to use AI Course Generator. Get your API key from{" "}
                       <a href="https://platform.openai.com/api-keys" target="_blank" className="text-accent underline">OpenAI Dashboard</a>
                     </p>
-
                     <div>
                       <Label className="text-xs">OpenAI API Key</Label>
                       <div className="relative">
-                        <Input
-                          type={showAiKey ? "text" : "password"}
-                          placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
-                          value={aiKey}
-                          onChange={(e) => setAiKey(e.target.value)}
-                          className="font-mono text-xs pr-10"
-                        />
+                        <Input type={showAiKey ? "text" : "password"} placeholder="sk-xxxxxxxxxxxxxxxxxxxx" value={aiKey} onChange={(e) => setAiKey(e.target.value)} className="font-mono text-xs pr-10" />
                         <button type="button" onClick={() => setShowAiKey(!showAiKey)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                           {showAiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                       {aiConnected && !showAiKey && <p className="text-[10px] text-muted-foreground mt-1">{maskedKey}</p>}
                     </div>
-
                     <div>
                       <Label className="text-xs">Model</Label>
                       <Select value={aiModel} onValueChange={setAiModel}>
-                        <SelectTrigger className="text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="gpt-4o-mini">GPT-4o Mini (Fast & Affordable)</SelectItem>
                           <SelectItem value="gpt-4o">GPT-4o (Best Quality)</SelectItem>
@@ -278,32 +236,15 @@ export default function SettingsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div>
                       <Label className="text-xs">Temperature: {aiTemp}</Label>
-                      <Slider
-                        value={[aiTemp]}
-                        onValueChange={([v]) => setAiTemp(v)}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        className="mt-2"
-                      />
+                      <Slider value={[aiTemp]} onValueChange={([v]) => setAiTemp(v)} min={0} max={1} step={0.1} className="mt-2" />
                       <p className="text-[10px] text-muted-foreground mt-1">Lower = more focused, Higher = more creative</p>
                     </div>
-
                     <div>
                       <Label className="text-xs">Max Tokens</Label>
-                      <Input
-                        type="number"
-                        value={aiMaxTokens}
-                        onChange={(e) => setAiMaxTokens(Number(e.target.value))}
-                        min={500}
-                        max={8000}
-                        className="text-xs"
-                      />
+                      <Input type="number" value={aiMaxTokens} onChange={(e) => setAiMaxTokens(Number(e.target.value))} min={500} max={8000} className="text-xs" />
                     </div>
-
                     <div className="flex gap-2">
                       <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveAiSettings} disabled={savingAi}>
                         {savingAi && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

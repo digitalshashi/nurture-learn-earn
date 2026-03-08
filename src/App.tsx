@@ -37,6 +37,7 @@ import Partnerships from "./pages/Partnerships";
 import Gamification from "./pages/Gamification";
 import LevelUp from "./pages/LevelUp";
 import SettingsPage from "./pages/SettingsPage";
+import PlatformSettings from "./pages/PlatformSettings";
 import Billing from "./pages/Billing";
 import Referral from "./pages/Referral";
 import PageBuilder from "./pages/PageBuilder";
@@ -115,6 +116,7 @@ const App = () => (
             <Route path="/levelup" element={<ProtectedRoute><LevelUp /></ProtectedRoute>} />
             <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/settings/platform" element={<ProtectedRoute><PlatformSettings /></ProtectedRoute>} />
             <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
