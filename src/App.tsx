@@ -64,6 +64,7 @@ import WorkshopLandingPage from "./pages/WorkshopLandingPage";
 import SecuritySettings from "./pages/SecuritySettings";
 import TeamManagement from "./pages/TeamManagement";
 import CloudStorage from "./pages/CloudStorage";
+import LevelUpUpgrade from "./pages/LevelUpUpgrade";
 
 const queryClient = new QueryClient();
 
