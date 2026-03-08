@@ -211,10 +211,18 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
 
+  const filteredSections = sidebarSections
+    .filter((section) => !section.coachOnly || isCoachOrAdmin)
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item: any) => !item.coachOnly || isCoachOrAdmin),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border top-16">
       <SidebarContent className="pt-2 gap-0">
-        {sidebarSections.map((section, si) => {
+        {filteredSections.map((section, si) => {
           if (section.label) {
             return (
               <CollapsibleGroup
