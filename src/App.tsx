@@ -62,6 +62,8 @@ import AICourseGenerator from "./pages/AICourseGenerator";
 import AILandingPageBuilder from "./pages/AILandingPageBuilder";
 import WorkshopLandingPage from "./pages/WorkshopLandingPage";
 import SecuritySettings from "./pages/SecuritySettings";
+import TeamManagement from "./pages/TeamManagement";
+import CloudStorage from "./pages/CloudStorage";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +125,8 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/settings/platform" element={<ProtectedRoute><PlatformSettings /></ProtectedRoute>} />
             <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
+            <Route path="/settings/team" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
+            <Route path="/settings/cloud" element={<ProtectedRoute><CloudStorage /></ProtectedRoute>} />
             <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />

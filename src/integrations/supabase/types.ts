@@ -913,6 +913,42 @@ export type Database = {
           },
         ]
       }
+      cloud_files: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          last_restored_at: string | null
+          mime_type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          last_restored_at?: string | null
+          mime_type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          last_restored_at?: string | null
+          mime_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       coach_payment_settings: {
         Row: {
           coach_id: string
@@ -2640,6 +2676,54 @@ export type Database = {
           support_email?: string | null
           updated_at?: string
           widget_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          avatar_url: string | null
+          coach_id: string
+          country: string | null
+          created_at: string | null
+          email: string
+          id: string
+          invited_at: string | null
+          name: string
+          permissions: string[] | null
+          phone: string | null
+          role: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          coach_id: string
+          country?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          invited_at?: string | null
+          name?: string
+          permissions?: string[] | null
+          phone?: string | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          coach_id?: string
+          country?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          invited_at?: string | null
+          name?: string
+          permissions?: string[] | null
+          phone?: string | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
