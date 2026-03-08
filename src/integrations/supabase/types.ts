@@ -883,6 +883,265 @@ export type Database = {
         }
         Relationships: []
       }
+      email_accounts: {
+        Row: {
+          api_domain: string | null
+          api_key: string | null
+          api_region: string | null
+          coach_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          is_verified: boolean
+          provider: string
+          sender_email: string
+          sender_name: string
+          smtp_encryption: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_domain?: string | null
+          api_key?: string | null
+          api_region?: string | null
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_verified?: boolean
+          provider?: string
+          sender_email: string
+          sender_name: string
+          smtp_encryption?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_domain?: string | null
+          api_key?: string | null
+          api_region?: string | null
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_verified?: boolean
+          provider?: string
+          sender_email?: string
+          sender_name?: string
+          smtp_encryption?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_broadcasts: {
+        Row: {
+          broadcast_type: string
+          coach_id: string
+          content: string | null
+          created_at: string
+          emails_bounced: number
+          emails_clicked: number
+          emails_delivered: number
+          emails_opened: number
+          emails_sent: number
+          emails_unsubscribed: number
+          exclude_filter: Json | null
+          id: string
+          recipient_filter: Json | null
+          recipient_source: string | null
+          scheduled_at: string | null
+          sender_account_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          title: string
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          broadcast_type?: string
+          coach_id: string
+          content?: string | null
+          created_at?: string
+          emails_bounced?: number
+          emails_clicked?: number
+          emails_delivered?: number
+          emails_opened?: number
+          emails_sent?: number
+          emails_unsubscribed?: number
+          exclude_filter?: Json | null
+          id?: string
+          recipient_filter?: Json | null
+          recipient_source?: string | null
+          scheduled_at?: string | null
+          sender_account_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          title: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          broadcast_type?: string
+          coach_id?: string
+          content?: string | null
+          created_at?: string
+          emails_bounced?: number
+          emails_clicked?: number
+          emails_delivered?: number
+          emails_opened?: number
+          emails_sent?: number
+          emails_unsubscribed?: number
+          exclude_filter?: Json | null
+          id?: string
+          recipient_filter?: Json | null
+          recipient_source?: string | null
+          scheduled_at?: string | null
+          sender_account_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          title?: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_broadcasts_sender_account_id_fkey"
+            columns: ["sender_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_logs: {
+        Row: {
+          broadcast_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          recipient_id: string | null
+        }
+        Insert: {
+          broadcast_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          recipient_id?: string | null
+        }
+        Update: {
+          broadcast_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          recipient_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "email_broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "email_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_recipients: {
+        Row: {
+          broadcast_id: string
+          clicked_at: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          opened_at: string | null
+          sent_at: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          broadcast_id: string
+          clicked_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          opened_at?: string | null
+          sent_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          broadcast_id?: string
+          clicked_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          opened_at?: string | null
+          sent_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_recipients_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "email_broadcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_unsubscribed: {
+        Row: {
+          coach_id: string
+          email: string
+          id: string
+          reason: string | null
+          unsubscribed_at: string
+          user_id: string | null
+        }
+        Insert: {
+          coach_id: string
+          email: string
+          id?: string
+          reason?: string | null
+          unsubscribed_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          coach_id?: string
+          email?: string
+          id?: string
+          reason?: string | null
+          unsubscribed_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       enrollments: {
         Row: {
           course_id: string
