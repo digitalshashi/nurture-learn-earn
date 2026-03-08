@@ -118,17 +118,17 @@ export function TopNav() {
       </div>
 
       {/* Center: Nav */}
-      <nav className="hidden md:flex items-center justify-center gap-0 flex-1">
+      <nav className="hidden md:flex items-center justify-center flex-1">
         {visibleItems.map((item, i) => (
           <NavLink
             key={item.label + i}
             to={item.link}
             end={item.link === "/dashboard"}
-            className="flex flex-col items-center px-3 py-1 text-muted-foreground hover:text-accent transition-colors text-xs gap-0.5"
-            activeClassName="text-accent border-b-2 border-accent"
+            className="flex flex-col items-center px-5 py-2 text-muted-foreground hover:text-accent transition-colors gap-1.5 min-w-[72px]"
+            activeClassName="text-accent border-b-[3px] border-accent"
           >
             <LucideIcon name={item.icon_name} className="h-5 w-5" />
-            <span className="font-medium uppercase">{item.label}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide">{item.label}</span>
           </NavLink>
         ))}
       </nav>
