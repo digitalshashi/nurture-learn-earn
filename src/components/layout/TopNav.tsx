@@ -21,7 +21,7 @@ interface NavMenuItem {
 const defaultNavItems = [
   { label: "FEED", link: "/feed", icon_name: "users" },
   { label: "COURSES", link: "/courses", icon_name: "book-open" },
-  { label: "QUEST", link: "/levelup", icon_name: "trophy" },
+  { label: "QUEST", link: "/quest", icon_name: "sword" },
   { label: "EVENTS", link: "/student-events", icon_name: "calendar" },
   { label: "TOOLS", link: "/channels", icon_name: "wrench" },
 ];

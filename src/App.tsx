@@ -137,6 +137,7 @@ const App = () => (
             <Route path="/partnerships" element={<ProtectedRoute><Partnerships /></ProtectedRoute>} />
             <Route path="/gamification" element={<ProtectedRoute><Gamification /></ProtectedRoute>} />
             <Route path="/levelup" element={<ProtectedRoute><LevelUp /></ProtectedRoute>} />
+            <Route path="/quest" element={<ProtectedRoute><QuestDashboard /></ProtectedRoute>} />
             <Route path="/levelup-upgrade" element={<ProtectedRoute><LevelUpUpgrade /></ProtectedRoute>} />
             <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
