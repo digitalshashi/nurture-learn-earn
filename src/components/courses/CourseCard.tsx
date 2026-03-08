@@ -25,7 +25,6 @@ interface CourseCardProps {
 
 export function CourseCard({
   title,
-  description,
   thumbnail,
   price,
   category,
@@ -36,12 +35,13 @@ export function CourseCard({
 }: CourseCardProps) {
   return (
     <Card
-      className={`card-shadow hover:card-shadow-hover transition-shadow overflow-hidden group ${
+      className={`card-shadow hover:card-shadow-hover transition-shadow overflow-hidden group h-[320px] flex flex-col ${
         locked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
       }`}
       onClick={onClick}
     >
-      <div className="aspect-video bg-secondary overflow-hidden relative">
+      {/* Fixed height thumbnail */}
+      <div className="h-[160px] min-h-[160px] bg-secondary overflow-hidden relative">
         <img
           src={thumbnail}
           alt={title}
@@ -56,22 +56,29 @@ export function CourseCard({
           </div>
         )}
       </div>
-      <CardContent className="pt-3 pb-4">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1.5">
-            <Badge variant="secondary" className="text-[10px] font-medium">{category}</Badge>
-            <Badge className={`text-[10px] font-medium capitalize border-0 ${BADGE_STYLES[accessLevel] || BADGE_STYLES.free}`}>
+
+      {/* Content area - flex grow to fill remaining space */}
+      <CardContent className="pt-3 pb-3 px-4 flex flex-col flex-1 min-h-0">
+        {/* Title - 2 lines max */}
+        <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{title}</h3>
+
+        {/* Tags + Price row */}
+        <div className="flex items-center justify-between mt-2 gap-2 overflow-hidden">
+          <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+            <Badge variant="secondary" className="text-[10px] font-medium shrink-0">{category}</Badge>
+            <Badge className={`text-[10px] font-medium capitalize border-0 shrink-0 ${BADGE_STYLES[accessLevel] || BADGE_STYLES.free}`}>
               {accessLevel}
             </Badge>
           </div>
-          <span className="text-sm font-bold text-accent">{price > 0 ? `₹${price}` : "Free"}</span>
+          <span className="text-sm font-bold text-accent shrink-0">{price > 0 ? `₹${price}` : "Free"}</span>
         </div>
-        <h3 className="font-semibold text-sm mt-2 line-clamp-2">{title}</h3>
-        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
+
+        {/* Spacer pushes bottom content down */}
+        <div className="flex-1" />
 
         {/* Progress bar */}
         {!locked && progress > 0 && (
-          <div className="mt-3">
+          <div className="mt-2">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-medium text-muted-foreground">Progress</span>
               <span className="text-[10px] font-bold text-primary">{progress}%</span>
@@ -80,21 +87,19 @@ export function CourseCard({
           </div>
         )}
 
-        {!locked && progress >= 100 && (
-          <div className="mt-2">
+        {/* Bottom action */}
+        <div className="mt-2 min-h-[20px]">
+          {!locked && progress >= 100 && (
             <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200 text-[10px] border-0">
               ✓ Completed
             </Badge>
-          </div>
-        )}
-
-        {!locked && progress > 0 && progress < 100 && (
-          <div className="mt-2">
+          )}
+          {!locked && progress > 0 && progress < 100 && (
             <span className="text-xs font-medium text-primary cursor-pointer hover:underline">
               Continue →
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
