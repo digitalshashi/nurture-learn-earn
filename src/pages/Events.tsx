@@ -82,7 +82,7 @@ export default function Events() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
-  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ ...defaultForm });
