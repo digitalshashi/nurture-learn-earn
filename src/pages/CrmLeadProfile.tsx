@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Plus, User, Mail, Phone, MapPin, Tag, Calendar, MessageSquare } from "lucide-react";
+import { ArrowLeft, Save, Plus, User, Mail, Phone, MapPin, Tag, Calendar, MessageSquare, Sparkles, Loader2, TrendingUp, Target, Clock as ClockIcon, Lightbulb } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function CrmLeadProfile() {
