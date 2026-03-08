@@ -41,6 +41,7 @@ import UnsubscribedUsers from "./pages/UnsubscribedUsers";
 import StudentAffiliate from "./pages/StudentAffiliate";
 import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 import NavigationSettings from "./pages/NavigationSettings";
+import SuperAdmin from "./pages/SuperAdmin";
 
 const queryClient = new QueryClient();
 
