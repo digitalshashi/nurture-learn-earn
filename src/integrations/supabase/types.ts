@@ -1161,6 +1161,7 @@ export type Database = {
       courses: {
         Row: {
           access_duration_days: number | null
+          access_level: string
           category: string | null
           coach_id: string
           cover_image_url: string | null
@@ -1169,6 +1170,7 @@ export type Database = {
           description: string | null
           disable_comments: boolean
           disable_qna: boolean
+          display_order: number
           drip_type: string
           enable_drm: boolean
           id: string
@@ -1183,6 +1185,7 @@ export type Database = {
         }
         Insert: {
           access_duration_days?: number | null
+          access_level?: string
           category?: string | null
           coach_id: string
           cover_image_url?: string | null
@@ -1191,6 +1194,7 @@ export type Database = {
           description?: string | null
           disable_comments?: boolean
           disable_qna?: boolean
+          display_order?: number
           drip_type?: string
           enable_drm?: boolean
           id?: string
@@ -1205,6 +1209,7 @@ export type Database = {
         }
         Update: {
           access_duration_days?: number | null
+          access_level?: string
           category?: string | null
           coach_id?: string
           cover_image_url?: string | null
@@ -1213,6 +1218,7 @@ export type Database = {
           description?: string | null
           disable_comments?: boolean
           disable_qna?: boolean
+          display_order?: number
           drip_type?: string
           enable_drm?: boolean
           id?: string
@@ -2441,6 +2447,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          service_level: string
           updated_at: string
         }
         Insert: {
@@ -2450,6 +2457,7 @@ export type Database = {
           email?: string
           full_name?: string
           id: string
+          service_level?: string
           updated_at?: string
         }
         Update: {
@@ -2459,6 +2467,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          service_level?: string
           updated_at?: string
         }
         Relationships: []
