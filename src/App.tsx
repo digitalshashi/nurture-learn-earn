@@ -86,7 +86,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
             <Route path="/workshop/:slug" element={<WorkshopLandingPage />} />
             <Route path="/login" element={<Login />} />
