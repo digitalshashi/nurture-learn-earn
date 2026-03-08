@@ -1,85 +1,96 @@
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FeedPost } from "@/components/feed/FeedPost";
 import { FeedSidebar } from "@/components/feed/FeedSidebar";
+import { CreatePostCard } from "@/components/feed/CreatePostCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-const mockPosts = [
-  {
-    id: "1",
-    author: "Internet Lifestyle Hub",
-    authorAvatar: "",
-    badge: "Freedom Business Blueprint",
-    badgePoints: "+25",
-    timeAgo: "2d",
-    content: "Remember these days? Dial-up modem connection sound before the internet connects 🔊",
-    image: "/placeholder.svg",
-    likes: 1720,
-    comments: 641,
-    shares: 288690,
-  },
-  {
-    id: "2",
-    author: "Internet Lifestyle Hub",
-    authorAvatar: "",
-    badge: "Freedom Business Blueprint",
-    badgePoints: "+25",
-    timeAgo: "5d",
-    content: "What are your TOP LEARNINGS from this week? Share below! 👇",
-    image: "/placeholder.svg",
-    likes: 892,
-    comments: 234,
-    shares: 12400,
-  },
-  {
-    id: "3",
-    author: "Internet Lifestyle Hub",
-    authorAvatar: "",
-    badge: "Freedom Business Blueprint",
-    badgePoints: "+25",
-    timeAgo: "6d",
-    content: "What lessons did you learn in today's SALES SUPERSTAR session? Drop your takeaways! 🎯",
-    image: "/placeholder.svg",
-    likes: 456,
-    comments: 178,
-    shares: 8900,
-  },
-];
+interface Post {
+  id: string;
+  content: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  link_url: string | null;
+  created_at: string;
+  user_id: string;
+  profiles?: { full_name: string; avatar_url: string | null };
+}
 
 export default function Feed() {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPosts = async () => {
+    const { data } = await supabase
+      .from("posts")
+      .select("*, profiles(full_name, avatar_url)")
+      .eq("is_feed_post", true)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setPosts(data as any);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPosts();
+
+    const channel = supabase
+      .channel("feed-posts")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: "is_feed_post=eq.true" }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   return (
     <AppLayout>
       <div className="flex max-w-7xl mx-auto w-full">
         <div className="flex-1 max-w-2xl mx-auto py-4 px-4">
-          {/* Upcoming Events Banner */}
-          <div className="bg-card rounded-lg border border-border p-4 mb-4 card-shadow">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-sm">Upcoming events</h3>
-              <button className="text-accent text-xs font-medium">See all</button>
-            </div>
-            <div className="flex items-center gap-3 bg-secondary/50 rounded-lg p-3">
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground">11:00 AM</div>
-                <div className="text-xs text-muted-foreground">02:00 PM</div>
-              </div>
-              <div>
-                <p className="font-medium text-sm">Leadership Council Call</p>
-                <p className="text-xs text-muted-foreground">By Internet Lifestyle Hub</p>
-              </div>
-            </div>
-          </div>
+          <CreatePostCard onPostCreated={fetchPosts} />
 
-          {/* Feed Posts */}
-          <div className="space-y-4">
-            {mockPosts.map((post) => (
-              <FeedPost key={post.id} {...post} />
-            ))}
+          <div className="space-y-4 mt-4">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">Loading posts...</div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">No posts yet. Be the first to share!</div>
+            ) : (
+              posts.map((post) => (
+                <FeedPost
+                  key={post.id}
+                  id={post.id}
+                  author={post.profiles?.full_name || "Unknown"}
+                  authorAvatar={post.profiles?.avatar_url || ""}
+                  content={post.content || ""}
+                  image={post.image_url || undefined}
+                  videoUrl={post.video_url || undefined}
+                  linkUrl={post.link_url || undefined}
+                  timeAgo={getTimeAgo(post.created_at)}
+                  likes={0}
+                  comments={0}
+                />
+              ))
+            )}
           </div>
         </div>
 
-        {/* Right Sidebar */}
         <div className="hidden lg:block w-80 py-4 pr-4">
           <FeedSidebar />
         </div>
       </div>
     </AppLayout>
   );
+}
+
+function getTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
 }
