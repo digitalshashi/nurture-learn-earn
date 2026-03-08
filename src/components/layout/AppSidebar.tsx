@@ -112,7 +112,14 @@ const sidebarSections = [
   {
     label: "Automation",
     items: [
+      { title: "Path", url: "/automation/path", icon: Route },
       { title: "Email Automation", url: "/automation/email", icon: Mail },
+      { title: "WhatsApp Automation", url: "/automation/whatsapp", icon: Phone },
+      { title: "Notifications", url: "/automation/notifications", icon: Bell },
+      { title: "Templates", url: "/automation/templates", icon: FileText },
+      { title: "Events Personalisation", url: "/automation/events-personalisation", icon: ToggleRight },
+      { title: "Account Management", url: "/automation/account-management", icon: Phone },
+      { title: "Logs", url: "/automation/logs", icon: Activity },
       { title: "Certificates", url: "/automation/certificates", icon: Award },
       { title: "Integrations", url: "/automation/integrations", icon: Puzzle },
     ],
