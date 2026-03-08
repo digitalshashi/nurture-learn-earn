@@ -103,7 +103,7 @@ export default function CoachAffiliateManagement() {
               <div className="space-y-4 mt-2">
                 <div>
                   <Label>Product Type</Label>
-                  <Select value={newProgram.product_type} onValueChange={(v) => setNewProgram(p => ({ ...p, product_type: v, course_id: "" }))}>
+                  <Select value={newProgram.product_type} onValueChange={(v) => setNewProgram(p => ({ ...p, product_type: v, course_id: "", service_id: "" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="service">Service</SelectItem>
@@ -112,8 +112,17 @@ export default function CoachAffiliateManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Select {newProgram.product_type === "service" ? "Service" : "Course"} {newProgram.product_type === "course" && <span className="text-muted-foreground text-xs">(optional)</span>}</Label>
-                  <Select value={newProgram.course_id} onValueChange={(v) => setNewProgram(p => ({ ...p, course_id: v }))}>
+                  <Label>Select {newProgram.product_type === "service" ? "Service" : "Course"}</Label>
+                  <Select
+                    value={newProgram.product_type === "service" ? newProgram.service_id : newProgram.course_id}
+                    onValueChange={(v) =>
+                      setNewProgram((p) =>
+                        p.product_type === "service"
+                          ? { ...p, service_id: v }
+                          : { ...p, course_id: v }
+                      )
+                    }
+                  >
                     <SelectTrigger><SelectValue placeholder={`Choose a ${newProgram.product_type}`} /></SelectTrigger>
                     <SelectContent>
                       {newProgram.product_type === "service" ? (
