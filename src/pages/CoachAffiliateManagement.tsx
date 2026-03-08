@@ -20,9 +20,10 @@ export default function CoachAffiliateManagement() {
   const { toast } = useToast();
   const [programs, setPrograms] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [allSales, setAllSales] = useState<any[]>([]);
   const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
-  const [newProgram, setNewProgram] = useState({ course_id: "", commission_percent: 10, commission_type: "percentage" });
+  const [newProgram, setNewProgram] = useState({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
 
   useEffect(() => {
     if (user) loadData();
@@ -33,6 +34,9 @@ export default function CoachAffiliateManagement() {
 
     const { data: myCourses } = await supabase.from("courses").select("id, title, price").eq("coach_id", user.id);
     setCourses(myCourses || []);
+
+    const { data: myServices } = await supabase.from("services").select("id, title, price").eq("coach_id", user.id);
+    setServices(myServices || []);
 
     const { data: progs } = await supabase.from("affiliate_programs").select("*, courses(title, price)");
     setPrograms(progs || []);
@@ -54,7 +58,7 @@ export default function CoachAffiliateManagement() {
 
   const createProgram = async () => {
     if (!newProgram.course_id) {
-      toast({ title: "Please select a course", variant: "destructive" });
+      toast({ title: "Please select a product", variant: "destructive" });
       return;
     }
     const { error } = await supabase.from("affiliate_programs").insert({
@@ -63,7 +67,7 @@ export default function CoachAffiliateManagement() {
       commission_type: newProgram.commission_type,
     });
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Affiliate program created!" }); loadData(); }
+    else { toast({ title: "Affiliate program created!" }); loadData(); setNewProgram({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" }); }
   };
 
   const toggleProgram = async (id: string, active: boolean) => {
