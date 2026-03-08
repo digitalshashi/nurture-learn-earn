@@ -197,7 +197,7 @@ export function AppSidebar() {
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border top-14">
+    <Sidebar collapsible="icon" className="border-r border-border top-16">
       <SidebarContent className="pt-2 gap-0">
         {sidebarSections.map((section, si) => {
           if (section.label) {
