@@ -62,6 +62,8 @@ import AICourseGenerator from "./pages/AICourseGenerator";
 import AILandingPageBuilder from "./pages/AILandingPageBuilder";
 import WorkshopLandingPage from "./pages/WorkshopLandingPage";
 import SecuritySettings from "./pages/SecuritySettings";
+import TeamManagement from "./pages/TeamManagement";
+import CloudStorage from "./pages/CloudStorage";
 
 const queryClient = new QueryClient();
 
