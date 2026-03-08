@@ -46,12 +46,13 @@ interface EventRow {
   recurrence_rule: string | null;
   occurrence_number: number | null;
   total_occurrences: number | null;
+  service_id: string | null;
   course_id: string | null;
   status: string;
   meeting_type: string;
 }
 
-interface CourseOption {
+interface ServiceOption {
   id: string;
   title: string;
 }
@@ -63,7 +64,7 @@ const defaultForm = {
   meeting_type: "custom",
   start_time: "",
   end_time: "",
-  course_id: "",
+  service_id: "",
   // Recurrence
   frequency: "does_not_repeat",
   interval_value: 1,
@@ -81,19 +82,19 @@ export default function Events() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
-  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ ...defaultForm });
 
   const loadData = async () => {
     if (!user) return;
-    const [evRes, cRes] = await Promise.all([
+    const [evRes, sRes] = await Promise.all([
       supabase.from("events").select("*").eq("created_by", user.id).order("start_time", { ascending: false }),
-      supabase.from("courses").select("id, title").eq("coach_id", user.id),
+      supabase.from("services").select("id, title").eq("coach_id", user.id),
     ]);
     setEvents(evRes.data || []);
-    setCourses(cRes.data || []);
+    setServices(sRes.data || []);
   };
 
   useEffect(() => { loadData(); }, [user]);
@@ -196,7 +197,7 @@ export default function Events() {
       meeting_type: form.meeting_type,
       start_time: occ.start.toISOString(),
       end_time: occ.end.toISOString(),
-      course_id: form.course_id || null,
+      service_id: form.service_id || null,
       recurring: isRecurring,
       recurrence_rule: recurrenceRule,
       total_occurrences: occ.total,
@@ -250,12 +251,12 @@ export default function Events() {
                   </Select>
                 </div>
                 <div><Label>Meeting Link</Label><Input value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })} placeholder="https://..." /></div>
-                <div><Label>Linked Course (optional)</Label>
-                  <Select value={form.course_id || "none"} onValueChange={(v) => setForm({ ...form, course_id: v === "none" ? "" : v })}>
+                <div><Label>Linked Service (optional)</Label>
+                  <Select value={form.service_id || "none"} onValueChange={(v) => setForm({ ...form, service_id: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="None (visible to all)" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      {courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                      {services.map((s) => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
