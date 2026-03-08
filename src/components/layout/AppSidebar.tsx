@@ -292,7 +292,7 @@ function CollapsibleGroup({
     <Collapsible open={collapsed ? false : open} onOpenChange={setOpen}>
       <SidebarGroup className="py-0.5">
         <CollapsibleTrigger className="w-full">
-          <SidebarGroupLabel className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center justify-between pr-2" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500 }}>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center justify-between pr-2">
             {!collapsed && label}
             {!collapsed && (
               <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
