@@ -321,6 +321,58 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="zoom">
+            <Card className="card-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2"><Video className="h-4 w-4 text-blue-500" /> Zoom Integration</CardTitle>
+                  {zoomConnected && <span className="flex items-center gap-1 text-xs text-green-600 font-medium"><CheckCircle2 className="h-3.5 w-3.5" /> Connected</span>}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loadingZoom ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Connect your Zoom account for auto-generated meeting links when creating events. Get credentials from{" "}
+                      <a href="https://marketplace.zoom.us/develop/create" target="_blank" className="text-accent underline">Zoom App Marketplace</a> → Create a Server-to-Server OAuth app.
+                    </p>
+                    <div>
+                      <Label className="text-xs">Zoom Account ID</Label>
+                      <Input placeholder="Enter your Zoom Account ID" value={zoomAccountId} onChange={(e) => setZoomAccountId(e.target.value)} className="font-mono text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Zoom Client ID</Label>
+                      <Input placeholder="Enter your Zoom Client ID" value={zoomClientId} onChange={(e) => setZoomClientId(e.target.value)} className="font-mono text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Zoom Client Secret</Label>
+                      <div className="relative">
+                        <Input type={showZoomSecret ? "text" : "password"} placeholder="Enter your Zoom Client Secret" value={zoomClientSecret} onChange={(e) => setZoomClientSecret(e.target.value)} className="font-mono text-xs pr-10" />
+                        <button type="button" onClick={() => setShowZoomSecret(!showZoomSecret)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showZoomSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveZoomSettings} disabled={savingZoom}>
+                        {savingZoom && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{zoomConnected ? "Update Credentials" : "Connect Zoom"}
+                      </Button>
+                      {zoomConnected && <Button variant="outline" onClick={disconnectZoom} disabled={savingZoom}>Disconnect</Button>}
+                    </div>
+                    {zoomConnected && (
+                      <div className="bg-muted/50 rounded-md p-3 text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground mb-1">✅ Zoom is connected</p>
+                        <p>Meeting links will be auto-generated when you create events. Students will receive the Zoom link automatically.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
