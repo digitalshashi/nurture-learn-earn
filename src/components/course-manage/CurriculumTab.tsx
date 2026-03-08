@@ -89,6 +89,7 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
     updated[sIdx].chapters.push({
       title: "", video_url: "", video_type: "direct", content: "",
       content_type: "video", sort_order: updated[sIdx].chapters.length,
+      resources: [],
     });
     setSections(updated);
   };
