@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Video, X, Image, Loader2, File, Link2 } from "lucide-react";
+import LessonRecorder from "./LessonRecorder";
 
 interface ChapterVideoUploadProps {
   contentType: string;
