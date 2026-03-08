@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trophy, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { UserBadges } from "@/components/badges/UserBadges";
 
 interface LeaderEntry {
   user_id: string;
