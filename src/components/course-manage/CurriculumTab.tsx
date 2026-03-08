@@ -77,6 +77,8 @@ export default function CurriculumTab({ courseId }: { courseId: string }) {
             content_type: c.content_type || "video",
             sort_order: c.sort_order,
             resources: Array.isArray(c.resources) ? c.resources : [],
+            thumbnail_url: c.thumbnail_url || "",
+            video_description: c.video_description || "",
           })),
       })));
     }
