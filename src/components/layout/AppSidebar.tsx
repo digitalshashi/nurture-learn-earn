@@ -31,6 +31,7 @@ import {
   Image,
   Tag,
   UserMinus,
+  Crown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
