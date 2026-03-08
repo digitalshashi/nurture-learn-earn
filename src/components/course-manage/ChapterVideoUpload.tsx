@@ -127,7 +127,19 @@ export default function ChapterVideoUpload({
         </div>
       </div>
 
-      {sourceMode === "upload" ? (
+      {sourceMode === "record" ? (
+        <LessonRecorder
+          onRecordingComplete={(url) => {
+            onContentChange(url);
+            setSourceMode("upload");
+            setShowRecorder(false);
+          }}
+          onClose={() => {
+            setSourceMode("upload");
+            setShowRecorder(false);
+          }}
+        />
+      ) : sourceMode === "upload" ? (
         <div className="space-y-2 rounded-md border-2 border-dashed border-border bg-background p-3 text-center">
           {contentUrl ? (
             <div className="space-y-2">
