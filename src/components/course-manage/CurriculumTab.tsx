@@ -11,6 +11,7 @@ import {
   Video, FileText, Music, Image, Link, File, Play
 } from "lucide-react";
 import ChapterResources, { type Resource } from "./ChapterResources";
+import ChapterVideoUpload from "./ChapterVideoUpload";
 
 interface Section {
   id?: string;
