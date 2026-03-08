@@ -8,14 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, RefreshCw, Pencil, Trash2, Share2, BarChart3, MoreHorizontal, Eye } from "lucide-react";
+import { Plus, Search, RefreshCw, Pencil, Trash2, Share2, MoreHorizontal, Eye, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ServiceShareDialog } from "@/components/services/ServiceShareDialog";
 
 interface Service {
   id: string;
   title: string;
+  slug: string | null;
   price: number;
   currency: string;
   status: string;
@@ -33,6 +35,7 @@ export default function Services() {
   const [search, setSearch] = useState("");
   const [showFree, setShowFree] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [shareService, setShareService] = useState<Service | null>(null);
 
   const loadServices = async () => {
     if (!user) return;
@@ -61,8 +64,8 @@ export default function Services() {
   };
 
   const statusBadge = (status: string) => {
-    const cls = status === "active" ? "bg-success text-success-foreground" :
-                status === "paused" ? "bg-warning text-warning-foreground" :
+    const cls = status === "active" ? "bg-green-500/10 text-green-600" :
+                status === "paused" ? "bg-yellow-500/10 text-yellow-600" :
                 status === "archived" ? "bg-muted text-muted-foreground" :
                 "bg-secondary text-secondary-foreground";
     return <Badge className={`${cls} text-xs uppercase`}>{status}</Badge>;
@@ -133,10 +136,10 @@ export default function Services() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/service-builder/${s.id}`)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/checkout/${s.slug || s.id}`)}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShareService(s)}>
                           <Share2 className="h-3.5 w-3.5" />
                         </Button>
                         <DropdownMenu>
@@ -145,6 +148,12 @@ export default function Services() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/service-builder/${s.id}`)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/checkout/${s.slug || s.id}`);
+                              toast({ title: "Link copied!" });
+                            }}>
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Copy Link
+                            </DropdownMenuItem>
                             <DropdownMenuItem>Analytics</DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={() => deleteService(s.id)}>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
@@ -158,6 +167,16 @@ export default function Services() {
           </CardContent>
         </Card>
       </div>
+
+      {shareService && (
+        <ServiceShareDialog
+          open={!!shareService}
+          onOpenChange={(open) => !open && setShareService(null)}
+          serviceTitle={shareService.title}
+          serviceId={shareService.id}
+          slug={shareService.slug}
+        />
+      )}
     </AppLayout>
   );
 }

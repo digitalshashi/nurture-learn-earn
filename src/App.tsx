@@ -52,6 +52,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import EmailSettings from "./pages/EmailSettings";
 import Services from "./pages/Services";
 import ServiceBuilder from "./pages/ServiceBuilder";
+import ServiceCheckout from "./pages/ServiceCheckout";
 
 const queryClient = new QueryClient();
 
