@@ -78,7 +78,7 @@ export default function CourseDetail() {
             <h1 className="text-2xl font-bold font-display mb-4">Freedom Business Model</h1>
 
             {/* Completion Banner */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 mb-4">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">🏆</span>
                 <div>
