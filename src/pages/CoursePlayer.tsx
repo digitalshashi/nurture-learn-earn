@@ -25,6 +25,8 @@ interface Chapter {
   sort_order: number;
   resources: any;
   created_at: string;
+  thumbnail_url: string | null;
+  video_description: string | null;
 }
 
 interface Section {
