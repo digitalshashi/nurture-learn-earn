@@ -981,6 +981,45 @@ export type Database = {
         }
         Relationships: []
       }
+      navigation_menu: {
+        Row: {
+          created_at: string
+          created_by: string
+          icon_name: string
+          id: string
+          is_enabled: boolean
+          label: string
+          link: string
+          sort_order: number
+          updated_at: string
+          visible_roles: string[]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          icon_name?: string
+          id?: string
+          is_enabled?: boolean
+          label: string
+          link?: string
+          sort_order?: number
+          updated_at?: string
+          visible_roles?: string[]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          icon_name?: string
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          link?: string
+          sort_order?: number
+          updated_at?: string
+          visible_roles?: string[]
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           channel_id: string | null

@@ -40,6 +40,7 @@ import Coupons from "./pages/Coupons";
 import UnsubscribedUsers from "./pages/UnsubscribedUsers";
 import StudentAffiliate from "./pages/StudentAffiliate";
 import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
+import NavigationSettings from "./pages/NavigationSettings";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/affiliate" element={<ProtectedRoute><StudentAffiliate /></ProtectedRoute>} />
             <Route path="/affiliate/manage" element={<ProtectedRoute><CoachAffiliateManagement /></ProtectedRoute>} />
+            <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
