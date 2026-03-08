@@ -14,6 +14,222 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_bank_details: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          id: string
+          ifsc_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      affiliate_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          ip_address: string | null
+          link_id: string
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          ip_address?: string | null
+          link_id: string
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          ip_address?: string | null
+          link_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_links: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string
+          referral_code: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id: string
+          referral_code: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string
+          referral_code?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          processed_at: string | null
+          remark: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          remark?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          remark?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      affiliate_programs: {
+        Row: {
+          commission_percent: number
+          commission_type: string
+          course_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          commission_percent?: number
+          commission_type?: string
+          course_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          commission_percent?: number
+          commission_type?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_programs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_sales: {
+        Row: {
+          amount_paid: number
+          buyer_email: string | null
+          buyer_id: string
+          buyer_name: string | null
+          buyer_phone: string | null
+          commission_earned: number
+          coupon_code: string | null
+          course_id: string
+          id: string
+          link_id: string
+          purchased_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          buyer_email?: string | null
+          buyer_id: string
+          buyer_name?: string | null
+          buyer_phone?: string | null
+          commission_earned?: number
+          coupon_code?: string | null
+          course_id: string
+          id?: string
+          link_id: string
+          purchased_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          buyer_email?: string | null
+          buyer_id?: string
+          buyer_name?: string | null
+          buyer_phone?: string | null
+          commission_earned?: number
+          coupon_code?: string | null
+          course_id?: string
+          id?: string
+          link_id?: string
+          purchased_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_sales_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_sales_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_submissions: {
         Row: {
           answer: string | null

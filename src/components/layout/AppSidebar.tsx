@@ -114,6 +114,7 @@ const sidebarSections = [
     label: null,
     items: [
       { title: "Partnerships", url: "/partnerships", icon: Handshake },
+      { title: "Affiliate", url: "/affiliate", icon: Gift },
       { title: "Gamification", url: "/gamification", icon: Trophy },
     ],
   },
