@@ -57,29 +57,27 @@ export default function CoachAffiliateManagement() {
   };
 
   const createProgram = async () => {
-    if (!newProgram.course_id) {
+    const selectedProductId = newProgram.product_type === "service" ? newProgram.service_id : newProgram.course_id;
+
+    if (!selectedProductId) {
       toast({ title: "Please select a product", variant: "destructive" });
       return;
     }
-    // If service selected, find the course linked to that service
-    let courseId = newProgram.course_id;
-    if (newProgram.product_type === "service") {
-      const linkedCourse = courses.find((c: any) => c.service_id === newProgram.course_id);
-      if (linkedCourse) {
-        courseId = linkedCourse.id;
-      } else {
-        // No course linked to this service — try using first coach course as fallback
-        toast({ title: "Error", description: "No course is linked to this service. Please link a course to the service first.", variant: "destructive" });
-        return;
-      }
-    }
-    const { error } = await supabase.from("affiliate_programs").insert({
-      course_id: courseId,
+
+    const payload = {
+      course_id: newProgram.product_type === "course" ? selectedProductId : null,
+      service_id: newProgram.product_type === "service" ? selectedProductId : null,
       commission_percent: newProgram.commission_percent,
       commission_type: newProgram.commission_type,
-    });
+    };
+
+    const { error } = await supabase.from("affiliate_programs").insert(payload as any);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Affiliate program created!" }); loadData(); setNewProgram({ course_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" }); }
+    else {
+      toast({ title: "Affiliate program created!" });
+      loadData();
+      setNewProgram({ course_id: "", service_id: "", commission_percent: 10, commission_type: "percentage", product_type: "service" });
+    }
   };
 
   const toggleProgram = async (id: string, active: boolean) => {
