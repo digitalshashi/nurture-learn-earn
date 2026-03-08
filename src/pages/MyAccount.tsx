@@ -122,6 +122,16 @@ export default function MyAccount() {
           </CardContent>
         </Card>
 
+        {/* Certificates */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5" /> My Certificates
+            </h2>
+            <StudentCertificates />
+          </CardContent>
+        </Card>
+
         {/* Danger Zone */}
         <div className="flex flex-col gap-2">
           <Button variant="outline" className="justify-start text-destructive" onClick={handleSignOut}>
