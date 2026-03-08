@@ -75,7 +75,7 @@ import CrmContactGroups from "./pages/CrmContactGroups";
 import CrmMetaLeads from "./pages/CrmMetaLeads";
 import CrmLeadProfile from "./pages/CrmLeadProfile";
 import QuestDashboard from "./pages/QuestDashboard";
-
+import RolePermissions from "./pages/RolePermissions";
 const queryClient = new QueryClient();
 
 const App = () => (
