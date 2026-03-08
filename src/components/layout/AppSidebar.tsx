@@ -1,6 +1,7 @@
 import {
   Home,
   BarChart3,
+  Route,
   BookOpen,
   Video,
   Calendar,
