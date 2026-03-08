@@ -158,6 +158,13 @@ const sidebarSections = [
     ],
   },
   {
+    label: "AI Suite",
+    items: [
+      { title: "AI Lead Intelligence", url: "/crm/contacts", icon: Contact },
+      { title: "AI Content Generator", url: "/ai/content-generator", icon: Rocket },
+    ],
+  },
+  {
     label: "Settings",
     items: [
       { title: "Platform Settings", url: "/settings/platform", icon: Settings },

@@ -193,7 +193,7 @@ export default function CrmFollowUps() {
                 <Button onClick={addFollowUp} className="w-full">Create Follow-Up</Button>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
           </div>
 
         <div className="grid grid-cols-3 gap-4">
