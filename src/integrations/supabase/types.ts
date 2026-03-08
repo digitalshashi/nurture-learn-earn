@@ -2608,6 +2608,36 @@ export type Database = {
           },
         ]
       }
+      permission_audit_log: {
+        Row: {
+          changed_by: string
+          created_at: string
+          feature_key: string
+          id: string
+          new_value: boolean
+          old_value: boolean | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          feature_key: string
+          id?: string
+          new_value: boolean
+          old_value?: boolean | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          feature_key?: string
+          id?: string
+          new_value?: boolean
+          old_value?: boolean | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           brand_name: string | null
@@ -3031,6 +3061,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          feature_key: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          feature_key: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          feature_key?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       saas_plans: {
         Row: {
