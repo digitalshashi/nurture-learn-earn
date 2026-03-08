@@ -197,7 +197,7 @@ export default function Events() {
       meeting_type: form.meeting_type,
       start_time: occ.start.toISOString(),
       end_time: occ.end.toISOString(),
-      course_id: form.course_id || null,
+      service_id: form.service_id || null,
       recurring: isRecurring,
       recurrence_rule: recurrenceRule,
       total_occurrences: occ.total,
