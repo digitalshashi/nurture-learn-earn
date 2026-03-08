@@ -122,8 +122,56 @@ export default function CrmFollowUps() {
       <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold font-display">Follow-Ups</h1>
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Follow-Up</Button></DialogTrigger>
+          <div className="flex gap-2">
+            <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+              <DialogTrigger asChild><Button variant="outline" size="sm"><Sparkles className="h-4 w-4 mr-1" />AI Email Writer</Button></DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle>Generate Follow-up Email with AI</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <Input placeholder="Lead Name" value={emailForm.lead_name} onChange={e => setEmailForm({ ...emailForm, lead_name: e.target.value })} />
+                  <Input placeholder="Course / Service Name *" value={emailForm.course_name} onChange={e => setEmailForm({ ...emailForm, course_name: e.target.value })} />
+                  <Input placeholder="Target Audience" value={emailForm.audience} onChange={e => setEmailForm({ ...emailForm, audience: e.target.value })} />
+                  <Input placeholder="Offer Details" value={emailForm.offer} onChange={e => setEmailForm({ ...emailForm, offer: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select value={emailForm.goal} onValueChange={v => setEmailForm({ ...emailForm, goal: v })}>
+                      <SelectTrigger><SelectValue placeholder="Goal" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="conversion">Conversion</SelectItem>
+                        <SelectItem value="reminder">Reminder</SelectItem>
+                        <SelectItem value="nurture">Nurture</SelectItem>
+                        <SelectItem value="reengagement">Re-engagement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={emailForm.tone} onValueChange={v => setEmailForm({ ...emailForm, tone: v })}>
+                      <SelectTrigger><SelectValue placeholder="Tone" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="friendly">Friendly</SelectItem>
+                        <SelectItem value="sales">Sales</SelectItem>
+                        <SelectItem value="reminder">Reminder</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={generateEmail} disabled={emailLoading} className="w-full">
+                    {emailLoading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-1" />Generate Email</>}
+                  </Button>
+                  {emailResult && (
+                    <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground">SUBJECT</p>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyEmail}><Copy className="h-3 w-3" /></Button>
+                      </div>
+                      <p className="text-sm font-medium">{emailResult.subject}</p>
+                      <p className="text-xs font-semibold text-muted-foreground mt-2">BODY</p>
+                      <p className="text-sm whitespace-pre-wrap">{emailResult.body}</p>
+                      <Badge variant="default" className="text-xs mt-1">{emailResult.cta_text}</Badge>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Follow-Up</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>New Follow-Up</DialogTitle></DialogHeader>
               <div className="space-y-3">
