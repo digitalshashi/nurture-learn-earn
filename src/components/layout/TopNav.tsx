@@ -1,18 +1,17 @@
-import { Users, BookOpen, Gamepad2, Video, Sparkles, BarChart3, Award, Bell, Grid3X3, LogOut } from "lucide-react";
+import { Users, BookOpen, Video, Sparkles, BarChart3, Bell, LogOut, LayoutDashboard, MessageSquare } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
+  { title: "DASHBOARD", url: "/dashboard", icon: LayoutDashboard },
   { title: "FEED", url: "/feed", icon: Users },
   { title: "COURSES", url: "/courses", icon: BookOpen },
-  { title: "CHANNELS", url: "/channels", icon: BarChart3 },
-  { title: "EVENTS", url: "/events", icon: Video },
-  { title: "DASHBOARD", url: "/dashboard", icon: Sparkles },
+  { title: "WORKSHOPS", url: "/workshops", icon: Video },
+  { title: "MESSAGES", url: "/channels", icon: MessageSquare },
 ];
 
 export function TopNav() {
@@ -31,7 +30,7 @@ export function TopNav() {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center px-4 justify-between sticky top-0 z-50">
       <div className="flex items-center gap-1">
-        <div className="h-8 w-8 bg-primary rounded-lg mr-4 flex items-center justify-center cursor-pointer" onClick={() => navigate("/feed")}>
+        <div className="h-8 w-8 bg-primary rounded-lg mr-4 flex items-center justify-center cursor-pointer" onClick={() => navigate("/dashboard")}>
           <span className="text-primary-foreground text-sm font-bold">L</span>
         </div>
         <nav className="hidden md:flex items-center gap-0">
@@ -39,7 +38,7 @@ export function TopNav() {
             <NavLink
               key={item.title}
               to={item.url}
-              end
+              end={item.url === "/dashboard"}
               className="flex flex-col items-center px-3 py-1 text-muted-foreground hover:text-accent transition-colors text-xs gap-0.5"
               activeClassName="text-accent border-b-2 border-accent"
             >
