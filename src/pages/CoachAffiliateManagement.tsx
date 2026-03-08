@@ -61,8 +61,20 @@ export default function CoachAffiliateManagement() {
       toast({ title: "Please select a product", variant: "destructive" });
       return;
     }
+    // If service selected, find the course linked to that service
+    let courseId = newProgram.course_id;
+    if (newProgram.product_type === "service") {
+      const linkedCourse = courses.find((c: any) => c.service_id === newProgram.course_id);
+      if (linkedCourse) {
+        courseId = linkedCourse.id;
+      } else {
+        // No course linked to this service — try using first coach course as fallback
+        toast({ title: "Error", description: "No course is linked to this service. Please link a course to the service first.", variant: "destructive" });
+        return;
+      }
+    }
     const { error } = await supabase.from("affiliate_programs").insert({
-      course_id: newProgram.course_id,
+      course_id: courseId,
       commission_percent: newProgram.commission_percent,
       commission_type: newProgram.commission_type,
     });
