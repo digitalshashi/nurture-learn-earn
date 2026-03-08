@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MessageCircle, Calendar, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { UserBadges } from "@/components/badges/UserBadges";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
