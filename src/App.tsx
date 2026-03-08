@@ -83,6 +83,8 @@ const App = () => (
             <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+            <Route path="/affiliate" element={<ProtectedRoute><StudentAffiliate /></ProtectedRoute>} />
+            <Route path="/affiliate/manage" element={<ProtectedRoute><CoachAffiliateManagement /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
