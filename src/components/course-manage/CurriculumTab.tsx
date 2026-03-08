@@ -10,6 +10,7 @@ import {
   Plus, GripVertical, Trash2, ChevronDown, ChevronRight, Save, 
   Video, FileText, Music, Image, Link, File, Play
 } from "lucide-react";
+import ChapterResources, { type Resource } from "./ChapterResources";
 
 interface Section {
   id?: string;
