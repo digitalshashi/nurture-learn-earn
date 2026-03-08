@@ -28,6 +28,7 @@ import Certificates from "./pages/Certificates";
 import Integrations from "./pages/Integrations";
 import Partnerships from "./pages/Partnerships";
 import Gamification from "./pages/Gamification";
+import LevelUp from "./pages/LevelUp";
 import SettingsPage from "./pages/SettingsPage";
 import Billing from "./pages/Billing";
 import Referral from "./pages/Referral";
