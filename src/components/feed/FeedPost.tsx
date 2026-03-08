@@ -29,7 +29,6 @@ export function FeedPost({ author, authorAvatar, content, image, videoUrl, linkU
   // Legacy video_url support (for posts created before auto-embed)
   const legacyVideoEmbed = useMemo(() => {
     if (!videoUrl || richEmbeds.some((e) => e.url === videoUrl)) return null;
-    const { parseEmbed } = require("@/lib/link-embed");
     return parseEmbed(videoUrl);
   }, [videoUrl, richEmbeds]);
 
