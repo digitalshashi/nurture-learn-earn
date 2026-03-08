@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Check, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Check, Clock, AlertTriangle, Sparkles, Copy, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,6 +49,33 @@ export default function CrmFollowUps() {
     await supabase.from("crm_follow_ups").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", id);
     toast({ title: "Marked as completed" });
     loadData();
+  };
+
+  // AI Email Writer state
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ course_name: "", audience: "", offer: "", goal: "conversion", tone: "friendly", lead_name: "" });
+  const [emailResult, setEmailResult] = useState<any>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const generateEmail = async () => {
+    setEmailLoading(true);
+    setEmailResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-email-writer", { body: emailForm });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      setEmailResult(data);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const copyEmail = () => {
+    if (!emailResult) return;
+    navigator.clipboard.writeText(`Subject: ${emailResult.subject}\n\n${emailResult.body}\n\n[${emailResult.cta_text}]`);
+    toast({ title: "Email copied to clipboard" });
   };
 
   const pending = followUps.filter(f => f.status === "pending");
@@ -94,8 +122,56 @@ export default function CrmFollowUps() {
       <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold font-display">Follow-Ups</h1>
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Follow-Up</Button></DialogTrigger>
+          <div className="flex gap-2">
+            <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+              <DialogTrigger asChild><Button variant="outline" size="sm"><Sparkles className="h-4 w-4 mr-1" />AI Email Writer</Button></DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle>Generate Follow-up Email with AI</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <Input placeholder="Lead Name" value={emailForm.lead_name} onChange={e => setEmailForm({ ...emailForm, lead_name: e.target.value })} />
+                  <Input placeholder="Course / Service Name *" value={emailForm.course_name} onChange={e => setEmailForm({ ...emailForm, course_name: e.target.value })} />
+                  <Input placeholder="Target Audience" value={emailForm.audience} onChange={e => setEmailForm({ ...emailForm, audience: e.target.value })} />
+                  <Input placeholder="Offer Details" value={emailForm.offer} onChange={e => setEmailForm({ ...emailForm, offer: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select value={emailForm.goal} onValueChange={v => setEmailForm({ ...emailForm, goal: v })}>
+                      <SelectTrigger><SelectValue placeholder="Goal" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="conversion">Conversion</SelectItem>
+                        <SelectItem value="reminder">Reminder</SelectItem>
+                        <SelectItem value="nurture">Nurture</SelectItem>
+                        <SelectItem value="reengagement">Re-engagement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={emailForm.tone} onValueChange={v => setEmailForm({ ...emailForm, tone: v })}>
+                      <SelectTrigger><SelectValue placeholder="Tone" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="friendly">Friendly</SelectItem>
+                        <SelectItem value="sales">Sales</SelectItem>
+                        <SelectItem value="reminder">Reminder</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={generateEmail} disabled={emailLoading} className="w-full">
+                    {emailLoading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-1" />Generate Email</>}
+                  </Button>
+                  {emailResult && (
+                    <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground">SUBJECT</p>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyEmail}><Copy className="h-3 w-3" /></Button>
+                      </div>
+                      <p className="text-sm font-medium">{emailResult.subject}</p>
+                      <p className="text-xs font-semibold text-muted-foreground mt-2">BODY</p>
+                      <p className="text-sm whitespace-pre-wrap">{emailResult.body}</p>
+                      <Badge variant="default" className="text-xs mt-1">{emailResult.cta_text}</Badge>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Follow-Up</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>New Follow-Up</DialogTitle></DialogHeader>
               <div className="space-y-3">
@@ -117,7 +193,8 @@ export default function CrmFollowUps() {
                 <Button onClick={addFollowUp} className="w-full">Create Follow-Up</Button>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">

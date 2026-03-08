@@ -1380,6 +1380,9 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          last_scored_at: string | null
+          lead_score: number | null
+          lead_score_label: string | null
           name: string
           phone: string | null
           pipeline_id: string | null
@@ -1398,6 +1401,9 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_scored_at?: string | null
+          lead_score?: number | null
+          lead_score_label?: string | null
           name: string
           phone?: string | null
           pipeline_id?: string | null
@@ -1416,6 +1422,9 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_scored_at?: string | null
+          lead_score?: number | null
+          lead_score_label?: string | null
           name?: string
           phone?: string | null
           pipeline_id?: string | null

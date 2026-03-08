@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, UserCheck, Download, Upload, Edit2, Tags } from "lucide-react";
+import { Search, Eye, Trash2, UserCheck, Download, Upload, Edit2, Tags, Sparkles, Loader2 } from "lucide-react";
 import { EditContactDialog } from "@/components/crm/EditContactDialog";
 import { ImportContactsDialog } from "@/components/crm/ImportContactsDialog";
 import { ConvertToCustomerDialog } from "@/components/crm/ConvertToCustomerDialog";
@@ -25,6 +25,7 @@ export default function CrmContacts() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSource, setFilterSource] = useState("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [scoringId, setScoringId] = useState<string | null>(null);
 
   const [editContact, setEditContact] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -40,6 +41,32 @@ export default function CrmContacts() {
     setLeads(data || []);
     setLoading(false);
     setSelected(new Set());
+  };
+
+  const scoreLead = async (lead: any) => {
+    setScoringId(lead.id);
+    try {
+      const [{ count: notesCount }, { count: fuCount }] = await Promise.all([
+        supabase.from("crm_lead_notes").select("*", { count: "exact", head: true }).eq("lead_id", lead.id),
+        supabase.from("crm_follow_ups").select("*", { count: "exact", head: true }).eq("lead_id", lead.id),
+      ]);
+      const { data, error } = await supabase.functions.invoke("ai-lead-score", {
+        body: { lead: { ...lead, notes_count: notesCount || 0, follow_ups_count: fuCount || 0 } },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      await supabase.from("crm_leads").update({
+        lead_score: data.score,
+        lead_score_label: data.label,
+        last_scored_at: new Date().toISOString(),
+      }).eq("id", lead.id);
+      toast({ title: `Score: ${data.score} (${data.label})`, description: data.reasoning });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Scoring failed", description: e.message, variant: "destructive" });
+    } finally {
+      setScoringId(null);
+    }
   };
 
   const deleteLead = async (id: string) => {
@@ -157,7 +184,7 @@ export default function CrmContacts() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>City</TableHead>
+                  <TableHead>Lead Score</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Tags</TableHead>
                   <TableHead>Status</TableHead>
@@ -175,7 +202,20 @@ export default function CrmContacts() {
                     <TableCell className="font-medium text-sm">{l.name}</TableCell>
                     <TableCell className="text-sm">{l.email || "—"}</TableCell>
                     <TableCell className="text-sm">{l.phone || "—"}</TableCell>
-                    <TableCell className="text-sm">{l.city || "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {l.lead_score > 0 ? (
+                          <Badge variant={l.lead_score_label === "hot" ? "destructive" : l.lead_score_label === "warm" ? "default" : "secondary"} className="text-xs">
+                            {l.lead_score} · {l.lead_score_label === "hot" ? "🔥 Hot" : l.lead_score_label === "warm" ? "🟡 Warm" : "❄️ Cold"}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scoreLead(l)} disabled={scoringId === l.id} title="AI Score">
+                          {scoringId === l.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell><Badge variant="secondary" className="text-xs">{l.source}</Badge></TableCell>
                     <TableCell><div className="flex flex-wrap gap-1">{(l.tags || []).map((t: string) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}</div></TableCell>
                     <TableCell><Badge variant={l.status === "converted" ? "default" : "outline"} className="text-xs">{l.status === "converted" ? "Customer" : l.status}</Badge></TableCell>

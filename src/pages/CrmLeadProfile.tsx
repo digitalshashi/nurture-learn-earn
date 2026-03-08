@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Plus, User, Mail, Phone, MapPin, Tag, Calendar, MessageSquare } from "lucide-react";
+import { ArrowLeft, Save, Plus, User, Mail, Phone, MapPin, Tag, Calendar, MessageSquare, Sparkles, Loader2, TrendingUp, Target, Clock as ClockIcon, Lightbulb } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function CrmLeadProfile() {
@@ -25,6 +25,8 @@ export default function CrmLeadProfile() {
   const [newNote, setNewNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => { if (user && id) loadData(); }, [user, id]);
 
@@ -64,6 +66,23 @@ export default function CrmLeadProfile() {
     await supabase.from("crm_lead_notes").insert({ lead_id: id!, content: newNote, created_by: user!.id });
     setNewNote("");
     loadData();
+  };
+
+  const runAiAnalysis = async () => {
+    if (!lead) return;
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-sales-assistant", {
+        body: { lead, notes, follow_ups: followUps },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      setAiAnalysis(data);
+    } catch (e: any) {
+      toast({ title: "AI Analysis failed", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   if (loading) return <AppLayout><div className="flex items-center justify-center py-20 text-muted-foreground">Loading...</div></AppLayout>;
@@ -157,6 +176,58 @@ export default function CrmLeadProfile() {
                   {(lead.tags || []).map((t: string) => <Badge key={t} variant="secondary">{t}</Badge>)}
                   {(!lead.tags || lead.tags.length === 0) && <span className="text-xs text-muted-foreground">No tags</span>}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Sales Assistant */}
+            <Card className="card-shadow border-primary/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-1.5"><Sparkles className="h-4 w-4 text-primary" />AI Sales Assistant</CardTitle>
+                  <Button variant="outline" size="sm" onClick={runAiAnalysis} disabled={aiLoading}>
+                    {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5 mr-1" />Analyze</>}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!aiAnalysis && !aiLoading && <p className="text-xs text-muted-foreground text-center py-3">Click Analyze for AI insights</p>}
+                {aiLoading && <div className="flex items-center justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}
+                {aiAnalysis && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Purchase Probability:</span>
+                      <Badge variant={aiAnalysis.purchase_probability >= 70 ? "destructive" : aiAnalysis.purchase_probability >= 40 ? "default" : "secondary"}>
+                        {aiAnalysis.purchase_probability}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Target className="h-4 w-4 text-primary mt-0.5" />
+                      <div><p className="text-xs font-semibold text-muted-foreground">Recommended Action</p><p className="text-sm">{aiAnalysis.recommended_action}</p></div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <ClockIcon className="h-4 w-4 text-primary mt-0.5" />
+                      <div><p className="text-xs font-semibold text-muted-foreground">Best Time to Contact</p><p className="text-sm">{aiAnalysis.best_contact_time}</p></div>
+                    </div>
+                    {aiAnalysis.follow_up_message && (
+                      <div className="border rounded-md p-2 bg-muted/30">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Suggested Message</p>
+                        <p className="text-sm">{aiAnalysis.follow_up_message}</p>
+                      </div>
+                    )}
+                    {aiAnalysis.insights?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Key Insights</p>
+                        {aiAnalysis.insights.map((ins: string, i: number) => (
+                          <div key={i} className="flex items-start gap-1.5 mb-1">
+                            <Lightbulb className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                            <p className="text-xs">{ins}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

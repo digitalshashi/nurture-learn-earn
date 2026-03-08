@@ -59,6 +59,7 @@ import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
 import Messages from "./pages/Messages";
 import AICourseGenerator from "./pages/AICourseGenerator";
+import AIContentGenerator from "./pages/AIContentGenerator";
 import AILandingPageBuilder from "./pages/AILandingPageBuilder";
 import WorkshopLandingPage from "./pages/WorkshopLandingPage";
 import SecuritySettings from "./pages/SecuritySettings";
@@ -138,6 +139,7 @@ const App = () => (
             <Route path="/gamification" element={<ProtectedRoute><Gamification /></ProtectedRoute>} />
             <Route path="/levelup" element={<ProtectedRoute><LevelUp /></ProtectedRoute>} />
             <Route path="/quest" element={<ProtectedRoute><QuestDashboard /></ProtectedRoute>} />
+            <Route path="/ai/content-generator" element={<ProtectedRoute><AIContentGenerator /></ProtectedRoute>} />
             <Route path="/levelup-upgrade" element={<ProtectedRoute><LevelUpUpgrade /></ProtectedRoute>} />
             <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
