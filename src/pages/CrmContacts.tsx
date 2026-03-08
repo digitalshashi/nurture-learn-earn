@@ -184,7 +184,7 @@ export default function CrmContacts() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>City</TableHead>
+                  <TableHead>Lead Score</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Tags</TableHead>
                   <TableHead>Status</TableHead>
