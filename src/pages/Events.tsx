@@ -89,12 +89,12 @@ export default function Events() {
 
   const loadData = async () => {
     if (!user) return;
-    const [evRes, cRes] = await Promise.all([
+    const [evRes, sRes] = await Promise.all([
       supabase.from("events").select("*").eq("created_by", user.id).order("start_time", { ascending: false }),
-      supabase.from("courses").select("id, title").eq("coach_id", user.id),
+      supabase.from("services").select("id, title").eq("coach_id", user.id),
     ]);
     setEvents(evRes.data || []);
-    setCourses(cRes.data || []);
+    setServices(sRes.data || []);
   };
 
   useEffect(() => { loadData(); }, [user]);
