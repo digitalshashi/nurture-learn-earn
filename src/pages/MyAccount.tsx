@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, ShoppingBag, CreditCard, Mail, LogOut, Trash2, UserCircle, Share2 } from "lucide-react";
+import { User, ShoppingBag, CreditCard, Mail, LogOut, Trash2, UserCircle, Share2, Award } from "lucide-react";
+import { StudentCertificates } from "@/components/certificates/StudentCertificates";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -118,6 +119,16 @@ export default function MyAccount() {
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Certificates */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5" /> My Certificates
+            </h2>
+            <StudentCertificates />
           </CardContent>
         </Card>
 

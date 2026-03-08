@@ -617,6 +617,85 @@ export type Database = {
         }
         Relationships: []
       }
+      certificate_templates: {
+        Row: {
+          accent_color: string | null
+          background_color: string | null
+          certificate_text: string | null
+          coach_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          linked_course_id: string | null
+          linked_section_id: string | null
+          linked_service_id: string | null
+          logo_url: string | null
+          name: string
+          signature_url: string | null
+          template_style: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          background_color?: string | null
+          certificate_text?: string | null
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          linked_course_id?: string | null
+          linked_section_id?: string | null
+          linked_service_id?: string | null
+          logo_url?: string | null
+          name: string
+          signature_url?: string | null
+          template_style?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          background_color?: string | null
+          certificate_text?: string | null
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          linked_course_id?: string | null
+          linked_section_id?: string | null
+          linked_service_id?: string | null
+          logo_url?: string | null
+          name?: string
+          signature_url?: string | null
+          template_style?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_templates_linked_course_id_fkey"
+            columns: ["linked_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_templates_linked_section_id_fkey"
+            columns: ["linked_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_templates_linked_service_id_fkey"
+            columns: ["linked_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_participants: {
         Row: {
           challenge_id: string | null
@@ -2201,6 +2280,47 @@ export type Database = {
           xp_value?: number | null
         }
         Relationships: []
+      }
+      issued_certificates: {
+        Row: {
+          certificate_id: string
+          course_name: string | null
+          id: string
+          issued_at: string
+          service_name: string | null
+          student_name: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          certificate_id: string
+          course_name?: string | null
+          id?: string
+          issued_at?: string
+          service_name?: string | null
+          student_name: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          certificate_id?: string
+          course_name?: string | null
+          id?: string
+          issued_at?: string
+          service_name?: string | null
+          student_name?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issued_certificates_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       landing_pages: {
         Row: {
