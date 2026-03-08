@@ -50,6 +50,8 @@ import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 import NavigationSettings from "./pages/NavigationSettings";
 import SuperAdmin from "./pages/SuperAdmin";
 import EmailSettings from "./pages/EmailSettings";
+import Services from "./pages/Services";
+import ServiceBuilder from "./pages/ServiceBuilder";
 
 const queryClient = new QueryClient();
 
