@@ -59,6 +59,8 @@ import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
 import Messages from "./pages/Messages";
 import AICourseGenerator from "./pages/AICourseGenerator";
+import AILandingPageBuilder from "./pages/AILandingPageBuilder";
+import WorkshopLandingPage from "./pages/WorkshopLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
+            <Route path="/workshop/:slug" element={<WorkshopLandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
@@ -96,6 +99,7 @@ const App = () => (
             <Route path="/sales/subscriptions" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
             <Route path="/sales/withdrawals" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
             <Route path="/page-builder" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
+            <Route path="/page-builder/ai-landing" element={<ProtectedRoute><AILandingPageBuilder /></ProtectedRoute>} />
             <Route path="/marketing/email" element={<ProtectedRoute><MarketingEmail /></ProtectedRoute>} />
             <Route path="/marketing/broadcasts" element={<ProtectedRoute><Broadcasts /></ProtectedRoute>} />
             <Route path="/marketing/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />

@@ -1,13 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Layout, FileText, ShoppingCart, Magnet } from "lucide-react";
+import { Plus, Layout, FileText, ShoppingCart, Magnet, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const pageTypes = [
-  { title: "Landing Page", description: "Create a beautiful landing page for your course", icon: Layout, color: "bg-info/10 text-info" },
-  { title: "Checkout Page", description: "Customize your checkout experience", icon: ShoppingCart, color: "bg-accent/10 text-accent" },
-  { title: "Sales Funnel", description: "Build a multi-step sales funnel", icon: FileText, color: "bg-success/10 text-success" },
-  { title: "Lead Capture", description: "Capture leads with forms and CTAs", icon: Magnet, color: "bg-destructive/10 text-destructive" },
+  { title: "Landing Page", description: "Create a beautiful landing page for your course", icon: Layout, color: "bg-info/10 text-info", url: "" },
+  { title: "Checkout Page", description: "Customize your checkout experience", icon: ShoppingCart, color: "bg-accent/10 text-accent", url: "" },
+  { title: "Sales Funnel", description: "Build a multi-step sales funnel", icon: FileText, color: "bg-success/10 text-success", url: "" },
+  { title: "AI Landing Page", description: "Generate a full workshop page with AI", icon: Sparkles, color: "bg-primary/10 text-primary", url: "/page-builder/ai-landing" },
 ];
 
 const mockPages = [
@@ -16,6 +17,8 @@ const mockPages = [
 ];
 
 export default function PageBuilder() {
+  const navigate = useNavigate();
+
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto py-6 px-4">
@@ -26,7 +29,11 @@ export default function PageBuilder() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {pageTypes.map((p) => (
-            <Card key={p.title} className="card-shadow cursor-pointer hover:card-shadow-hover transition-shadow">
+            <Card
+              key={p.title}
+              className="card-shadow cursor-pointer hover:card-shadow-hover transition-shadow"
+              onClick={() => p.url && navigate(p.url)}
+            >
               <CardContent className="pt-6 pb-4 flex flex-col items-center text-center gap-2">
                 <div className={`p-3 rounded-xl ${p.color}`}><p.icon className="h-6 w-6" /></div>
                 <h3 className="text-sm font-semibold">{p.title}</h3>

@@ -1664,6 +1664,87 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_pages: {
+        Row: {
+          bonuses: Json | null
+          certificate_image_url: string | null
+          coach_id: string
+          coach_name: string
+          core_outcome: string
+          created_at: string
+          cta_form_link: string | null
+          facebook_pixel_id: string | null
+          ga4_id: string | null
+          generated_content: Json | null
+          id: string
+          mentor_image_url: string | null
+          published_at: string | null
+          skill: string
+          slug: string
+          status: string
+          target_audience: string
+          testimonials: Json | null
+          thumbnail_url: string | null
+          tracking_enabled: boolean | null
+          updated_at: string
+          whatsapp_link: string | null
+          workshop_date: string | null
+          workshop_time: string | null
+        }
+        Insert: {
+          bonuses?: Json | null
+          certificate_image_url?: string | null
+          coach_id: string
+          coach_name?: string
+          core_outcome?: string
+          created_at?: string
+          cta_form_link?: string | null
+          facebook_pixel_id?: string | null
+          ga4_id?: string | null
+          generated_content?: Json | null
+          id?: string
+          mentor_image_url?: string | null
+          published_at?: string | null
+          skill?: string
+          slug: string
+          status?: string
+          target_audience?: string
+          testimonials?: Json | null
+          thumbnail_url?: string | null
+          tracking_enabled?: boolean | null
+          updated_at?: string
+          whatsapp_link?: string | null
+          workshop_date?: string | null
+          workshop_time?: string | null
+        }
+        Update: {
+          bonuses?: Json | null
+          certificate_image_url?: string | null
+          coach_id?: string
+          coach_name?: string
+          core_outcome?: string
+          created_at?: string
+          cta_form_link?: string | null
+          facebook_pixel_id?: string | null
+          ga4_id?: string | null
+          generated_content?: Json | null
+          id?: string
+          mentor_image_url?: string | null
+          published_at?: string | null
+          skill?: string
+          slug?: string
+          status?: string
+          target_audience?: string
+          testimonials?: Json | null
+          thumbnail_url?: string | null
+          tracking_enabled?: boolean | null
+          updated_at?: string
+          whatsapp_link?: string | null
+          workshop_date?: string | null
+          workshop_time?: string | null
+        }
+        Relationships: []
+      }
       level_definitions: {
         Row: {
           badge_name: string | null
