@@ -54,6 +54,9 @@ import Services from "./pages/Services";
 import ServiceBuilder from "./pages/ServiceBuilder";
 import ServiceCheckout from "./pages/ServiceCheckout";
 import Leaderboard from "./pages/Leaderboard";
+import StudentProfile from "./pages/StudentProfile";
+import MyAccount from "./pages/MyAccount";
+import Messages from "./pages/Messages";
 
 const queryClient = new QueryClient();
 
