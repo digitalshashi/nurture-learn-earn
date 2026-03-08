@@ -856,6 +856,36 @@ export type Database = {
           },
         ]
       }
+      coach_payment_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          default_currency: string
+          id: string
+          razorpay_key_id: string | null
+          razorpay_key_secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          default_currency?: string
+          id?: string
+          razorpay_key_id?: string | null
+          razorpay_key_secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          default_currency?: string
+          id?: string
+          razorpay_key_id?: string | null
+          razorpay_key_secret?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coach_subscriptions: {
         Row: {
           assigned_by: string
