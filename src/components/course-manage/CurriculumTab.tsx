@@ -29,6 +29,8 @@ interface Chapter {
   content_type: string;
   sort_order: number;
   resources: Resource[];
+  thumbnail_url: string;
+  video_description: string;
 }
 
 const contentTypeIcons: Record<string, any> = {
