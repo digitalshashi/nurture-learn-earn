@@ -146,6 +146,54 @@ export default function SettingsPage() {
     setTestingAi(false);
   };
 
+  const loadZoomSettings = async () => {
+    const { data } = await supabase
+      .from("zoom_settings" as any)
+      .select("*")
+      .eq("coach_id", user!.id)
+      .maybeSingle();
+    if (data) {
+      const d = data as any;
+      setZoomAccountId(d.zoom_account_id || "");
+      setZoomClientId(d.zoom_client_id || "");
+      setZoomClientSecret(d.zoom_client_secret || "");
+      setZoomConnected(!!d.zoom_account_id && !!d.zoom_client_id && !!d.zoom_client_secret);
+    }
+    setLoadingZoom(false);
+  };
+
+  const saveZoomSettings = async () => {
+    if (!user) return;
+    if (!zoomAccountId.trim() || !zoomClientId.trim() || !zoomClientSecret.trim()) {
+      toast({ title: "Error", description: "All Zoom fields are required", variant: "destructive" });
+      return;
+    }
+    setSavingZoom(true);
+    const { error } = await supabase
+      .from("zoom_settings" as any)
+      .upsert({
+        coach_id: user.id,
+        zoom_account_id: zoomAccountId.trim(),
+        zoom_client_id: zoomClientId.trim(),
+        zoom_client_secret: zoomClientSecret.trim(),
+        is_connected: true,
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: "coach_id" });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else { toast({ title: "Zoom settings saved!" }); setZoomConnected(true); }
+    setSavingZoom(false);
+  };
+
+  const disconnectZoom = async () => {
+    if (!user) return;
+    setSavingZoom(true);
+    await supabase.from("zoom_settings" as any).upsert({
+      coach_id: user.id, zoom_account_id: null, zoom_client_id: null, zoom_client_secret: null, is_connected: false, updated_at: new Date().toISOString()
+    } as any, { onConflict: "coach_id" });
+    setZoomAccountId(""); setZoomClientId(""); setZoomClientSecret(""); setZoomConnected(false); setSavingZoom(false);
+    toast({ title: "Zoom disconnected" });
+  };
+
   const maskedKey = aiKey ? "sk-" + "•".repeat(20) + aiKey.slice(-4) : "";
 
   return (
