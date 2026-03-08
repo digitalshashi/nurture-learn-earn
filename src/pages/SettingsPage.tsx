@@ -206,6 +206,7 @@ export default function SettingsPage() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="ai">AI Settings</TabsTrigger>
+            <TabsTrigger value="zoom">Zoom</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
