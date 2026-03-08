@@ -65,9 +65,19 @@ import { useState } from "react";
 
 const sidebarSections = [
   {
+    label: "Community",
+    items: [
+      { title: "Feed", url: "/feed", icon: Home },
+      { title: "Messages", url: "/messages", icon: MessageSquare },
+      { title: "Channels", url: "/channels", icon: Hash },
+      { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
+      { title: "Events", url: "/student-events", icon: Calendar },
+    ],
+  },
+  {
     label: null,
     items: [
-      { title: "Get Started", url: "/dashboard", icon: Rocket },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     ],
   },
   {
