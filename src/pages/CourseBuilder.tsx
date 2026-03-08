@@ -380,6 +380,7 @@ function ChapterEditor({
   onUploadResource: (s: number, c: number, f: File) => void;
   onRemoveResource: (s: number, c: number, r: number) => void;
 }) {
+  const [showRecorder, setShowRecorder] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
   const resourceInputRef = useRef<HTMLInputElement>(null);
