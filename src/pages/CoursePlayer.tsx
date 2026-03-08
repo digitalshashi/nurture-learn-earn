@@ -461,22 +461,29 @@ function TabsWrapper({
       </div>
 
       {activeTab === "description" && (
-        <div className="prose prose-sm max-w-none">
-          {chapter.content ? (
-            <div
-              className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{
-                __html: chapter.content
-                  .replace(/\n/g, "<br/>")
-                  .replace(
-                    /(https?:\/\/[^\s<]+)/g,
-                    '<a href="$1" target="_blank" rel="noopener" class="text-primary hover:underline">Click Here</a>'
-                  ),
-              }}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">No description available for this lesson.</p>
+        <div className="space-y-4">
+          {chapter.video_description && (
+            <div className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              {chapter.video_description}
+            </div>
           )}
+          {chapter.content ? (
+            <div className="prose prose-sm max-w-none">
+              <div
+                className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{
+                  __html: chapter.content
+                    .replace(/\n/g, "<br/>")
+                    .replace(
+                      /(https?:\/\/[^\s<]+)/g,
+                      '<a href="$1" target="_blank" rel="noopener" class="text-primary hover:underline">Click Here</a>'
+                    ),
+                }}
+              />
+            </div>
+          ) : !chapter.video_description ? (
+            <p className="text-sm text-muted-foreground">No description available for this lesson.</p>
+          ) : null}
         </div>
       )}
 
