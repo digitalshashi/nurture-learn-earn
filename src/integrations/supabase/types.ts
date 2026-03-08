@@ -2042,6 +2042,7 @@ export type Database = {
           occurrence_number: number | null
           recurrence_rule: string | null
           recurring: boolean
+          service_id: string | null
           start_time: string
           status: string
           title: string
@@ -2059,6 +2060,7 @@ export type Database = {
           occurrence_number?: number | null
           recurrence_rule?: string | null
           recurring?: boolean
+          service_id?: string | null
           start_time: string
           status?: string
           title: string
@@ -2076,6 +2078,7 @@ export type Database = {
           occurrence_number?: number | null
           recurrence_rule?: string | null
           recurring?: boolean
+          service_id?: string | null
           start_time?: string
           status?: string
           title?: string
@@ -2087,6 +2090,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
