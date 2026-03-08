@@ -32,6 +32,10 @@ import Billing from "./pages/Billing";
 import Referral from "./pages/Referral";
 import PageBuilder from "./pages/PageBuilder";
 import MarketingEmail from "./pages/MarketingEmail";
+import Broadcasts from "./pages/Broadcasts";
+import Banners from "./pages/Banners";
+import Coupons from "./pages/Coupons";
+import UnsubscribedUsers from "./pages/UnsubscribedUsers";
 
 const queryClient = new QueryClient();
 
@@ -64,7 +68,10 @@ const App = () => (
             <Route path="/sales/withdrawals" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
             <Route path="/page-builder" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
             <Route path="/marketing/email" element={<ProtectedRoute><MarketingEmail /></ProtectedRoute>} />
-            <Route path="/marketing/broadcasts" element={<ProtectedRoute><MarketingEmail /></ProtectedRoute>} />
+            <Route path="/marketing/broadcasts" element={<ProtectedRoute><Broadcasts /></ProtectedRoute>} />
+            <Route path="/marketing/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
+            <Route path="/marketing/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
+            <Route path="/marketing/unsubscribed" element={<ProtectedRoute><UnsubscribedUsers /></ProtectedRoute>} />
             <Route path="/automation/email" element={<ProtectedRoute><EmailAutomation /></ProtectedRoute>} />
             <Route path="/automation/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
             <Route path="/automation/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
