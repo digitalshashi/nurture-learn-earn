@@ -271,10 +271,10 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild tooltip="Admin">
                     <NavLink to="/admin" className="hover:bg-secondary/80 text-sm" activeClassName="bg-secondary text-foreground font-medium">
-                      <Shield className="h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
+                      <Shield className="h-5 w-5 shrink-0" />
+                      <span className="truncate">Admin</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -288,10 +288,10 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild tooltip="Super Admin">
                     <NavLink to="/super-admin" className="hover:bg-secondary/80 text-sm" activeClassName="bg-secondary text-foreground font-medium">
-                      <Crown className="h-4 w-4" />
-                      {!collapsed && <span>Super Admin</span>}
+                      <Crown className="h-5 w-5 shrink-0" />
+                      <span className="truncate">Super Admin</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
