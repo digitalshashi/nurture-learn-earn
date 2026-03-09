@@ -4095,7 +4095,7 @@ export type Database = {
       user_has_levelup_access: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "coach" | "student"
+      app_role: "admin" | "coach" | "student" | "super_admin"
       community_role: "owner" | "moderator" | "student" | "affiliate"
     }
     CompositeTypes: {
@@ -4224,7 +4224,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "coach", "student"],
+      app_role: ["admin", "coach", "student", "super_admin"],
       community_role: ["owner", "moderator", "student", "affiliate"],
     },
   },

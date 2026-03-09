@@ -57,7 +57,7 @@ export default function AdminPanel() {
     loadUsers();
   };
 
-  if (!hasRole("admin")) {
+  if (!hasRole("admin") && !hasRole("super_admin")) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[calc(100vh-var(--nav-height))]">
@@ -114,6 +114,7 @@ export default function AdminPanel() {
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="coach">Coach</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

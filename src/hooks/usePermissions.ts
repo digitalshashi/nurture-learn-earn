@@ -28,8 +28,9 @@ export function usePermissions() {
     }
 
     const fetchPermissions = async () => {
-      // Get the highest role for the user
-      const highestRole = roles.includes("admin" as any)
+      const highestRole = roles.includes("super_admin" as any)
+        ? "super_admin"
+        : roles.includes("admin" as any)
         ? "admin"
         : roles.includes("coach" as any)
         ? "coach"
@@ -54,8 +55,7 @@ export function usePermissions() {
   }, [user, roles]);
 
   const hasPermission = (featureKey: FeatureKey): boolean => {
-    // Admin always has access to everything
-    if (roles.includes("admin" as any)) return true;
+    if (roles.includes("super_admin" as any) || roles.includes("admin" as any)) return true;
     return permissions[featureKey] ?? false;
   };
 
