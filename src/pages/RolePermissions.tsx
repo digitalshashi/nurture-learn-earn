@@ -223,8 +223,8 @@ export default function RolePermissions() {
                     <Badge variant="outline" className="capitalize">{activeRole}</Badge>
                     <span className="text-xs text-muted-foreground">Feature Toggles</span>
                   </div>
-                  {activeRole === "admin" && (
-                    <Badge variant="secondary" className="text-[10px]">Admin has full access by default</Badge>
+                  {(activeRole === "admin" || activeRole === "super_admin") && (
+                    <Badge variant="secondary" className="text-[10px]">{activeRole === "super_admin" ? "Super Admin" : "Admin"} has full access by default</Badge>
                   )}
                 </div>
 
