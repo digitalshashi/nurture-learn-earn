@@ -28,8 +28,9 @@ export function usePermissions() {
     }
 
     const fetchPermissions = async () => {
-      // Get the highest role for the user
-      const highestRole = roles.includes("admin" as any)
+      const highestRole = roles.includes("super_admin" as any)
+        ? "super_admin"
+        : roles.includes("admin" as any)
         ? "admin"
         : roles.includes("coach" as any)
         ? "coach"
