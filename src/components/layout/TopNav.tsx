@@ -96,12 +96,18 @@ export function TopNav() {
     ? user.user_metadata.full_name.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "U";
 
-  // Filter by user role
+  // Start with pinned items, then add DB-configured items (excluding duplicates of pinned links)
+  const pinnedLinks = new Set(PINNED_NAV_ITEMS.map((p) => p.link));
   const roleFiltered = menuItems.length > 0
-    ? menuItems.filter((item) => {
-        if (!item.visible_roles || item.visible_roles.length === 0) return true;
-        return roles.some((r) => item.visible_roles.includes(r));
-      })
+    ? [
+        ...PINNED_NAV_ITEMS,
+        ...menuItems
+          .filter((item) => !pinnedLinks.has(item.link))
+          .filter((item) => {
+            if (!item.visible_roles || item.visible_roles.length === 0) return true;
+            return roles.some((r) => item.visible_roles.includes(r));
+          }),
+      ]
     : defaultNavItems;
 
   // Filter LevelUp items for students without access
