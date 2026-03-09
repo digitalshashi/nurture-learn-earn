@@ -57,7 +57,7 @@ export default function AdminPanel() {
     loadUsers();
   };
 
-  if (!hasRole("admin")) {
+  if (!hasRole("admin") && !hasRole("super_admin")) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[calc(100vh-var(--nav-height))]">
