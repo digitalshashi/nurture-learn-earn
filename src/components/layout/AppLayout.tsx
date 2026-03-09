@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { TopNav } from "./TopNav";
 
@@ -9,14 +9,14 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex flex-col w-full">
-        <TopNav />
-        <div className="flex flex-1 w-full">
-          <AppSidebar />
-          <main className="flex-1 overflow-auto">
+      <div className="min-h-screen flex w-full bg-background text-foreground">
+        <AppSidebar />
+        <SidebarInset className="flex flex-col flex-1 w-full min-w-0 bg-background overflow-hidden">
+          <TopNav />
+          <div className="flex-1 overflow-auto">
             {children}
-          </main>
-        </div>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

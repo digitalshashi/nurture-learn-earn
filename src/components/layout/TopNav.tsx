@@ -120,7 +120,8 @@ export function TopNav() {
   return (
     <header className="h-16 border-b border-border bg-card flex items-center px-6 sticky top-0 z-50">
       {/* Left: Logo */}
-      <div className="flex items-center shrink-0">
+      <div className="flex items-center shrink-0 gap-4">
+        <SidebarTrigger className="text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors" />
         <div
           className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center cursor-pointer"
           onClick={() => navigate("/dashboard")}

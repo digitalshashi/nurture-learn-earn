@@ -319,14 +319,12 @@ function CollapsibleGroup({
   const [open, setOpen] = useState(isActive);
 
   return (
-    <Collapsible open={collapsed ? false : open} onOpenChange={setOpen}>
+    <Collapsible open={collapsed ? true : open} onOpenChange={setOpen}>
       <SidebarGroup className="py-0.5">
-        <CollapsibleTrigger className="w-full">
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center justify-between pr-2">
-            {!collapsed && label}
-            {!collapsed && (
-              <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-            )}
+        <CollapsibleTrigger className="w-full group/trigger">
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center justify-between pr-2 hover:text-foreground transition-colors group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:pointer-events-none">
+            {label}
+            <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
           </SidebarGroupLabel>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -334,14 +332,14 @@ function CollapsibleGroup({
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       className="hover:bg-secondary/80 text-sm"
                       activeClassName="bg-secondary text-foreground font-medium"
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
