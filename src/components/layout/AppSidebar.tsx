@@ -227,7 +227,7 @@ export function AppSidebar() {
     .filter((section) => section.items.length > 0);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border top-16">
+    <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent className="pt-2 gap-0">
         {filteredSections.map((section, si) => {
           if (section.label) {
@@ -247,15 +247,15 @@ export function AppSidebar() {
                 <SidebarMenu>
                   {section.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild tooltip={item.title}>
                         <NavLink
                           to={item.url}
                           end={item.url === "/dashboard"}
                           className="hover:bg-secondary/80 text-sm"
                           activeClassName="bg-secondary text-foreground font-medium"
                         >
-                          <item.icon className="h-4 w-4" />
-                          {!collapsed && <span>{item.title}</span>}
+                          <item.icon className="h-5 w-5 shrink-0" />
+                          <span className="truncate">{item.title}</span>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
