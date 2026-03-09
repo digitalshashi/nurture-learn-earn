@@ -17,12 +17,17 @@ interface NavMenuItem {
   visible_roles: string[];
 }
 
-// Fallback static nav items when no DB items configured
-const defaultNavItems = [
+// These items ALWAYS show in the top nav for all roles
+const PINNED_NAV_ITEMS = [
   { label: "FEED", link: "/feed", icon_name: "users" },
   { label: "COURSES", link: "/courses", icon_name: "book-open" },
   { label: "QUEST", link: "/quest", icon_name: "sword" },
   { label: "EVENTS", link: "/student-events", icon_name: "calendar" },
+];
+
+// Fallback static nav items when no DB items configured
+const defaultNavItems = [
+  ...PINNED_NAV_ITEMS,
   { label: "LEVEL UP", link: "/levelup", icon_name: "trophy" },
 ];
 
