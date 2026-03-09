@@ -1341,6 +1341,70 @@ export type Database = {
           },
         ]
       }
+      course_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "course_chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_chat_sessions: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_chat_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           access_duration_days: number | null
@@ -2101,6 +2165,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escalated_questions: {
+        Row: {
+          coach_reply: string | null
+          context: string | null
+          course_id: string
+          created_at: string
+          id: string
+          question: string
+          replied_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          coach_reply?: string | null
+          context?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          question: string
+          replied_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          coach_reply?: string | null
+          context?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          question?: string
+          replied_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalated_questions_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
