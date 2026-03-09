@@ -283,7 +283,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {hasRole("admin") && (
+        {(hasRole("admin") || hasRole("super_admin")) && (
           <SidebarGroup className="py-0.5">
             <SidebarGroupContent>
               <SidebarMenu>

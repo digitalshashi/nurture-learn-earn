@@ -77,7 +77,7 @@ export function TopNav() {
   const checkLevelupAccess = async () => {
     if (!user) return;
     // Coaches/admins always have access
-    const isCoachOrAdmin = roles.includes("coach") || roles.includes("admin");
+    const isCoachOrAdmin = roles.includes("coach") || roles.includes("admin") || roles.includes("super_admin" as any);
     if (isCoachOrAdmin) {
       setHasLevelupAccess(true);
       return;

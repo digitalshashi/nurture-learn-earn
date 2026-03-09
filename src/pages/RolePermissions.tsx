@@ -243,7 +243,7 @@ export default function RolePermissions() {
                           <CardContent className="space-y-1">
                             {cat.features.map((feat) => {
                               const isEnabled = permissions[feat.key] ?? false;
-                              const isDisabled = activeRole === "admin"; // Admin always on
+                              const isDisabled = activeRole === "admin" || activeRole === "super_admin";
                               return (
                                 <div
                                   key={feat.key}
