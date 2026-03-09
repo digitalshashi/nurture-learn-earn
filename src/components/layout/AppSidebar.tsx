@@ -213,7 +213,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = state === "collapsed";
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
   const filteredSections = sidebarSections
     .filter((section) => {
