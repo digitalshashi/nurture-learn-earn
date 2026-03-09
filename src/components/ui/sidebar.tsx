@@ -14,9 +14,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
+const SIDEBAR_WIDTH = "260px";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH_ICON = "70px";
+
+function getSidebarStateFromCookie() {
+  if (typeof document === "undefined") return true;
+  const match = document.cookie.match(new RegExp(`(^| )${SIDEBAR_COOKIE_NAME}=([^;]+)`));
+  if (match) return match[2] === "true";
+  return true;
+}
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContext = {
