@@ -213,7 +213,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = state === "collapsed";
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
   const filteredSections = sidebarSections
     .filter((section) => {
@@ -283,7 +283,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {hasRole("admin") && (
+        {(hasRole("admin") || hasRole("super_admin")) && (
           <SidebarGroup className="py-0.5">
             <SidebarGroupContent>
               <SidebarMenu>

@@ -101,7 +101,7 @@ export default function RolePermissions() {
   const [loadingLog, setLoadingLog] = useState(false);
   const [activeTab, setActiveTab] = useState("permissions");
 
-  const isAdmin = hasRole("admin");
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
 
   useEffect(() => {
     loadPermissions(activeRole);
@@ -223,8 +223,8 @@ export default function RolePermissions() {
                     <Badge variant="outline" className="capitalize">{activeRole}</Badge>
                     <span className="text-xs text-muted-foreground">Feature Toggles</span>
                   </div>
-                  {activeRole === "admin" && (
-                    <Badge variant="secondary" className="text-[10px]">Admin has full access by default</Badge>
+                  {(activeRole === "admin" || activeRole === "super_admin") && (
+                    <Badge variant="secondary" className="text-[10px]">{activeRole === "super_admin" ? "Super Admin" : "Admin"} has full access by default</Badge>
                   )}
                 </div>
 
@@ -243,7 +243,7 @@ export default function RolePermissions() {
                           <CardContent className="space-y-1">
                             {cat.features.map((feat) => {
                               const isEnabled = permissions[feat.key] ?? false;
-                              const isDisabled = activeRole === "admin"; // Admin always on
+                              const isDisabled = activeRole === "admin" || activeRole === "super_admin";
                               return (
                                 <div
                                   key={feat.key}

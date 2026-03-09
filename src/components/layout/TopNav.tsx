@@ -17,12 +17,17 @@ interface NavMenuItem {
   visible_roles: string[];
 }
 
-// Fallback static nav items when no DB items configured
-const defaultNavItems = [
+// These items ALWAYS show in the top nav for all roles
+const PINNED_NAV_ITEMS = [
   { label: "FEED", link: "/feed", icon_name: "users" },
   { label: "COURSES", link: "/courses", icon_name: "book-open" },
   { label: "QUEST", link: "/quest", icon_name: "sword" },
   { label: "EVENTS", link: "/student-events", icon_name: "calendar" },
+];
+
+// Fallback static nav items when no DB items configured
+const defaultNavItems = [
+  ...PINNED_NAV_ITEMS,
   { label: "LEVEL UP", link: "/levelup", icon_name: "trophy" },
 ];
 
@@ -72,7 +77,7 @@ export function TopNav() {
   const checkLevelupAccess = async () => {
     if (!user) return;
     // Coaches/admins always have access
-    const isCoachOrAdmin = roles.includes("coach") || roles.includes("admin");
+    const isCoachOrAdmin = roles.includes("coach") || roles.includes("admin") || roles.includes("super_admin" as any);
     if (isCoachOrAdmin) {
       setHasLevelupAccess(true);
       return;
@@ -91,12 +96,18 @@ export function TopNav() {
     ? user.user_metadata.full_name.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "U";
 
-  // Filter by user role
+  // Start with pinned items, then add DB-configured items (excluding duplicates of pinned links)
+  const pinnedLinks = new Set(PINNED_NAV_ITEMS.map((p) => p.link));
   const roleFiltered = menuItems.length > 0
-    ? menuItems.filter((item) => {
-        if (!item.visible_roles || item.visible_roles.length === 0) return true;
-        return roles.some((r) => item.visible_roles.includes(r));
-      })
+    ? [
+        ...PINNED_NAV_ITEMS,
+        ...menuItems
+          .filter((item) => !pinnedLinks.has(item.link))
+          .filter((item) => {
+            if (!item.visible_roles || item.visible_roles.length === 0) return true;
+            return roles.some((r) => item.visible_roles.includes(r));
+          }),
+      ]
     : defaultNavItems;
 
   // Filter LevelUp items for students without access
