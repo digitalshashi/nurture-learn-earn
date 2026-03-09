@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ROLES = [
+  { key: "super_admin", label: "Super Admin", icon: Crown, color: "bg-red-500", desc: "Full system control & role management" },
   { key: "admin", label: "Admin", icon: Crown, color: "bg-amber-500", desc: "Full platform control" },
   { key: "coach", label: "Coach", icon: Shield, color: "bg-blue-500", desc: "Manage students, courses & services" },
   { key: "student", label: "Student", icon: Users, color: "bg-emerald-500", desc: "Consume content & participate" },

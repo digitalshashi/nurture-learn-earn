@@ -114,6 +114,7 @@ export default function AdminPanel() {
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="coach">Coach</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
