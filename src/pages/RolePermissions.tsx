@@ -101,7 +101,7 @@ export default function RolePermissions() {
   const [loadingLog, setLoadingLog] = useState(false);
   const [activeTab, setActiveTab] = useState("permissions");
 
-  const isAdmin = hasRole("admin");
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
 
   useEffect(() => {
     loadPermissions(activeRole);
