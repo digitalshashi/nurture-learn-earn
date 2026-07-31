@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Mail, Trash2, Settings, Check, X, Shield } from "lucide-react";
+import { Plus, Mail, Trash2, Settings, Check, X, Shield, Loader2, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,6 +67,19 @@ const PROVIDERS = [
 
 const SMTP_STYLE_PROVIDERS = ["smtp", "ses"];
 
+async function extractFunctionErrorMessage(error: any, fallback: string): Promise<string> {
+  try {
+    const ctx = error?.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.clone().json();
+      if (body?.error) return body.error;
+    }
+  } catch {
+    // ignore parse failures, fall through to fallback
+  }
+  return error?.message || fallback;
+}
+
 export default function EmailSettings() {
   const { user, roles } = useAuth();
   const { toast } = useToast();
@@ -74,6 +87,7 @@ export default function EmailSettings() {
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...defaultForm });
 
   const loadAccounts = async () => {
@@ -145,6 +159,23 @@ export default function EmailSettings() {
     else toast({ title: "Platform-default sender updated", description: "This account will send all system emails, including login OTP codes." });
     loadAccounts();
     setLoading(false);
+  };
+
+  const handleTestConnection = async (accountId: string) => {
+    setTestingId(accountId);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-email-connection", {
+        body: { accountId },
+      });
+      if (error) throw new Error(await extractFunctionErrorMessage(error, "Test failed"));
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Test email sent!", description: `Check ${data.sentTo} — your connection works.` });
+      loadAccounts();
+    } catch (err: any) {
+      toast({ title: "Connection test failed", description: err.message, variant: "destructive" });
+    } finally {
+      setTestingId(null);
+    }
   };
 
   return (
@@ -312,9 +343,25 @@ export default function EmailSettings() {
                             </TableCell>
                           )}
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(a.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-7"
+                                disabled={testingId === a.id}
+                                onClick={() => handleTestConnection(a.id)}
+                              >
+                                {testingId === a.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                ) : (
+                                  <Send className="h-3.5 w-3.5 mr-1" />
+                                )}
+                                Test
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(a.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

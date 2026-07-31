@@ -13,6 +13,22 @@ import { supabase } from "@/integrations/supabase/client";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
+// supabase.functions.invoke() only gives a generic "non-2xx status code"
+// message on error; the actual reason is in the response body served by the
+// edge function itself, reachable via error.context (a Response object).
+async function extractFunctionErrorMessage(error: any, fallback: string): Promise<string> {
+  try {
+    const ctx = error?.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.clone().json();
+      if (body?.error) return body.error;
+    }
+  } catch {
+    // ignore parse failures, fall through to fallback
+  }
+  return error?.message || fallback;
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
@@ -70,7 +86,7 @@ export default function Login() {
       const { data, error } = await supabase.functions.invoke("send-login-otp", {
         body: { email: otpEmail },
       });
-      if (error) throw error;
+      if (error) throw new Error(await extractFunctionErrorMessage(error, "Could not send code"));
       if (data?.error) throw new Error(data.error);
       toast({ title: "Code sent", description: `Check ${otpEmail} for your login code.` });
       setOtpStep("verify");
@@ -90,7 +106,7 @@ export default function Login() {
       const { data, error } = await supabase.functions.invoke("verify-login-otp", {
         body: { email: otpEmail, code: otpCode },
       });
-      if (error) throw error;
+      if (error) throw new Error(await extractFunctionErrorMessage(error, "Verification failed"));
       if (data?.error) throw new Error(data.error);
 
       const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -115,7 +131,7 @@ export default function Login() {
       const { data, error } = await supabase.functions.invoke("send-login-otp", {
         body: { email: otpEmail },
       });
-      if (error) throw error;
+      if (error) throw new Error(await extractFunctionErrorMessage(error, "Could not resend code"));
       if (data?.error) throw new Error(data.error);
       toast({ title: "Code resent", description: `Check ${otpEmail} for your new code.` });
       setResendCooldown(RESEND_COOLDOWN_SECONDS);

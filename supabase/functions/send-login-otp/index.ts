@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sendEmail } from "../_shared/email-sender.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +32,101 @@ function generateCode(): string {
 
 function renderTemplate(str: string, vars: Record<string, string>): string {
   return str.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? "");
+}
+
+interface EmailAccount {
+  provider: string;
+  sender_name: string;
+  sender_email: string;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_encryption: string | null;
+  smtp_username: string | null;
+  smtp_password: string | null;
+  api_key: string | null;
+  reply_to_name: string | null;
+  reply_to_email: string | null;
+}
+
+interface SendEmailArgs {
+  account: EmailAccount;
+  to: string;
+  subject: string;
+  html: string;
+  fromName?: string | null;
+  replyToName?: string | null;
+  replyToEmail?: string | null;
+}
+
+async function sendEmail({ account, to, subject, html, fromName, replyToName, replyToEmail }: SendEmailArgs): Promise<void> {
+  const resolvedFromName = fromName || account.sender_name;
+  const resolvedFromEmail = account.sender_email;
+  const resolvedReplyToName = replyToName || account.reply_to_name || resolvedFromName;
+  const resolvedReplyToEmail = replyToEmail || account.reply_to_email || resolvedFromEmail;
+
+  if (account.provider === "smtp" || account.provider === "ses") {
+    // Amazon SES: use the SMTP interface with SES SMTP credentials (from the
+    // SES console), not raw IAM access keys — avoids implementing AWS SigV4.
+    if (!account.smtp_host || !account.smtp_username || !account.smtp_password) {
+      throw new Error("SMTP credentials are incomplete for this sender account");
+    }
+    const client = new SMTPClient({
+      connection: {
+        hostname: account.smtp_host,
+        port: account.smtp_port || 587,
+        tls: account.smtp_encryption === "ssl",
+        auth: { username: account.smtp_username, password: account.smtp_password },
+      },
+    });
+    try {
+      await client.send({
+        from: `${resolvedFromName} <${resolvedFromEmail}>`,
+        to,
+        replyTo: resolvedReplyToEmail,
+        subject,
+        html,
+      });
+    } finally {
+      await client.close();
+    }
+    return;
+  }
+
+  if (account.provider === "resend") {
+    if (!account.api_key) throw new Error("Resend API key is missing for this sender account");
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${account.api_key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${resolvedFromName} <${resolvedFromEmail}>`,
+        to: [to],
+        reply_to: resolvedReplyToEmail,
+        subject,
+        html,
+      }),
+    });
+    if (!res.ok) throw new Error(`Resend send failed: ${res.status} ${await res.text()}`);
+    return;
+  }
+
+  if (account.provider === "mailersend") {
+    if (!account.api_key) throw new Error("MailerSend API key is missing for this sender account");
+    const res = await fetch("https://api.mailersend.com/v1/email", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${account.api_key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: { email: resolvedFromEmail, name: resolvedFromName },
+        to: [{ email: to }],
+        reply_to: { email: resolvedReplyToEmail, name: resolvedReplyToName },
+        subject,
+        html,
+      }),
+    });
+    if (!res.ok) throw new Error(`MailerSend send failed: ${res.status} ${await res.text()}`);
+    return;
+  }
+
+  throw new Error(`Unsupported email provider: ${account.provider}`);
 }
 
 Deno.serve(async (req) => {
