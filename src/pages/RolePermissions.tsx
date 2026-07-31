@@ -13,7 +13,7 @@ import {
   Home, MessageSquare, Hash, Trophy, Calendar, Video, Megaphone,
   LayoutDashboard, BarChart3, DollarSign, Layout, Contact,
   Send, Route, Handshake, Gift, Rocket, Settings, Award, Target,
-  FileText, Clock,
+  FileText, Clock, PlaySquare, Navigation,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +46,7 @@ const FEATURE_CATEGORIES: { category: string; features: { key: string; label: st
       { key: "certificates", label: "Certificates", icon: Award, desc: "Download certificates" },
       { key: "quest", label: "Quest Dashboard", icon: Target, desc: "Quests & achievements" },
       { key: "levelup", label: "Level Up", icon: Trophy, desc: "LevelUp platform" },
+      { key: "video_library", label: "Video Library", icon: PlaySquare, desc: "Access recorded video library" },
     ],
   },
   {
@@ -86,6 +87,7 @@ const FEATURE_CATEGORIES: { category: string; features: { key: string; label: st
       { key: "cloud_storage", label: "Cloud Storage", icon: Layout, desc: "File storage" },
       { key: "billing", label: "Billing & Plans", icon: DollarSign, desc: "Billing management" },
       { key: "referral", label: "Refer & Earn", icon: Gift, desc: "Referral program" },
+      { key: "navigation_settings", label: "Navigation Settings", icon: Navigation, desc: "Customize app navigation menu" },
     ],
   },
 ];

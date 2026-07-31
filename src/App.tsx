@@ -91,78 +91,78 @@ const App = () => (
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
             <Route path="/workshop/:slug" element={<WorkshopLandingPage />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-            <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-            <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
-            <Route path="/service-builder" element={<ProtectedRoute><ServiceBuilder /></ProtectedRoute>} />
-            <Route path="/service-builder/:id" element={<ProtectedRoute><ServiceBuilder /></ProtectedRoute>} />
-            <Route path="/ai-course-generator" element={<ProtectedRoute><AICourseGenerator /></ProtectedRoute>} />
-            <Route path="/course-builder" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
-            <Route path="/course-builder/:id" element={<ProtectedRoute><CourseBuilder /></ProtectedRoute>} />
-            <Route path="/course-player/:id" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
-            <Route path="/course-manage/:id" element={<ProtectedRoute><CourseManage /></ProtectedRoute>} />
-            <Route path="/channels" element={<ProtectedRoute><Channels /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-            <Route path="/workshops" element={<ProtectedRoute><Workshops /></ProtectedRoute>} />
-            <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
-            <Route path="/student-events" element={<ProtectedRoute><StudentEvents /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-            <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-            <Route path="/crm" element={<ProtectedRoute><CrmDashboard /></ProtectedRoute>} />
-            <Route path="/crm/pipelines" element={<ProtectedRoute><CrmPipelines /></ProtectedRoute>} />
-            <Route path="/crm/contacts" element={<ProtectedRoute><CrmContacts /></ProtectedRoute>} />
-            <Route path="/crm/follow-ups" element={<ProtectedRoute><CrmFollowUps /></ProtectedRoute>} />
-            <Route path="/crm/contact-groups" element={<ProtectedRoute><CrmContactGroups /></ProtectedRoute>} />
-            <Route path="/crm/meta-leads" element={<ProtectedRoute><CrmMetaLeads /></ProtectedRoute>} />
-            <Route path="/crm/leads/:id" element={<ProtectedRoute><CrmLeadProfile /></ProtectedRoute>} />
-            <Route path="/sales/earnings" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
-            <Route path="/sales/transactions" element={<ProtectedRoute><SalesTransactions /></ProtectedRoute>} />
-            <Route path="/sales/subscriptions" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
-            <Route path="/sales/withdrawals" element={<ProtectedRoute><SalesEarnings /></ProtectedRoute>} />
-            <Route path="/page-builder" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
-            <Route path="/page-builder/ai-landing" element={<ProtectedRoute><AILandingPageBuilder /></ProtectedRoute>} />
-            <Route path="/marketing/email" element={<ProtectedRoute><MarketingEmail /></ProtectedRoute>} />
-            <Route path="/marketing/broadcasts" element={<ProtectedRoute><Broadcasts /></ProtectedRoute>} />
-            <Route path="/marketing/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
-            <Route path="/marketing/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
-            <Route path="/marketing/unsubscribed" element={<ProtectedRoute><UnsubscribedUsers /></ProtectedRoute>} />
-            <Route path="/automation/path" element={<ProtectedRoute><AutomationPath /></ProtectedRoute>} />
-            <Route path="/automation/email" element={<ProtectedRoute><EmailAutomation /></ProtectedRoute>} />
-            <Route path="/automation/whatsapp" element={<ProtectedRoute><WhatsAppAutomation /></ProtectedRoute>} />
-            <Route path="/automation/notifications" element={<ProtectedRoute><NotificationAutomation /></ProtectedRoute>} />
-            <Route path="/automation/templates" element={<ProtectedRoute><AutomationTemplates /></ProtectedRoute>} />
-            <Route path="/automation/events-personalisation" element={<ProtectedRoute><EventsPersonalisation /></ProtectedRoute>} />
-            <Route path="/automation/account-management" element={<ProtectedRoute><WhatsAppAccountManagement /></ProtectedRoute>} />
-            <Route path="/automation/logs" element={<ProtectedRoute><AutomationLogs /></ProtectedRoute>} />
-            <Route path="/automation/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
-            <Route path="/automation/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
-            <Route path="/partnerships" element={<ProtectedRoute><Partnerships /></ProtectedRoute>} />
-            <Route path="/gamification" element={<ProtectedRoute><Gamification /></ProtectedRoute>} />
-            <Route path="/levelup" element={<ProtectedRoute><LevelUp /></ProtectedRoute>} />
-            <Route path="/quest" element={<ProtectedRoute><QuestDashboard /></ProtectedRoute>} />
-            <Route path="/ai/content-generator" element={<ProtectedRoute><AIContentGenerator /></ProtectedRoute>} />
-            <Route path="/video-library" element={<ProtectedRoute><VideoLibrary /></ProtectedRoute>} />
-            <Route path="/levelup-upgrade" element={<ProtectedRoute><LevelUpUpgrade /></ProtectedRoute>} />
-            <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            <Route path="/settings/platform" element={<ProtectedRoute><PlatformSettings /></ProtectedRoute>} />
-            <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
-            <Route path="/settings/team" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
-            <Route path="/settings/cloud" element={<ProtectedRoute><CloudStorage /></ProtectedRoute>} />
-            <Route path="/settings/roles" element={<ProtectedRoute><RolePermissions /></ProtectedRoute>} />
-            <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
-            <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute featureKey="dashboard"><Dashboard /></ProtectedRoute>} />
+            <Route path="/feed" element={<ProtectedRoute featureKey="community_feed"><Feed /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute featureKey="courses"><Courses /></ProtectedRoute>} />
+            <Route path="/services" element={<ProtectedRoute featureKey="services"><Services /></ProtectedRoute>} />
+            <Route path="/service-builder" element={<ProtectedRoute featureKey="services"><ServiceBuilder /></ProtectedRoute>} />
+            <Route path="/service-builder/:id" element={<ProtectedRoute featureKey="services"><ServiceBuilder /></ProtectedRoute>} />
+            <Route path="/ai-course-generator" element={<ProtectedRoute featureKey="ai_suite"><AICourseGenerator /></ProtectedRoute>} />
+            <Route path="/course-builder" element={<ProtectedRoute featureKey="courses"><CourseBuilder /></ProtectedRoute>} />
+            <Route path="/course-builder/:id" element={<ProtectedRoute featureKey="courses"><CourseBuilder /></ProtectedRoute>} />
+            <Route path="/course-player/:id" element={<ProtectedRoute featureKey="courses"><CoursePlayer /></ProtectedRoute>} />
+            <Route path="/course-manage/:id" element={<ProtectedRoute featureKey="courses"><CourseManage /></ProtectedRoute>} />
+            <Route path="/channels" element={<ProtectedRoute featureKey="channels"><Channels /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute featureKey="analytics"><Analytics /></ProtectedRoute>} />
+            <Route path="/workshops" element={<ProtectedRoute featureKey="workshops"><Workshops /></ProtectedRoute>} />
+            <Route path="/events" element={<ProtectedRoute featureKey="events"><Events /></ProtectedRoute>} />
+            <Route path="/student-events" element={<ProtectedRoute featureKey="events"><StudentEvents /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute featureKey="customers"><Customers /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute featureKey="customers"><Leads /></ProtectedRoute>} />
+            <Route path="/crm" element={<ProtectedRoute featureKey="crm"><CrmDashboard /></ProtectedRoute>} />
+            <Route path="/crm/pipelines" element={<ProtectedRoute featureKey="crm"><CrmPipelines /></ProtectedRoute>} />
+            <Route path="/crm/contacts" element={<ProtectedRoute featureKey="crm"><CrmContacts /></ProtectedRoute>} />
+            <Route path="/crm/follow-ups" element={<ProtectedRoute featureKey="crm"><CrmFollowUps /></ProtectedRoute>} />
+            <Route path="/crm/contact-groups" element={<ProtectedRoute featureKey="crm"><CrmContactGroups /></ProtectedRoute>} />
+            <Route path="/crm/meta-leads" element={<ProtectedRoute featureKey="crm"><CrmMetaLeads /></ProtectedRoute>} />
+            <Route path="/crm/leads/:id" element={<ProtectedRoute featureKey="crm"><CrmLeadProfile /></ProtectedRoute>} />
+            <Route path="/sales/earnings" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/sales/transactions" element={<ProtectedRoute featureKey="sales"><SalesTransactions /></ProtectedRoute>} />
+            <Route path="/sales/subscriptions" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/sales/withdrawals" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/page-builder" element={<ProtectedRoute featureKey="page_builder"><PageBuilder /></ProtectedRoute>} />
+            <Route path="/page-builder/ai-landing" element={<ProtectedRoute featureKey="page_builder"><AILandingPageBuilder /></ProtectedRoute>} />
+            <Route path="/marketing/email" element={<ProtectedRoute featureKey="marketing"><MarketingEmail /></ProtectedRoute>} />
+            <Route path="/marketing/broadcasts" element={<ProtectedRoute featureKey="marketing"><Broadcasts /></ProtectedRoute>} />
+            <Route path="/marketing/banners" element={<ProtectedRoute featureKey="marketing"><Banners /></ProtectedRoute>} />
+            <Route path="/marketing/coupons" element={<ProtectedRoute featureKey="marketing"><Coupons /></ProtectedRoute>} />
+            <Route path="/marketing/unsubscribed" element={<ProtectedRoute featureKey="marketing"><UnsubscribedUsers /></ProtectedRoute>} />
+            <Route path="/automation/path" element={<ProtectedRoute featureKey="automation"><AutomationPath /></ProtectedRoute>} />
+            <Route path="/automation/email" element={<ProtectedRoute featureKey="automation"><EmailAutomation /></ProtectedRoute>} />
+            <Route path="/automation/whatsapp" element={<ProtectedRoute featureKey="automation"><WhatsAppAutomation /></ProtectedRoute>} />
+            <Route path="/automation/notifications" element={<ProtectedRoute featureKey="automation"><NotificationAutomation /></ProtectedRoute>} />
+            <Route path="/automation/templates" element={<ProtectedRoute featureKey="automation"><AutomationTemplates /></ProtectedRoute>} />
+            <Route path="/automation/events-personalisation" element={<ProtectedRoute featureKey="automation"><EventsPersonalisation /></ProtectedRoute>} />
+            <Route path="/automation/account-management" element={<ProtectedRoute featureKey="automation"><WhatsAppAccountManagement /></ProtectedRoute>} />
+            <Route path="/automation/logs" element={<ProtectedRoute featureKey="automation"><AutomationLogs /></ProtectedRoute>} />
+            <Route path="/automation/certificates" element={<ProtectedRoute featureKey="certificates"><Certificates /></ProtectedRoute>} />
+            <Route path="/automation/integrations" element={<ProtectedRoute featureKey="automation"><Integrations /></ProtectedRoute>} />
+            <Route path="/partnerships" element={<ProtectedRoute featureKey="partnerships"><Partnerships /></ProtectedRoute>} />
+            <Route path="/gamification" element={<ProtectedRoute featureKey="gamification"><Gamification /></ProtectedRoute>} />
+            <Route path="/levelup" element={<ProtectedRoute featureKey="levelup"><LevelUp /></ProtectedRoute>} />
+            <Route path="/quest" element={<ProtectedRoute featureKey="quest"><QuestDashboard /></ProtectedRoute>} />
+            <Route path="/ai/content-generator" element={<ProtectedRoute featureKey="ai_suite"><AIContentGenerator /></ProtectedRoute>} />
+            <Route path="/video-library" element={<ProtectedRoute featureKey="video_library"><VideoLibrary /></ProtectedRoute>} />
+            <Route path="/levelup-upgrade" element={<ProtectedRoute featureKey="levelup"><LevelUpUpgrade /></ProtectedRoute>} />
+            <Route path="/leaderboard" element={<ProtectedRoute featureKey="leaderboard"><Leaderboard /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute featureKey="my_settings"><SettingsPage /></ProtectedRoute>} />
+            <Route path="/settings/platform" element={<ProtectedRoute featureKey="platform_settings"><PlatformSettings /></ProtectedRoute>} />
+            <Route path="/settings/security" element={<ProtectedRoute featureKey="security_settings"><SecuritySettings /></ProtectedRoute>} />
+            <Route path="/settings/team" element={<ProtectedRoute featureKey="team_management"><TeamManagement /></ProtectedRoute>} />
+            <Route path="/settings/cloud" element={<ProtectedRoute featureKey="cloud_storage"><CloudStorage /></ProtectedRoute>} />
+            <Route path="/settings/roles" element={<ProtectedRoute featureKey="platform_settings"><RolePermissions /></ProtectedRoute>} />
+            <Route path="/billing" element={<ProtectedRoute featureKey="billing"><Billing /></ProtectedRoute>} />
+            <Route path="/referral" element={<ProtectedRoute featureKey="referral"><Referral /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-            <Route path="/affiliate" element={<ProtectedRoute><StudentAffiliate /></ProtectedRoute>} />
-            <Route path="/affiliate/manage" element={<ProtectedRoute><CoachAffiliateManagement /></ProtectedRoute>} />
-            <Route path="/navigation-settings" element={<ProtectedRoute><NavigationSettings /></ProtectedRoute>} />
+            <Route path="/affiliate" element={<ProtectedRoute featureKey="affiliate"><StudentAffiliate /></ProtectedRoute>} />
+            <Route path="/affiliate/manage" element={<ProtectedRoute featureKey="affiliate"><CoachAffiliateManagement /></ProtectedRoute>} />
+            <Route path="/navigation-settings" element={<ProtectedRoute featureKey="navigation_settings"><NavigationSettings /></ProtectedRoute>} />
             <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
-            <Route path="/settings/email" element={<ProtectedRoute><EmailSettings /></ProtectedRoute>} />
+            <Route path="/settings/email" element={<ProtectedRoute featureKey="marketing"><EmailSettings /></ProtectedRoute>} />
             <Route path="/profile/:userId" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
             <Route path="/my-account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
-            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/messages/:recipientId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute featureKey="messages"><Messages /></ProtectedRoute>} />
+            <Route path="/messages/:recipientId" element={<ProtectedRoute featureKey="messages"><Messages /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

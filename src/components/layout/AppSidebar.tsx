@@ -44,6 +44,7 @@ import {
   Crown,
   Bell,
   HardDrive,
+  Navigation,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -105,7 +106,7 @@ const sidebarSections = [
       { title: "Courses", url: "/courses", icon: BookOpen, permissionKey: "courses" as FeatureKey },
       { title: "Workshops", url: "/workshops", icon: Video, permissionKey: "workshops" as FeatureKey },
       { title: "Events", url: "/events", icon: Calendar, permissionKey: "events" as FeatureKey },
-      { title: "Video Library", url: "/video-library", icon: Video, permissionKey: "courses" as FeatureKey },
+      { title: "Video Library", url: "/video-library", icon: Video, permissionKey: "video_library" as FeatureKey },
     ],
   },
   {
@@ -202,6 +203,7 @@ const sidebarSections = [
       { title: "My Settings", url: "/settings", icon: Settings, permissionKey: "my_settings" as FeatureKey },
       { title: "Billing & Plans", url: "/billing", icon: Receipt, permissionKey: "billing" as FeatureKey },
       { title: "Refer & Earn", url: "/referral", icon: Gift, permissionKey: "referral" as FeatureKey },
+      { title: "Navigation Settings", url: "/navigation-settings", icon: Navigation, permissionKey: "navigation_settings" as FeatureKey },
     ],
   },
 ];

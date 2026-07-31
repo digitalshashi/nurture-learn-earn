@@ -9,7 +9,8 @@ export type FeatureKey =
   | "automation" | "partnerships" | "affiliate" | "gamification" | "levelup"
   | "ai_suite" | "platform_settings" | "security_settings" | "team_management"
   | "cloud_storage" | "billing" | "referral" | "certificates" | "quest"
-  | "create_post" | "create_channels" | "my_settings";
+  | "create_post" | "create_channels" | "my_settings"
+  | "video_library" | "navigation_settings";
 
 interface PermissionRecord {
   feature_key: string;
@@ -27,15 +28,15 @@ export function usePermissions() {
       return;
     }
 
-    const fetchPermissions = async () => {
-      const highestRole = roles.includes("super_admin" as any)
-        ? "super_admin"
-        : roles.includes("admin" as any)
-        ? "admin"
-        : roles.includes("coach" as any)
-        ? "coach"
-        : "student";
+    const highestRole = roles.includes("super_admin" as any)
+      ? "super_admin"
+      : roles.includes("admin" as any)
+      ? "admin"
+      : roles.includes("coach" as any)
+      ? "coach"
+      : "student";
 
+    const fetchPermissions = async () => {
       const { data, error } = await supabase
         .from("role_permissions" as any)
         .select("feature_key, enabled")
@@ -52,6 +53,21 @@ export function usePermissions() {
     };
 
     fetchPermissions();
+
+    // Real-time: reflect permission changes for this role immediately in
+    // every already-open session, instead of requiring a reload.
+    const channel = supabase
+      .channel(`role_permissions_${highestRole}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "role_permissions", filter: `role=eq.${highestRole}` },
+        () => fetchPermissions(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, roles]);
 
   const hasPermission = (featureKey: FeatureKey): boolean => {
