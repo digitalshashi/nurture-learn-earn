@@ -1,5 +1,18 @@
 project_id = "cxaieaasrwnscshfdcbp"
 
+[auth]
+site_url = "https://nurture-learn-earn.sasivanga.workers.dev"
+additional_redirect_urls = ["https://nurture-learn-earn.sasivanga.workers.dev/**"]
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
 [functions.create-razorpay-order]
 verify_jwt = false
 
