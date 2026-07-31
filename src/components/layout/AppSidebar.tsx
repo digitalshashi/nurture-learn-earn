@@ -46,6 +46,9 @@ import {
   HardDrive,
   Navigation,
   LifeBuoy,
+  Target,
+  CheckSquare,
+  Wand2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -119,6 +122,16 @@ const sidebarSections = [
       { title: "Transactions", url: "/sales/transactions", icon: CreditCard, permissionKey: "sales" as FeatureKey },
       { title: "Subscriptions", url: "/sales/subscriptions", icon: ArrowLeftRight, permissionKey: "sales" as FeatureKey },
       { title: "Withdrawals", url: "/sales/withdrawals", icon: Wallet, permissionKey: "sales" as FeatureKey },
+    ],
+  },
+  {
+    label: "Goal Tracker",
+    permissionKey: "growth" as FeatureKey,
+    items: [
+      { title: "Goal", url: "/growth/goal", icon: Target, permissionKey: "growth" as FeatureKey },
+      { title: "Actions", url: "/growth/actions", icon: CheckSquare, permissionKey: "growth" as FeatureKey },
+      { title: "Business", url: "/growth/business", icon: Wallet, permissionKey: "growth" as FeatureKey },
+      { title: "Boosters", url: "/growth/boosters", icon: Wand2, permissionKey: "growth" as FeatureKey },
     ],
   },
   {

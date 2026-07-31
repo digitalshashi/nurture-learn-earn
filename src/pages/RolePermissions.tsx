@@ -79,6 +79,12 @@ const FEATURE_CATEGORIES: { category: string; features: { key: string; label: st
     ],
   },
   {
+    category: "Goal Tracker",
+    features: [
+      { key: "growth", label: "Goal Tracker", icon: Target, desc: "Goals, actions, P&L & AI boosters" },
+    ],
+  },
+  {
     category: "Settings",
     features: [
       { key: "my_settings", label: "My Settings", icon: Settings, desc: "Personal settings" },

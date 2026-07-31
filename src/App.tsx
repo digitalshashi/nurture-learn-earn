@@ -79,6 +79,10 @@ import QuestDashboard from "./pages/QuestDashboard";
 import RolePermissions from "./pages/RolePermissions";
 import VideoLibrary from "./pages/VideoLibrary";
 import Support from "./pages/Support";
+import GrowthGoal from "./pages/GrowthGoal";
+import GrowthActions from "./pages/GrowthActions";
+import GrowthBusiness from "./pages/GrowthBusiness";
+import GrowthBoosters from "./pages/GrowthBoosters";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -124,6 +128,10 @@ const App = () => (
             <Route path="/sales/transactions" element={<ProtectedRoute featureKey="sales"><SalesTransactions /></ProtectedRoute>} />
             <Route path="/sales/subscriptions" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
             <Route path="/sales/withdrawals" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/growth/goal" element={<ProtectedRoute featureKey="growth"><GrowthGoal /></ProtectedRoute>} />
+            <Route path="/growth/actions" element={<ProtectedRoute featureKey="growth"><GrowthActions /></ProtectedRoute>} />
+            <Route path="/growth/business" element={<ProtectedRoute featureKey="growth"><GrowthBusiness /></ProtectedRoute>} />
+            <Route path="/growth/boosters" element={<ProtectedRoute featureKey="growth"><GrowthBoosters /></ProtectedRoute>} />
             <Route path="/page-builder" element={<ProtectedRoute featureKey="page_builder"><PageBuilder /></ProtectedRoute>} />
             <Route path="/page-builder/ai-landing" element={<ProtectedRoute featureKey="page_builder"><AILandingPageBuilder /></ProtectedRoute>} />
             <Route path="/marketing/email" element={<ProtectedRoute featureKey="marketing"><MarketingEmail /></ProtectedRoute>} />

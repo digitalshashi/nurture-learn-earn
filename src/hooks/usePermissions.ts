@@ -10,7 +10,7 @@ export type FeatureKey =
   | "ai_suite" | "platform_settings" | "security_settings" | "team_management"
   | "cloud_storage" | "billing" | "referral" | "certificates" | "quest"
   | "create_post" | "create_channels" | "my_settings"
-  | "video_library" | "navigation_settings" | "support";
+  | "video_library" | "navigation_settings" | "support" | "growth";
 
 interface PermissionRecord {
   feature_key: string;
