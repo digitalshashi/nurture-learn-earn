@@ -48,7 +48,7 @@ export default function Channels() {
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
   // Fetch channels
   const fetchChannels = useCallback(async () => {

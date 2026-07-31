@@ -53,7 +53,7 @@ export default function Courses() {
   const [studentLevel, setStudentLevel] = useState("free");
   const [courseProgress, setCourseProgress] = useState<Record<string, { total: number; completed: number }>>({});
 
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
   useEffect(() => {
     fetchCourses();

@@ -13,6 +13,6 @@ export function HomeRedirect() {
   }
 
   // Coaches and admins go to dashboard; students go to feed
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
   return <Navigate to={isCoachOrAdmin ? "/dashboard" : "/feed"} replace />;
 }

@@ -24,7 +24,7 @@ import {
 export default function Partnerships() {
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
-  const isCoach = hasRole("coach") || hasRole("admin");
+  const isCoach = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
   // State
   const [programs, setPrograms] = useState<any[]>([]);

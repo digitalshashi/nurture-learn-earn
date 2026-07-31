@@ -20,7 +20,7 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     if (!user) return;
-    if (hasRole("coach") || hasRole("admin")) {
+    if (hasRole("coach") || hasRole("admin") || hasRole("super_admin")) {
       const { count: courseCount } = await supabase.from("courses").select("*", { count: "exact", head: true }).eq("coach_id", user.id);
       const { count: enrollCount } = await supabase.from("enrollments").select("*", { count: "exact", head: true });
       const { count: postCount } = await supabase.from("posts").select("*", { count: "exact", head: true });
@@ -32,7 +32,7 @@ export default function Dashboard() {
     }
   };
 
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin");
+  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
   const statCards = isCoachOrAdmin
     ? [
