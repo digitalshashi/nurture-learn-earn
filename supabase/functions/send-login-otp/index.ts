@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Single lookup, gating early return — must happen before anything else.
     const { data: profile } = await adminClient
       .from("profiles")
       .select("id, full_name, email")
@@ -155,13 +156,35 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    const { data: lastOtp } = await adminClient
-      .from("login_otps")
-      .select("created_at")
-      .eq("email", normalizedEmail)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // The rest of the reads are independent of each other — run them
+    // concurrently instead of sequentially to cut round-trip latency.
+    // Account resolution is collapsed into a single ordered query
+    // (platform-default+verified first, else newest verified, else newest
+    // any) instead of up to 3 sequential fallback queries.
+    const [{ data: lastOtp }, { data: account }, { data: template }] = await Promise.all([
+      adminClient
+        .from("login_otps")
+        .select("created_at")
+        .eq("email", normalizedEmail)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      adminClient
+        .from("email_accounts")
+        .select("*")
+        .order("is_platform_default", { ascending: false })
+        .order("is_verified", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      adminClient
+        .from("email_templates")
+        .select("*")
+        .eq("template_key", "login_otp")
+        .is("coach_id", null)
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]);
 
     if (lastOtp) {
       const secondsSinceLast = (Date.now() - new Date(lastOtp.created_at).getTime()) / 1000;
@@ -171,6 +194,13 @@ Deno.serve(async (req) => {
           429,
         );
       }
+    }
+
+    if (!account) {
+      return json(
+        { error: "Email delivery is not configured. Ask your administrator to add a sender account in Email Settings." },
+        500,
+      );
     }
 
     const code = generateCode();
@@ -184,51 +214,6 @@ Deno.serve(async (req) => {
     });
     if (insertError) throw insertError;
 
-    let { data: account } = await adminClient
-      .from("email_accounts")
-      .select("*")
-      .eq("is_platform_default", true)
-      .eq("is_verified", true)
-      .limit(1)
-      .maybeSingle();
-
-    // Fallback: any verified sender, then any configured sender at all.
-    if (!account) {
-      const { data: verified } = await adminClient
-        .from("email_accounts")
-        .select("*")
-        .eq("is_verified", true)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      account = verified;
-    }
-    if (!account) {
-      const { data: any1 } = await adminClient
-        .from("email_accounts")
-        .select("*")
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      account = any1;
-    }
-
-    if (!account) {
-      return json(
-        { error: "Email delivery is not configured. Ask your administrator to add a sender account in Email Settings." },
-        500,
-      );
-    }
-
-
-    const { data: template } = await adminClient
-      .from("email_templates")
-      .select("*")
-      .eq("template_key", "login_otp")
-      .is("coach_id", null)
-      .eq("is_active", true)
-      .maybeSingle();
-
     const subjectTpl = template?.subject || "Your login code: {{otp_code}}";
     const bodyTpl =
       template?.body_html ||
@@ -240,7 +225,7 @@ Deno.serve(async (req) => {
       expiry_minutes: String(OTP_TTL_MINUTES),
     };
 
-    await sendEmail({
+    const sendPromise = sendEmail({
       account,
       to: normalizedEmail,
       subject: renderTemplate(subjectTpl, vars),
@@ -248,7 +233,18 @@ Deno.serve(async (req) => {
       fromName: template?.from_name,
       replyToName: template?.reply_to_name,
       replyToEmail: template?.reply_to_email,
-    });
+    }).catch((err) => console.error("send-login-otp background send failed:", err));
+
+    // Respond as soon as the code is safely stored — don't make the client
+    // wait on the SMTP/API round-trip. EdgeRuntime.waitUntil keeps the
+    // function instance alive long enough to finish the send in the background.
+    // @ts-ignore -- EdgeRuntime is a Supabase/Deno Deploy runtime global, not in the TS lib.
+    if (typeof EdgeRuntime !== "undefined") {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(sendPromise);
+    } else {
+      await sendPromise;
+    }
 
     return json({ success: true });
   } catch (err) {
