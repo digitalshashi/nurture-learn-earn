@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Video, Search, Filter, Play, Clock, HardDrive,
@@ -14,11 +13,15 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { deleteFromCloud, listCloudFiles } from "@/lib/cloud-storage";
 
 interface VideoFile {
   name: string;
   id: string;
   created_at: string;
+  folder: string;
+  key: string;
+  publicUrl: string;
   metadata: {
     size: number;
     mimetype: string;
@@ -41,51 +44,62 @@ export default function VideoLibrary() {
     if (!user) return;
     setLoading(true);
     try {
-      // List all files in the user's recordings folder
-      const { data: recordings } = await supabase.storage
-        .from("course-videos")
-        .list(`recordings/${user.id}`, { sortBy: { column: "created_at", order: "desc" } });
+      // List from R2/S3 bucket (1corehub) under user videos + recordings
+      const [recordings, uploads] = await Promise.all([
+        listCloudFiles(`${user.id}/recordings/`),
+        listCloudFiles(`${user.id}/videos/`),
+      ]);
 
-      const { data: uploads } = await supabase.storage
-        .from("course-videos")
-        .list(`videos/${user.id}`, { sortBy: { column: "created_at", order: "desc" } });
+      const mapItems = (items: typeof recordings, folder: string): VideoFile[] =>
+        items
+          .filter((f) => f.key && !f.key.endsWith("/"))
+          .map((f) => {
+            const name = f.key.split("/").pop() || f.key;
+            return {
+              name,
+              id: f.key,
+              key: f.key,
+              folder,
+              publicUrl: f.publicUrl || "",
+              created_at: f.lastModified || new Date().toISOString(),
+              metadata: { size: f.size, mimetype: "video/*" },
+            };
+          });
 
       const allVideos: VideoFile[] = [
-        ...(recordings || []).map((f: any) => ({ ...f, folder: "recordings" })),
-        ...(uploads || []).map((f: any) => ({ ...f, folder: "videos" })),
-      ].filter((f: any) => f.name && !f.name.startsWith("."));
+        ...mapItems(recordings, "recordings"),
+        ...mapItems(uploads, "videos"),
+      ].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
 
       setVideos(allVideos);
     } catch (err) {
       console.error(err);
+      toast({
+        title: "Could not load videos",
+        description: err instanceof Error ? err.message : "Check cloud storage config",
+        variant: "destructive",
+      });
     }
     setLoading(false);
   };
 
-  const getPublicUrl = (video: any) => {
-    const folder = video.folder === "recordings" ? "recordings" : "videos";
-    const { data } = supabase.storage
-      .from("course-videos")
-      .getPublicUrl(`${folder}/${user!.id}/${video.name}`);
-    return data.publicUrl;
-  };
+  const getPublicUrl = (video: VideoFile) => video.publicUrl;
 
-  const copyLink = (video: any) => {
+  const copyLink = (video: VideoFile) => {
     const url = getPublicUrl(video);
     navigator.clipboard.writeText(url);
     toast({ title: "Link copied!" });
   };
 
-  const deleteVideo = async (video: any) => {
-    const folder = video.folder === "recordings" ? "recordings" : "videos";
-    const { error } = await supabase.storage
-      .from("course-videos")
-      .remove([`${folder}/${user!.id}/${video.name}`]);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
+  const deleteVideo = async (video: VideoFile) => {
+    try {
+      await deleteFromCloud(video.key);
       toast({ title: "Video deleted" });
       setVideos((v) => v.filter((f) => f.id !== video.id));
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 

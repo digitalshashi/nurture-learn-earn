@@ -71,18 +71,14 @@ export function BrandingTab() {
   ) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/branding/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("course-resources")
-      .upload(path, file, { upsert: true });
-    if (error) {
+    try {
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const result = await uploadUserFile(user.id, "branding", file);
+      setter(result.publicUrl);
+      toast({ title: "Uploaded!" });
+    } catch (error: any) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-      return;
     }
-    const { data: urlData } = supabase.storage.from("course-resources").getPublicUrl(path);
-    setter(urlData.publicUrl);
-    toast({ title: "Uploaded!" });
   };
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;

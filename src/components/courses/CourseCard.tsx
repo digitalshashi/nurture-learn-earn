@@ -1,14 +1,13 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Lock } from "lucide-react";
-
-const BADGE_STYLES: Record<string, string> = {
-  free: "bg-muted text-muted-foreground",
-  silver: "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200",
-  gold: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200",
-  diamond: "bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-200",
-};
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Download, Lock, MoreHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CourseCardProps {
   id: string;
@@ -20,87 +19,151 @@ interface CourseCardProps {
   accessLevel?: string;
   progress?: number;
   locked?: boolean;
+  instructorName?: string;
+  sectionCount?: number;
+  lectureCount?: number;
+  isPaid?: boolean;
   onClick: () => void;
+  onContinue?: () => void;
+  onManage?: () => void;
 }
 
 export function CourseCard({
   title,
   thumbnail,
   price,
-  category,
   accessLevel = "free",
   progress = 0,
   locked = false,
+  instructorName = "Instructor",
+  sectionCount = 0,
+  lectureCount = 0,
+  isPaid,
   onClick,
+  onContinue,
+  onManage,
 }: CourseCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const paid = isPaid ?? price > 0;
+  const ctaLabel = progress > 0 && progress < 100 ? "Continue" : progress >= 100 ? "View Again" : "Start";
+
   return (
-    <Card
-      className={`card-shadow hover:card-shadow-hover transition-shadow overflow-hidden group h-[320px] flex flex-col ${
-        locked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
-      }`}
-      onClick={onClick}
+    <div
+      className={cn(
+        "group rounded-xl border border-border bg-card overflow-hidden flex flex-col",
+        "shadow-sm hover:shadow-md transition-shadow",
+        locked ? "opacity-80" : "cursor-pointer",
+      )}
+      onClick={() => {
+        if (locked || menuOpen) return;
+        onClick();
+      }}
     >
-      {/* Fixed height thumbnail */}
-      <div className="h-[160px] min-h-[160px] bg-secondary overflow-hidden relative">
+      {/* 16:9 thumbnail */}
+      <div className="relative w-full aspect-video bg-zinc-900 overflow-hidden">
         <img
-          src={thumbnail}
+          src={thumbnail || "/placeholder.svg"}
           alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
         />
         {locked && (
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
-            <Lock className="h-8 w-8 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
-              Upgrade to <span className="capitalize font-bold">{accessLevel}</span> to unlock
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 text-white">
+            <Lock className="h-7 w-7" />
+            <span className="text-xs font-medium">
+              Upgrade to <span className="capitalize font-semibold">{accessLevel}</span>
             </span>
           </div>
+        )}
+
+        {/* Options menu */}
+        <div className="absolute top-2.5 right-2.5" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="h-8 w-8 rounded-full bg-black/55 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+                aria-label="Course options"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={onClick}>Open course</DropdownMenuItem>
+              {onContinue && (
+                <DropdownMenuItem onClick={onContinue}>
+                  {ctaLabel}
+                </DropdownMenuItem>
+              )}
+              {onManage && (
+                <DropdownMenuItem onClick={onManage}>Manage</DropdownMenuItem>
+              )}
+              <DropdownMenuItem disabled className="text-muted-foreground">
+                <MoreHorizontal className="h-3.5 w-3.5 mr-2" />
+                More soon
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {paid && (
+          <Badge className="absolute bottom-2 left-2 bg-black/70 text-white border-0 text-[10px]">
+            Paid
+          </Badge>
         )}
       </div>
 
-      {/* Content area - flex grow to fill remaining space */}
-      <CardContent className="pt-3 pb-3 px-4 flex flex-col flex-1 min-h-0">
-        {/* Title - 2 lines max */}
-        <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{title}</h3>
+      {/* Body */}
+      <div className="p-4 flex flex-col flex-1 gap-2">
+        <h3 className="font-bold text-[15px] leading-snug line-clamp-2 text-foreground">{title}</h3>
+        <p className="text-sm text-muted-foreground truncate">{instructorName}</p>
+        <p className="text-xs text-muted-foreground">
+          {sectionCount} {sectionCount === 1 ? "section" : "sections"} · {lectureCount}{" "}
+          {lectureCount === 1 ? "lecture" : "lectures"}
+        </p>
 
-        {/* Tags + Price row */}
-        <div className="flex items-center justify-between mt-2 gap-2 overflow-hidden">
-          <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-            <Badge variant="secondary" className="text-[10px] font-medium shrink-0">{category}</Badge>
-            <Badge className={`text-[10px] font-medium capitalize border-0 shrink-0 ${BADGE_STYLES[accessLevel] || BADGE_STYLES.free}`}>
-              {accessLevel}
-            </Badge>
+        {/* Green progress */}
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            />
           </div>
-          <span className="text-sm font-bold text-accent shrink-0">{price > 0 ? `₹${price}` : "Free"}</span>
+          <span className="text-xs font-semibold text-foreground tabular-nums w-9 text-right">
+            {progress}%
+          </span>
         </div>
 
-        {/* Spacer pushes bottom content down */}
-        <div className="flex-1" />
-
-        {/* Progress bar */}
-        {!locked && progress > 0 && (
-          <div className="mt-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-medium text-muted-foreground">Progress</span>
-              <span className="text-[10px] font-bold text-primary">{progress}%</span>
-            </div>
-            <Progress value={progress} className="h-1.5" />
-          </div>
-        )}
-
-        {/* Bottom action */}
-        <div className="mt-2 min-h-[20px]">
-          {!locked && progress >= 100 && (
-            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200 text-[10px] border-0">
-              ✓ Completed
-            </Badge>
-          )}
-          {!locked && progress > 0 && progress < 100 && (
-            <span className="text-xs font-medium text-primary cursor-pointer hover:underline">
-              Continue →
-            </span>
+        {/* CTA row */}
+        <div className="flex items-center gap-2 mt-auto pt-2">
+          <button
+            type="button"
+            disabled={locked}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (locked) return;
+              (onContinue || onClick)();
+            }}
+            className={cn(
+              "flex-1 h-10 rounded-lg bg-foreground text-background text-sm font-semibold",
+              "hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            )}
+          >
+            {ctaLabel}
+          </button>
+          {progress > 0 && !locked && (
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="h-10 w-10 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
+              title="Download for offline"
+              aria-label="Download for offline"
+            >
+              <Download className="h-4 w-4" />
+            </button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

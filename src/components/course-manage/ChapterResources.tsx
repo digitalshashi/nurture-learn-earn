@@ -47,13 +47,11 @@ export default function ChapterResources({
     setUploading(true);
     try {
       const newResources = [...resources];
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
       for (const file of Array.from(files)) {
         const ext = file.name.split(".").pop()?.toLowerCase() || "";
-        const filePath = `${user.id}/${Date.now()}-${file.name}`;
-        const { error } = await supabase.storage.from("course-resources").upload(filePath, file);
-        if (error) throw error;
-        const { data: urlData } = supabase.storage.from("course-resources").getPublicUrl(filePath);
-        
+        const result = await uploadUserFile(user.id, "resources", file);
+
         let type = "other";
         if (ext === "pdf") type = "pdf";
         else if (["doc", "docx"].includes(ext)) type = "doc";
@@ -62,7 +60,7 @@ export default function ChapterResources({
 
         newResources.push({
           name: file.name,
-          url: urlData.publicUrl,
+          url: result.publicUrl,
           type,
           size: formatFileSize(file.size),
         });

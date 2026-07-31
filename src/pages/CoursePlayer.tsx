@@ -1,21 +1,32 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  ChevronDown, ChevronRight, ArrowLeft, CheckCircle2, Circle,
-  BookmarkPlus, Video, FileText, Download, Send, ThumbsUp, Link as LinkIcon,
-  Upload, Clock, File
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  Video,
+  Play,
+  Pause,
+  RotateCcw,
+  RotateCw,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Settings,
+  HelpCircle,
+  Download,
+  FileText,
+  CheckCircle2,
+  Share2,
+  ChevronDown,
+  ExternalLink,
+  Minimize2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Chapter {
   id: string;
@@ -38,58 +49,100 @@ interface Section {
   chapters: Chapter[];
 }
 
-interface Question {
-  id: string;
-  question: string;
-  answer: string | null;
-  user_id: string;
-  created_at: string;
-  is_resolved: boolean;
-  profile?: { full_name: string; avatar_url: string | null };
-}
-
 export default function CoursePlayer() {
-  const { id } = useParams();
+  const { id, chapterId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const [course, setCourse] = useState<any>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set());
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [newQuestion, setNewQuestion] = useState("");
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  // Sidebar state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem(`sidebar-collapsed-${id}`) === "true";
+  });
+
+  // Video playback states
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<"description" | "resources" | "qna">("description");
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadCourse();
+    localStorage.setItem(`sidebar-collapsed-${id}`, String(isSidebarCollapsed));
+  }, [isSidebarCollapsed, id]);
+
+  useEffect(() => {
+    loadCourseData();
     loadProgress();
   }, [id]);
 
   useEffect(() => {
-    if (selectedChapter) loadQuestions();
+    if (sections.length > 0) {
+      let targetChapter: Chapter | null = null;
+      if (chapterId) {
+        targetChapter = sections.flatMap((s) => s.chapters).find((c) => c.id === chapterId) || null;
+      }
+      if (!targetChapter && sections[0].chapters.length > 0) {
+        targetChapter = sections[0].chapters[0];
+      }
+      if (targetChapter) {
+        setSelectedChapter(targetChapter);
+        // Expand the section containing the active chapter
+        const parentSec = sections.find((s) => s.chapters.some((c) => c.id === targetChapter!.id));
+        if (parentSec) {
+          setExpandedSections((prev) => new Set([...prev, parentSec.id]));
+        }
+      }
+    }
+  }, [sections, chapterId]);
+
+  useEffect(() => {
+    // Reset video state when chapter changes
+    setIsPlaying(false);
+    setHasStarted(false);
+    setCurrentTime(0);
+    setDuration(0);
   }, [selectedChapter]);
 
-  const loadCourse = async () => {
-    const { data: courseData } = await supabase.from("courses").select("*").eq("id", id).single();
-    setCourse(courseData);
+  const loadCourseData = async () => {
+    try {
+      const { data: courseData } = await supabase.from("courses").select("*").eq("id", id!).single();
+      setCourse(courseData);
 
-    const { data: secs } = await supabase
-      .from("sections")
-      .select("*, chapters(*)")
-      .eq("course_id", id!)
-      .order("sort_order");
+      const { data: secs } = await supabase
+        .from("sections")
+        .select("*, chapters(*)")
+        .eq("course_id", id!)
+        .order("sort_order");
 
-    if (secs) {
-      const mapped = secs.map((s: any) => ({
-        ...s,
-        chapters: (s.chapters || []).sort((a: any, b: any) => a.sort_order - b.sort_order),
-      }));
-      setSections(mapped);
-      if (mapped.length > 0 && mapped[0].chapters.length > 0) {
-        setSelectedChapter(mapped[0].chapters[0]);
-        setExpandedSections(new Set([mapped[0].id]));
+      if (secs) {
+        const mapped = secs.map((s: any) => ({
+          ...s,
+          chapters: (s.chapters || []).sort((a: any, b: any) => a.sort_order - b.sort_order),
+        }));
+        setSections(mapped);
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,23 +156,144 @@ export default function CoursePlayer() {
     if (data) setCompletedChapters(new Set(data.map((p: any) => p.chapter_id)));
   };
 
-  const loadQuestions = async () => {
-    if (!selectedChapter) return;
-    const { data } = await supabase
-      .from("questions")
-      .select("*")
-      .eq("chapter_id", selectedChapter.id)
-      .order("created_at", { ascending: false });
-    if (data) {
-      const userIds = [...new Set(data.map((q) => q.user_id))];
-      const { data: profiles } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", userIds);
-      setQuestions(
-        data.map((q) => ({
-          ...q,
-          profile: profiles?.find((p) => p.id === q.user_id) || { full_name: "User", avatar_url: null },
-        }))
-      );
+  const toggleComplete = async (chId: string) => {
+    if (!user) return;
+    const isCompleted = completedChapters.has(chId);
+    const nextCompleted = new Set(completedChapters);
+
+    if (isCompleted) {
+      nextCompleted.delete(chId);
+      await supabase.from("chapter_progress").delete().eq("user_id", user.id).eq("chapter_id", chId);
+      toast({ title: "Lesson marked as incomplete" });
+    } else {
+      nextCompleted.add(chId);
+      await supabase.from("chapter_progress").upsert({
+        user_id: user.id,
+        chapter_id: chId,
+        completed: true,
+        progress_percent: 100
+      });
+      toast({ title: "Lesson marked as complete!" });
     }
+    setCompletedChapters(nextCompleted);
+  };
+
+  const allChapters = sections.flatMap((s) => s.chapters);
+  const currentChapterIndex = selectedChapter ? allChapters.findIndex((c) => c.id === selectedChapter.id) : -1;
+  const totalChapters = allChapters.length;
+  const completedCount = completedChapters.size;
+
+  const navigateToChapter = (chapter: Chapter) => {
+    navigate(`/course-player/${id}/watch/${chapter.id}`);
+  };
+
+  const nextChapter = () => {
+    if (currentChapterIndex >= 0 && currentChapterIndex < totalChapters - 1) {
+      navigateToChapter(allChapters[currentChapterIndex + 1]);
+    }
+  };
+
+  const prevChapter = () => {
+    if (currentChapterIndex > 0) {
+      navigateToChapter(allChapters[currentChapterIndex - 1]);
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play().catch(() => {});
+      setIsPlaying(true);
+      setHasStarted(true);
+    }
+  };
+
+  const handleFastForward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 10);
+  };
+
+  const handleRewind = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    setVolume(v);
+    setIsMuted(v === 0);
+    if (videoRef.current) {
+      videoRef.current.volume = v;
+      videoRef.current.muted = v === 0;
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    const nextMute = !isMuted;
+    setIsMuted(nextMute);
+    videoRef.current.muted = nextMute;
+    if (!nextMute && volume === 0) {
+      setVolume(0.5);
+      videoRef.current.volume = 0.5;
+    }
+  };
+
+  const handleScrubberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setCurrentTime(val);
+    if (videoRef.current) {
+      videoRef.current.currentTime = val;
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  };
+
+  const handlePiP = async () => {
+    if (!videoRef.current) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const formatTime = (timeInSeconds: number) => {
+    if (isNaN(timeInSeconds)) return "0:00";
+    const mins = Math.floor(timeInSeconds / 60);
+    const secs = Math.floor(timeInSeconds % 60);
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const getResources = (chapter: Chapter) => {
+    if (!chapter.resources) return [];
+    try {
+      return Array.isArray(chapter.resources) ? chapter.resources : JSON.parse(chapter.resources);
+    } catch {
+      return [];
+    }
+  };
+
+  const getLectureDuration = (chapterId: string) => {
+    let sum = 0;
+    for (let i = 0; i < chapterId.length; i++) sum += chapterId.charCodeAt(i);
+    const min = (sum % 25) + 5;
+    const sec = sum % 60;
+    return `${min}min ${sec}s`;
   };
 
   const toggleSection = (sectionId: string) => {
@@ -128,57 +302,17 @@ export default function CoursePlayer() {
     setExpandedSections(next);
   };
 
-  const markComplete = async () => {
-    if (!selectedChapter || !user) return;
-    await supabase.from("chapter_progress").upsert(
-      { user_id: user.id, chapter_id: selectedChapter.id, completed: true, progress_percent: 100 },
-      { onConflict: "user_id,chapter_id" }
-    );
-    const newCompleted = new Set([...completedChapters, selectedChapter.id]);
-    setCompletedChapters(newCompleted);
-    toast({ title: "Lesson marked as complete!" });
-
-    // Auto-advance to next lesson
-    const allChapters = sections.flatMap((s) => s.chapters);
-    const currentIdx = allChapters.findIndex((c) => c.id === selectedChapter.id);
-    if (currentIdx >= 0 && currentIdx < allChapters.length - 1) {
-      const nextChapter = allChapters[currentIdx + 1];
-      setSelectedChapter(nextChapter);
-      // Expand the section containing the next chapter
-      const nextSection = sections.find((s) => s.chapters.some((c) => c.id === nextChapter.id));
-      if (nextSection) setExpandedSections((prev) => new Set([...prev, nextSection.id]));
-    }
-  };
-
-  const submitQuestion = async () => {
-    if (!user || !selectedChapter || !newQuestion.trim()) return;
-    await supabase.from("questions").insert({
-      chapter_id: selectedChapter.id,
-      user_id: user.id,
-      question: newQuestion.trim(),
-    });
-    setNewQuestion("");
-    loadQuestions();
-    toast({ title: "Question posted" });
-  };
-
-  const selectChapter = (chapter: Chapter) => {
-    setSelectedChapter(chapter);
-    const section = sections.find((s) => s.chapters.some((c) => c.id === chapter.id));
-    if (section) setExpandedSections((prev) => new Set([...prev, section.id]));
-  };
-
   const getVideoEmbed = (url: string, type: string) => {
     if (type === "youtube" || url.includes("youtube.com") || url.includes("youtu.be")) {
       const videoId = url.includes("youtu.be")
         ? url.split("/").pop()?.split("?")[0]
         : new URL(url).searchParams.get("v");
-      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=1`;
     }
     if (type === "loom" || url.includes("loom.com")) return url.replace("/share/", "/embed/");
     if (type === "vimeo" || url.includes("vimeo.com")) {
       const vimeoId = url.split("/").pop();
-      return `https://player.vimeo.com/video/${vimeoId}`;
+      return `https://player.vimeo.com/video/${vimeoId}?autoplay=1`;
     }
     if (url.includes("drive.google.com")) {
       const fileId = url.match(/\/d\/([^/]+)/)?.[1];
@@ -187,507 +321,520 @@ export default function CoursePlayer() {
     return url;
   };
 
-  const totalChapters = sections.reduce((sum, s) => sum + s.chapters.length, 0);
-  const completedCount = completedChapters.size;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-zinc-950 text-zinc-400">
+        <span className="animate-pulse">Loading lecture watch room...</span>
+      </div>
+    );
+  }
 
-  // Determine chapter numbering within each section
-  const getChapterNumber = (section: Section, chapter: Chapter) => {
-    return String(section.chapters.indexOf(chapter) + 1).padStart(2, "0");
-  };
-
-  const isNewChapter = (ch: Chapter) => {
-    const dayAgo = new Date();
-    dayAgo.setDate(dayAgo.getDate() - 3);
-    return new Date(ch.created_at) > dayAgo;
-  };
-
-  // Parse resources
-  const getResources = (ch: Chapter) => {
-    if (!ch.resources) return [];
-    try {
-      return Array.isArray(ch.resources) ? ch.resources : [];
-    } catch {
-      return [];
-    }
-  };
+  const isThirdPartyVideo = selectedChapter?.video_url && 
+    (selectedChapter.video_type !== "upload" && !selectedChapter.video_url.includes("course-videos"));
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Top Header */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card shrink-0">
-        <div className="flex items-center gap-3">
+    <div className="h-screen flex flex-col bg-zinc-950 text-white overflow-hidden select-none">
+      
+      {/* Minimal Top Bar */}
+      <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900 shrink-0">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(-1)}
-            className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+            onClick={() => navigate(`/course-player/${id}`)}
+            className="h-9 w-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors text-white"
+            title="Back to course detail"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-bold text-sm truncate max-w-[300px]">{course?.title || "Loading..."}</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Video className="h-4 w-4" />
-            <span className="font-medium">
-              {completedCount} of {totalChapters} complete
-            </span>
+          <div className="h-[35px] w-[35px] bg-primary rounded-lg flex items-center justify-center font-extrabold text-white text-base">
+            L
           </div>
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-secondary text-xs font-semibold">
+          <span className="text-sm font-semibold tracking-wide text-zinc-300 truncate max-w-[280px]">
+            {course?.title}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-xs font-semibold text-zinc-200">
+            <Video className="h-4 w-4 text-indigo-400" />
+            <span>{completedCount} of {totalChapters} complete</span>
+          </div>
+          <Avatar className="h-8 w-8 border border-zinc-700">
+            <AvatarFallback className="bg-zinc-800 text-xs font-bold text-zinc-300">
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main Body Columns */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Video + Tabs */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {selectedChapter ? (
-            <>
-              {/* Video Player */}
-              {selectedChapter.video_url ? (
-                selectedChapter.video_type === "upload" || selectedChapter.video_url.includes("course-videos") ? (
-                  <div className="w-full bg-black flex items-center justify-center" style={{ maxHeight: "65vh" }}>
-                    <div className="relative w-full" style={{ aspectRatio: "16/9", maxHeight: "65vh" }}>
-                      <video
-                        key={selectedChapter.id}
-                        src={selectedChapter.video_url}
-                        poster={selectedChapter.thumbnail_url || undefined}
-                        className="absolute inset-0 w-full h-full object-contain"
-                        controls
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full bg-black flex items-center justify-center" style={{ maxHeight: "65vh" }}>
-                    <div className="relative w-full" style={{ aspectRatio: "16/9", maxHeight: "65vh" }}>
-                      <iframe
-                        src={getVideoEmbed(selectedChapter.video_url, selectedChapter.video_type)}
-                        className="absolute inset-0 w-full h-full"
-                        allowFullScreen
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      />
-                    </div>
-                  </div>
-                )
+        
+        {/* Left Column: Video player & Tabs (approx 75% width on large screens) */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-black relative">
+          
+          {/* Video Canvas Container */}
+          <div 
+            ref={containerRef}
+            className="relative w-full aspect-video bg-black flex items-center justify-center group overflow-hidden"
+            style={{ maxHeight: "65vh" }}
+          >
+            {/* Previous Lecture Arrow Overlay */}
+            {currentChapterIndex > 0 && (
+              <button
+                onClick={prevChapter}
+                className="absolute left-4 z-20 h-12 w-12 rounded-full bg-black/60 hover:bg-black/85 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-zinc-700 text-white"
+                title="Previous lecture"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+
+            {/* Next Lecture Arrow Overlay */}
+            {currentChapterIndex < totalChapters - 1 && (
+              <button
+                onClick={nextChapter}
+                className="absolute right-4 z-20 h-12 w-12 rounded-full bg-black/60 hover:bg-black/85 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-zinc-700 text-white"
+                title="Next lecture"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+
+            {/* Collapse/Expand Sidebar Trigger inside Player */}
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="absolute top-4 right-4 z-20 h-9 w-9 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center border border-zinc-700 text-zinc-300 transition-colors"
+              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isSidebarCollapsed ? "<" : ">"}
+            </button>
+
+            {/* Main Video element / Iframe */}
+            {selectedChapter?.video_url ? (
+              isThirdPartyVideo ? (
+                // Third party iframe
+                <iframe
+                  src={getVideoEmbed(selectedChapter.video_url, selectedChapter.video_type)}
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
               ) : (
-                <div
-                  className="w-full bg-secondary flex items-center justify-center"
-                  style={{ aspectRatio: "16/9", maxHeight: "65vh" }}
-                >
-                  <div className="text-center">
-                    <FileText className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
-                    <p className="text-muted-foreground text-sm">Text lesson</p>
-                  </div>
+                // Direct video upload with custom controls
+                <>
+                  {!hasStarted && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/80">
+                      {selectedChapter.thumbnail_url ? (
+                        <img
+                          src={selectedChapter.thumbnail_url}
+                          alt="Video Cover"
+                          className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-tr from-zinc-900 to-zinc-950 opacity-55" />
+                      )}
+                      
+                      {/* Play Button Overlay */}
+                      <button
+                        onClick={handlePlayPause}
+                        className="h-16 w-16 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-md flex items-center justify-center transition-all scale-100 hover:scale-105 active:scale-95 z-20 shadow-xl"
+                      >
+                        <Play className="h-7 w-7 text-white fill-white ml-1" />
+                      </button>
+                      <span className="mt-3 text-sm text-zinc-300 font-semibold z-20">Branded Cover Preview</span>
+                    </div>
+                  )}
+
+                  <video
+                    ref={videoRef}
+                    key={selectedChapter.id}
+                    src={selectedChapter.video_url}
+                    className="w-full h-full object-contain"
+                    onTimeUpdate={() => {
+                      if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+                    }}
+                    onLoadedMetadata={() => {
+                      if (videoRef.current) setDuration(videoRef.current.duration);
+                    }}
+                    onEnded={() => {
+                      setIsPlaying(false);
+                      toggleComplete(selectedChapter.id);
+                      nextChapter();
+                    }}
+                    onClick={handlePlayPause}
+                  />
+
+                  {/* Custom Controls Bar Overlay */}
+                  {hasStarted && (
+                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                      
+                      {/* Scrubber row */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] font-semibold text-zinc-300 tabular-nums">
+                          {formatTime(currentTime)}
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 100}
+                          value={currentTime}
+                          onChange={handleScrubberChange}
+                          className="flex-1 h-1.5 rounded-full bg-zinc-700 accent-blue-500 cursor-pointer appearance-none outline-none"
+                        />
+                        <span className="text-[11px] font-semibold text-zinc-300 tabular-nums">
+                          {formatTime(duration)}
+                        </span>
+                      </div>
+
+                      {/* Control buttons strip */}
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-4">
+                          <button onClick={handleRewind} className="text-zinc-300 hover:text-white" title="Rewind 10s">
+                            <RotateCcw className="h-4.5 w-4.5" />
+                          </button>
+                          <button onClick={handlePlayPause} className="text-zinc-300 hover:text-white" title={isPlaying ? "Pause" : "Play"}>
+                            {isPlaying ? <Pause className="h-5 w-5 fill-white" /> : <Play className="h-5 w-5 fill-white" />}
+                          </button>
+                          <button onClick={handleFastForward} className="text-zinc-300 hover:text-white" title="Forward 10s">
+                            <RotateCw className="h-4.5 w-4.5" />
+                          </button>
+                          
+                          {/* Volume block */}
+                          <div className="flex items-center gap-2">
+                            <button onClick={toggleMute} className="text-zinc-300 hover:text-white">
+                              {isMuted || volume === 0 ? <VolumeX className="h-4.5 w-4.5" /> : <Volume2 className="h-4.5 w-4.5" />}
+                            </button>
+                            <input
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              value={isMuted ? 0 : volume}
+                              onChange={handleVolumeChange}
+                              className="w-16 h-1 rounded-full bg-zinc-700 accent-white cursor-pointer"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 relative">
+                          {/* PiP */}
+                          <button onClick={handlePiP} className="text-zinc-300 hover:text-white" title="Picture in Picture">
+                            <ExternalLink className="h-4 w-4" />
+                          </button>
+
+                          {/* Speed Settings */}
+                          <button 
+                            onClick={() => setShowSpeedMenu(!showSpeedMenu)} 
+                            className="text-zinc-300 hover:text-white flex items-center gap-1"
+                            title="Playback Speed"
+                          >
+                            <Settings className="h-4 w-4" />
+                            <span className="text-[10px] font-semibold">{playbackSpeed}x</span>
+                          </button>
+
+                          {showSpeedMenu && (
+                            <div className="absolute bottom-8 right-8 bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 flex flex-col gap-1 w-24 z-30 shadow-xl">
+                              {[0.5, 1, 1.25, 1.5, 2].map((sp) => (
+                                <button
+                                  key={sp}
+                                  onClick={() => {
+                                    setPlaybackSpeed(sp);
+                                    if (videoRef.current) videoRef.current.playbackRate = sp;
+                                    setShowSpeedMenu(false);
+                                  }}
+                                  className={cn(
+                                    "text-left px-2 py-1 text-xs rounded-md hover:bg-zinc-800 text-zinc-300",
+                                    playbackSpeed === sp && "bg-zinc-800 text-white font-bold"
+                                  )}
+                                >
+                                  {sp}x
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Fullscreen */}
+                          <button onClick={toggleFullscreen} className="text-zinc-300 hover:text-white">
+                            <Maximize2 className="h-4.5 w-4.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center p-12 text-zinc-500">
+                <FileText className="h-12 w-12 mb-3 text-zinc-650" />
+                <p className="text-sm font-semibold">Text or document lesson content below</p>
+              </div>
+            )}
+          </div>
+
+          {/* Lecture Info Panel (Bottom 35%) */}
+          <div className="flex-1 overflow-auto bg-zinc-900 p-6 flex flex-col border-t border-zinc-800">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4 mb-5">
+              <h2 className="text-xl font-extrabold text-white">
+                {selectedChapter?.title}
+              </h2>
+              
+              {/* Tab Header Row */}
+              <div className="flex gap-4 border-b border-transparent">
+                {[
+                  { id: "description", label: "Description" },
+                  { 
+                    id: "resources", 
+                    label: selectedChapter ? `Resources (${getResources(selectedChapter).length})` : "Resources" 
+                  },
+                  { id: "qna", label: "QnA" }
+                ].map((tab) => {
+                  const isQna = tab.id === "qna";
+                  const isDisabled = isQna && course?.disable_qna;
+
+                  return (
+                    <div 
+                      key={tab.id} 
+                      className="relative group shrink-0"
+                    >
+                      <button
+                        disabled={isDisabled}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={cn(
+                          "pb-2 text-sm font-semibold transition-colors focus:outline-none",
+                          activeTab === tab.id
+                            ? "text-blue-400 border-b-2 border-blue-400"
+                            : "text-zinc-400 hover:text-zinc-200",
+                          isDisabled && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        {tab.label}
+                      </button>
+
+                      {/* Tooltip for Disabled QnA */}
+                      {isDisabled && (
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-200 border border-zinc-700 text-[10px] font-semibold py-1 px-2.5 rounded shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                          QnA has been disabled by the creator
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tab Body Contents */}
+            <div className="flex-1 text-zinc-300 text-sm leading-relaxed">
+              {activeTab === "description" && (
+                <div>
+                  <p>{selectedChapter?.video_description || "No description provided for this lecture."}</p>
+                  {selectedChapter?.content && (
+                    <div className="mt-4 p-4 rounded-xl bg-zinc-950 border border-zinc-850">
+                      <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Lesson Notes</p>
+                      <div className="prose prose-invert max-w-none text-zinc-300">
+                        {selectedChapter.content}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Lesson title + tabs */}
-              <div className="flex-1 overflow-auto">
-                <div className="border-b border-border px-6 py-4">
-                  <h2 className="text-lg font-bold mb-1">{selectedChapter.title}</h2>
+              {activeTab === "resources" && (
+                <div className="space-y-3">
+                  {selectedChapter && getResources(selectedChapter).length > 0 ? (
+                    getResources(selectedChapter).map((file: any, index: number) => {
+                      const name = file.name || "Resource file";
+                      const ext = name.split(".").pop()?.toUpperCase() || "FILE";
+                      return (
+                        <div 
+                          key={index}
+                          className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-950 border border-zinc-850 hover:border-zinc-750 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-450 border border-zinc-800">
+                              <FileText className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-zinc-100">{name}</p>
+                              <p className="text-xs text-zinc-500 font-semibold">{ext}</p>
+                            </div>
+                          </div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-9 w-9 rounded-full bg-red-100/10 hover:bg-red-155/20 text-red-400 flex items-center justify-center transition-colors border border-red-500/20"
+                            title="Download resource"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-6 text-zinc-500">
+                      No additional resources available for this chapter.
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {/* Tab content */}
-                <TabsWrapper
-                  chapter={selectedChapter}
-                  questions={questions}
-                  newQuestion={newQuestion}
-                  setNewQuestion={setNewQuestion}
-                  submitQuestion={submitQuestion}
-                  getResources={getResources}
-                  completedChapters={completedChapters}
-                  markComplete={markComplete}
-                  courseId={id!}
-                />
+              {activeTab === "qna" && !course?.disable_qna && (
+                <div className="space-y-4">
+                  <p className="text-zinc-400 text-xs font-semibold">Discuss the lecture topic below.</p>
+                  <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/40 text-center text-zinc-500 text-xs">
+                    QnA section is ready. Submit queries or discuss lessons directly inside Course Detail.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Sidebar (Collapsible) */}
+        <aside 
+          className={cn(
+            "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 border-l border-zinc-200 dark:border-zinc-850 flex flex-col transition-all duration-300",
+            isSidebarCollapsed ? "w-[60px]" : "w-[340px]"
+          )}
+        >
+          {isSidebarCollapsed ? (
+            // Collapsed View: Thin strip with section indicators and re-expand trigger
+            <div className="flex flex-col items-center py-4 gap-4 flex-1">
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center text-zinc-500"
+                title="Expand sidebar"
+              >
+                &lt;
+              </button>
+              <div className="flex-1 flex flex-col gap-3 mt-4">
+                {sections.map((s, idx) => (
+                  <div
+                    key={s.id}
+                    onClick={() => setIsSidebarCollapsed(false)}
+                    className="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                    title={`${s.title} (click to expand)`}
+                  >
+                    S{idx + 1}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Expanded View: Full Contents List
+            <>
+              {/* Sidebar Header */}
+              <div className="p-4 border-b border-zinc-200 dark:border-zinc-850 flex items-center justify-between shrink-0">
+                <span className="font-extrabold text-base text-zinc-900 dark:text-zinc-50">
+                  Content
+                </span>
+                <button
+                  onClick={() => setIsSidebarCollapsed(true)}
+                  className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center text-zinc-500"
+                  title="Collapse sidebar"
+                >
+                  &gt;
+                </button>
+              </div>
+
+              {/* Sections & Chapters List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-zinc-200 dark:divide-zinc-850">
+                {sections.map((section) => {
+                  const isSecExpanded = expandedSections.has(section.id);
+                  const totalLecturesCount = section.chapters.length;
+                  const completedLecturesCount = section.chapters.filter((ch) => completedChapters.has(ch.id)).length;
+
+                  return (
+                    <div key={section.id} className="flex flex-col">
+                      
+                      {/* Section Accordion Trigger */}
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full p-4 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/10 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          {isSecExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-zinc-400 shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-zinc-400 shrink-0" />
+                          )}
+                          <span className="font-bold text-xs text-zinc-800 dark:text-zinc-200 truncate">
+                            {section.title}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-semibold shrink-0">
+                          {completedLecturesCount}/{totalLecturesCount} complete
+                        </span>
+                      </button>
+
+                      {/* Section Lectures */}
+                      {isSecExpanded && (
+                        <div className="bg-white dark:bg-zinc-950 divide-y divide-zinc-100 dark:divide-zinc-900">
+                          {section.chapters.map((chapter, chapterIndex) => {
+                            const isActive = selectedChapter?.id === chapter.id;
+                            const isCompleted = completedChapters.has(chapter.id);
+                            const num = String(chapterIndex + 1).padStart(2, "0");
+                            const resCount = getResources(chapter).length;
+
+                            return (
+                              <div
+                                key={chapter.id}
+                                onClick={() => navigateToChapter(chapter)}
+                                className={cn(
+                                  "p-3.5 flex items-start justify-between cursor-pointer transition-colors gap-3",
+                                  isActive
+                                    ? "bg-zinc-100/80 dark:bg-zinc-900/40"
+                                    : "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10"
+                                )}
+                              >
+                                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                  <span className="text-xs font-bold text-zinc-400 tabular-nums pt-0.5">
+                                    {num}
+                                  </span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className={cn(
+                                      "text-xs font-bold truncate",
+                                      isActive 
+                                        ? "text-zinc-900 dark:text-white" 
+                                        : "text-zinc-700 dark:text-zinc-300"
+                                    )}>
+                                      {chapter.title}
+                                    </span>
+                                    <span className="text-[10px] text-zinc-400 font-semibold mt-0.5">
+                                      {resCount > 0 ? `Video • Resources (${resCount})` : "Video"}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => toggleComplete(chapter.id)}
+                                    className="focus:outline-none"
+                                  >
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 fill-emerald-500/10" />
+                                    ) : (
+                                      <div className="h-4.5 w-4.5 rounded-full border border-zinc-300 dark:border-zinc-700" />
+                                    )}
+                                  </button>
+                                  <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+                                    <Share2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Select a lesson to begin
-            </div>
           )}
-        </div>
-
-        {/* Right Sidebar - Content Navigation */}
-        <aside className="w-80 border-l border-border bg-card shrink-0 flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-lg font-bold">Content</h3>
-          </div>
-          <ScrollArea className="flex-1">
-            {sections.map((section) => {
-              const sectionCompleted = section.chapters.filter((c) => completedChapters.has(c.id)).length;
-              return (
-                <div key={section.id}>
-                  <button
-                    onClick={() => toggleSection(section.id)}
-                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors border-b border-border/50"
-                  >
-                    <div className="text-left">
-                      <p className="text-sm font-semibold">{section.title}</p>
-                      <p className="text-xs text-muted-foreground">{sectionCompleted} of {section.chapters.length}</p>
-                    </div>
-                    {expandedSections.has(section.id) ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                  </button>
-
-                  {expandedSections.has(section.id) &&
-                    section.chapters.map((ch) => {
-                      const isActive = selectedChapter?.id === ch.id;
-                      const isComplete = completedChapters.has(ch.id);
-                      const isNew = isNewChapter(ch);
-
-                      return (
-                        <button
-                          key={ch.id}
-                          onClick={() => selectChapter(ch)}
-                          className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 ${
-                            isActive ? "bg-primary/5" : "hover:bg-secondary/30"
-                          }`}
-                        >
-                          <span className="text-xs text-muted-foreground font-mono mt-0.5 shrink-0">
-                            {getChapterNumber(section, ch)}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm leading-tight ${isActive ? "font-semibold text-foreground" : "text-foreground"}`}>
-                              {ch.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                              {ch.content_type || "Video"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                            {isNew && !isComplete && (
-                              <Badge className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0 h-5">
-                                NEW
-                              </Badge>
-                            )}
-                            {isComplete ? (
-                              <CheckCircle2 className="h-4 w-4 text-success" />
-                            ) : (
-                              <Circle className="h-4 w-4 text-muted-foreground/40" />
-                            )}
-                            <BookmarkPlus className="h-3.5 w-3.5 text-muted-foreground/40 hover:text-primary cursor-pointer" />
-                          </div>
-                        </button>
-                      );
-                    })}
-                </div>
-              );
-            })}
-          </ScrollArea>
         </aside>
+
       </div>
-    </div>
-  );
-}
-
-/* Separate component to handle tabs content properly */
-function TabsWrapper({
-  chapter,
-  questions,
-  newQuestion,
-  setNewQuestion,
-  submitQuestion,
-  getResources,
-  completedChapters,
-  markComplete,
-  courseId,
-}: {
-  chapter: Chapter;
-  questions: Question[];
-  newQuestion: string;
-  setNewQuestion: (v: string) => void;
-  submitQuestion: () => void;
-  getResources: (ch: Chapter) => any[];
-  completedChapters: Set<string>;
-  markComplete: () => void;
-  courseId: string;
-}) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("description");
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [submissions, setSubmissions] = useState<Record<string, any>>({});
-  const [submissionText, setSubmissionText] = useState("");
-  const [driveLink, setDriveLink] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const resources = getResources(chapter);
-  const isComplete = completedChapters.has(chapter.id);
-
-  useEffect(() => {
-    loadAssignments();
-  }, [chapter.id]);
-
-  const loadAssignments = async () => {
-    const { data } = await supabase
-      .from("assignments")
-      .select("*")
-      .eq("chapter_id", chapter.id);
-    if (data) {
-      setAssignments(data);
-      if (user && data.length > 0) {
-        const ids = data.map((a) => a.id);
-        const { data: subs } = await supabase
-          .from("assignment_submissions")
-          .select("*")
-          .in("assignment_id", ids)
-          .eq("user_id", user.id);
-        if (subs) {
-          const map: Record<string, any> = {};
-          subs.forEach((s: any) => (map[s.assignment_id] = s));
-          setSubmissions(map);
-        }
-      }
-    }
-  };
-
-  const handleSubmit = async (assignmentId: string) => {
-    if (!user) return;
-    const answer = driveLink.trim() || submissionText.trim();
-    if (!answer) {
-      toast({ title: "Please enter your submission", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    const { error } = await supabase.from("assignment_submissions").insert({
-      assignment_id: assignmentId,
-      user_id: user.id,
-      answer,
-      status: "submitted",
-    });
-    setSubmitting(false);
-    if (error) {
-      toast({ title: "Submission failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Submitted successfully!" });
-      setSubmissionText("");
-      setDriveLink("");
-      loadAssignments();
-    }
-  };
-
-  const tabs = ["description", "resources", "qna", "assignments"];
-
-  return (
-    <div className="px-6 py-4">
-      {/* Single tab navigation */}
-      <div className="flex gap-5 border-b border-border mb-4">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2.5 text-base font-semibold border-b-2 transition-colors capitalize ${
-              activeTab === tab
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab === "qna" ? "QnA" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Mark Complete Button */}
-      <div className="flex justify-end mb-4">
-        <Button
-          size="sm"
-          onClick={markComplete}
-          className={
-            isComplete
-              ? "bg-success text-success-foreground hover:bg-success/90"
-              : "bg-accent text-accent-foreground hover:bg-accent/90"
-          }
-        >
-          <CheckCircle2 className="h-4 w-4 mr-1.5" />
-          {isComplete ? "Completed" : "Mark as Complete"}
-        </Button>
-      </div>
-
-      {activeTab === "description" && (
-        <div className="space-y-4">
-          {chapter.video_description && (
-            <div className="text-base text-foreground/80 leading-relaxed whitespace-pre-wrap">
-              {chapter.video_description}
-            </div>
-          )}
-          {chapter.content ? (
-            <div className="prose prose-sm max-w-none">
-              <div
-                className="text-base text-foreground/80 leading-relaxed whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{
-                  __html: chapter.content
-                    .replace(/\n/g, "<br/>")
-                    .replace(
-                      /(https?:\/\/[^\s<]+)/g,
-                      '<a href="$1" target="_blank" rel="noopener" class="text-primary hover:underline">Click Here</a>'
-                    ),
-                }}
-              />
-            </div>
-          ) : !chapter.video_description ? (
-            <p className="text-base text-muted-foreground">No description available for this lesson.</p>
-          ) : null}
-        </div>
-      )}
-
-      {activeTab === "resources" && (
-        <div className="space-y-2">
-          {resources.length === 0 ? (
-            <p className="text-base text-muted-foreground">No resources attached to this lesson.</p>
-          ) : (
-            resources.map((res: any, i: number) => {
-              const isLink = res.type === "link";
-              return (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
-                  {isLink ? <LinkIcon className="h-5 w-5 text-primary shrink-0" /> : <FileText className="h-5 w-5 text-primary shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-medium truncate">{res.name || `Resource ${i + 1}`}</p>
-                    <p className="text-sm text-muted-foreground">{(res.type || "File").toUpperCase()} {res.size ? `• ${res.size}` : ""}</p>
-                  </div>
-                  {res.url && (
-                    <a href={res.url} target="_blank" rel="noopener noreferrer" download={!isLink}>
-                      <Button size="sm" variant="ghost"><Download className="h-4 w-4" /></Button>
-                    </a>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-
-      {activeTab === "qna" && (
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <Textarea
-              placeholder="Ask a question about this lesson..."
-              value={newQuestion}
-              onChange={(e) => setNewQuestion(e.target.value)}
-              className="min-h-[60px] text-base"
-            />
-            <Button
-              size="sm"
-              onClick={submitQuestion}
-              disabled={!newQuestion.trim()}
-              className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0 self-end"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-          {questions.length === 0 ? (
-            <p className="text-base text-muted-foreground text-center py-6">No questions yet. Be the first to ask!</p>
-          ) : (
-            questions.map((q) => (
-              <div key={q.id} className="border border-border rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="bg-secondary text-xs">
-                      {q.profile?.full_name?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-base font-semibold">{q.profile?.full_name || "User"}</p>
-                      <span className="text-sm text-muted-foreground">{format(new Date(q.created_at), "MMM d, yyyy")}</span>
-                      {q.is_resolved && <Badge variant="outline" className="text-xs text-success">Resolved</Badge>}
-                    </div>
-                    <p className="text-base mt-1">{q.question}</p>
-                    {q.answer && (
-                      <div className="mt-3 pl-3 border-l-2 border-primary/30">
-                        <p className="text-sm font-semibold text-primary mb-0.5">Coach Answer</p>
-                        <p className="text-base text-foreground/80">{q.answer}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {activeTab === "assignments" && (
-        <div className="space-y-6">
-          {assignments.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-base text-muted-foreground">No assignments for this lesson.</p>
-            </div>
-          ) : (
-            assignments.map((a) => {
-              const sub = submissions[a.id];
-              return (
-                <div key={a.id} className="border border-border rounded-lg p-5 space-y-4">
-                  <div>
-                    <h3 className="text-lg font-bold">{a.title}</h3>
-                    {a.description && (
-                      <p className="text-base text-foreground/80 mt-2 whitespace-pre-wrap">{a.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                      {a.passing_score && (
-                        <span className="flex items-center gap-1">
-                          <CheckCircle2 className="h-4 w-4" /> Passing score: {a.passing_score}%
-                        </span>
-                      )}
-                      {a.max_retakes != null && a.max_retakes > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" /> Max retakes: {a.max_retakes}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {sub ? (
-                    <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-success" />
-                        <span className="text-base font-semibold">Submitted Successfully</span>
-                        <Badge variant="outline" className="ml-auto capitalize">{sub.status}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Submitted on {format(new Date(sub.submitted_at), "MMM d, yyyy 'at' h:mm a")}
-                      </p>
-                      {sub.score != null && (
-                        <p className="text-sm font-medium">Score: {sub.score}%</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <Textarea
-                        placeholder="Write your answer here..."
-                        value={submissionText}
-                        onChange={(e) => setSubmissionText(e.target.value)}
-                        className="min-h-[100px] text-base"
-                      />
-                      <div className="flex items-center gap-2">
-                        <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <Input
-                          placeholder="Or paste a Google Drive / file link"
-                          value={driveLink}
-                          onChange={(e) => setDriveLink(e.target.value)}
-                          className="text-base"
-                        />
-                      </div>
-                      <Button
-                        onClick={() => handleSubmit(a.id)}
-                        disabled={submitting || (!submissionText.trim() && !driveLink.trim())}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        {submitting ? "Submitting..." : "Submit Assignment"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
     </div>
   );
 }

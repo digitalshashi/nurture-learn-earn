@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Compass, MessageCircle, Radio, Trophy, Users2, Link2, X } from "lucide-react";
+import { Compass, MessageCircle, Radio, Trophy, Users2, Link2, X, LifeBuoy } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
     { label: "Channels", link: "/channels", icon: Radio, showDot: true },
     { label: "Champions", link: "/leaderboard", icon: Trophy, showDot: true },
     { label: "Groups", link: "/channels", icon: Users2, showDot: true },
+    { label: "Support", link: "/support", icon: LifeBuoy },
     { label: "Links", link: "/referral", icon: Link2 },
   ];
 

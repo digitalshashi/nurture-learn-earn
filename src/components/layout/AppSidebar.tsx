@@ -45,6 +45,7 @@ import {
   Bell,
   HardDrive,
   Navigation,
+  LifeBuoy,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -76,6 +77,7 @@ const sidebarSections = [
       { title: "Channels", url: "/channels", icon: Hash, permissionKey: "channels" as FeatureKey },
       { title: "Leaderboard", url: "/leaderboard", icon: Trophy, permissionKey: "leaderboard" as FeatureKey },
       { title: "Events", url: "/student-events", icon: Calendar, permissionKey: "events" as FeatureKey },
+      { title: "Support", url: "/support", icon: LifeBuoy, permissionKey: "support" as FeatureKey },
     ],
   },
   {

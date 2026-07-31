@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseCard } from "@/components/courses/CourseCard";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Sparkles, GripVertical, Lock } from "lucide-react";
+import { Search, Plus, Sparkles, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CourseReorderPanel } from "@/components/courses/CourseReorderPanel";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Course {
   id: string;
@@ -23,23 +22,7 @@ interface Course {
   coach_id: string;
 }
 
-interface ChapterProgress {
-  chapter_id: string;
-  completed: boolean;
-  course_id?: string;
-}
-
-const ACCESS_LEVELS = ["free", "silver", "gold", "diamond"] as const;
 const LEVEL_HIERARCHY: Record<string, number> = { free: 0, silver: 1, gold: 2, diamond: 3 };
-
-const BADGE_STYLES: Record<string, string> = {
-  free: "bg-muted text-muted-foreground",
-  silver: "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200",
-  gold: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200",
-  diamond: "bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-200",
-};
-
-type ProgressFilter = "all" | "in-progress" | "completed" | "not-started";
 
 export default function Courses() {
   const navigate = useNavigate();
@@ -47,11 +30,20 @@ export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [serviceFilter, setServiceFilter] = useState("all");
-  const [progressFilter, setProgressFilter] = useState<ProgressFilter>("all");
   const [reorderOpen, setReorderOpen] = useState(false);
   const [studentLevel, setStudentLevel] = useState("free");
+
+  // Filters State
+  const [courseTypeFilter, setCourseTypeFilter] = useState("all");
+  const [progressFilter, setProgressFilter] = useState<"all" | "in-progress" | "completed" | "expired">("all");
+  const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
+  const [membershipFilter, setMembershipFilter] = useState("all");
+  const [durationFilter, setDurationFilter] = useState("all");
+
+  // Analytics/Totals state for cards
   const [courseProgress, setCourseProgress] = useState<Record<string, { total: number; completed: number }>>({});
+  const [courseLecturesCount, setCourseLecturesCount] = useState<Record<string, number>>({});
+  const [courseSectionsCount, setCourseSectionsCount] = useState<Record<string, number>>({});
 
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
@@ -61,7 +53,7 @@ export default function Courses() {
   }, [user]);
 
   useEffect(() => {
-    if (user && courses.length > 0) fetchProgress();
+    if (user && courses.length > 0) fetchProgressAndTotals();
   }, [user, courses]);
 
   const fetchCourses = async () => {
@@ -80,9 +72,8 @@ export default function Courses() {
     if (data?.service_level) setStudentLevel(data.service_level);
   };
 
-  const fetchProgress = async () => {
+  const fetchProgressAndTotals = async () => {
     if (!user) return;
-    // Get all chapters grouped by course
     const courseIds = courses.map((c) => c.id);
     const { data: sections } = await supabase
       .from("sections")
@@ -93,13 +84,19 @@ export default function Courses() {
 
     const chapterToCourse: Record<string, string> = {};
     const courseTotals: Record<string, number> = {};
+    const courseSections: Record<string, number> = {};
+
     sections.forEach((s: any) => {
       const cid = s.course_id;
+      courseSections[cid] = (courseSections[cid] || 0) + 1;
       (s.chapters || []).forEach((ch: any) => {
         chapterToCourse[ch.id] = cid;
         courseTotals[cid] = (courseTotals[cid] || 0) + 1;
       });
     });
+
+    setCourseSectionsCount(courseSections);
+    setCourseLecturesCount(courseTotals);
 
     const { data: progress } = await supabase
       .from("chapter_progress")
@@ -134,141 +131,207 @@ export default function Courses() {
   const filtered = courses.filter((c) => {
     // Search
     const q = search.toLowerCase();
-    if (q && !c.title.toLowerCase().includes(q) && !(c.category || "").toLowerCase().includes(q)) return false;
-    // Service level filter
-    if (serviceFilter !== "all" && c.access_level !== serviceFilter) return false;
-    // Progress filter
-    if (progressFilter !== "all") {
-      const pct = getProgressPercent(c.id);
-      if (progressFilter === "completed" && pct < 100) return false;
-      if (progressFilter === "in-progress" && (pct === 0 || pct >= 100)) return false;
-      if (progressFilter === "not-started" && pct > 0) return false;
-    }
+    if (q && !c.title.toLowerCase().includes(q) && !(c.description || "").toLowerCase().includes(q)) return false;
+
+    // Course type dropdown
+    if (courseTypeFilter === "free" && c.price > 0) return false;
+    if (courseTypeFilter === "paid" && c.price === 0) return false;
+
+    // Paid filter chip
+    if (paidFilter === "paid" && c.price === 0) return false;
+
+    // Membership dropdown chip
+    if (membershipFilter !== "all" && c.access_level !== membershipFilter) return false;
+
+    // Progress filter chips
+    const pct = getProgressPercent(c.id);
+    if (progressFilter === "completed" && pct < 100) return false;
+    if (progressFilter === "in-progress" && (pct === 0 || pct >= 100)) return false;
+    if (progressFilter === "expired") return false; // Expired always empty/locked in default setup
+
+    // Duration filter chip (using chapter/lecture count as proxy: short < 5, medium 5-10, long > 10)
+    const lecturesCount = courseLecturesCount[c.id] || 0;
+    if (durationFilter === "short" && lecturesCount >= 5) return false;
+    if (durationFilter === "medium" && (lecturesCount < 5 || lecturesCount > 10)) return false;
+    if (durationFilter === "long" && lecturesCount <= 10) return false;
+
     return true;
   });
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto py-6 px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold font-display">Courses</h1>
-          {isCoachOrAdmin && (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setReorderOpen(true)}>
-                <GripVertical className="h-4 w-4 mr-1" /> Reorder Courses
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/ai-course-generator")}>
-                <Sparkles className="h-4 w-4 mr-1" /> Create with AI
-              </Button>
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/course-builder")}>
-                <Plus className="h-4 w-4 mr-1" /> Create Course
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Filters */}
-        <div className="space-y-3 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search courses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 py-8 px-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+              Courses
+            </h1>
+            {isCoachOrAdmin && (
+              <div className="flex gap-3">
+                <Button variant="outline" className="rounded-xl" onClick={() => setReorderOpen(true)}>
+                  <GripVertical className="h-4 w-4 mr-2" /> Reorder
+                </Button>
+                <Button variant="outline" className="rounded-xl" onClick={() => navigate("/ai-course-generator")}>
+                  <Sparkles className="h-4 w-4 mr-2 text-indigo-500" /> Create with AI
+                </Button>
+                <Button className="bg-zinc-955 text-white hover:bg-zinc-800 rounded-xl" onClick={() => navigate("/course-builder")}>
+                  <Plus className="h-4 w-4 mr-2" /> Create Course
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            {/* Progress filter tabs */}
-            <div className="flex gap-1 rounded-lg border border-border p-1">
-              {([
-                { value: "all", label: "All" },
-                { value: "in-progress", label: "In Progress" },
-                { value: "completed", label: "Completed" },
-                { value: "not-started", label: "Not Started" },
-              ] as const).map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => setProgressFilter(tab.value)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    progressFilter === tab.value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+          {/* Search Row */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="search by course title or description"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-12 pl-12 pr-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 dark:focus:ring-zinc-300"
+              />
             </div>
-
-            {/* Service level filter */}
-            <Select value={serviceFilter} onValueChange={setServiceFilter}>
-              <SelectTrigger className="w-[160px] h-9">
-                <SelectValue placeholder="Service Level" />
+            <Select value={courseTypeFilter} onValueChange={setCourseTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[220px] h-12 rounded-xl bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+                <SelectValue placeholder="Course Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="free">Free Courses</SelectItem>
+                <SelectItem value="paid">Paid Courses</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2 mb-8">
+            {[
+              { id: "all", label: "All" },
+              { id: "in-progress", label: "In Progress" },
+              { id: "completed", label: "Completed" },
+              { id: "expired", label: "Expired" },
+              { id: "paid", label: "Paid" },
+            ].map((chip) => {
+              const isActive =
+                chip.id === "all"
+                  ? (progressFilter === "all" && paidFilter === "all")
+                  : chip.id === "paid"
+                  ? paidFilter === "paid"
+                  : progressFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => {
+                    if (chip.id === "all") {
+                      setProgressFilter("all");
+                      setPaidFilter("all");
+                    } else if (chip.id === "paid") {
+                      setPaidFilter("paid");
+                      setProgressFilter("all");
+                    } else {
+                      setProgressFilter(chip.id as any);
+                      setPaidFilter("all");
+                    }
+                  }}
+                  className={cn(
+                    "h-9 px-4 rounded-full text-xs font-semibold border transition-all",
+                    isActive
+                      ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                      : "border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900",
+                  )}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+
+            {/* Membership Dropdown Chip */}
+            <Select value={membershipFilter} onValueChange={setMembershipFilter}>
+              <SelectTrigger className="h-9 w-auto px-4 rounded-full border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 gap-1.5 focus:ring-0 focus:ring-offset-0 bg-white dark:bg-zinc-950">
+                <span>Membership: <span className="capitalize text-zinc-900 dark:text-zinc-100">{membershipFilter === "all" ? "All" : membershipFilter}</span></span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Memberships</SelectItem>
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="silver">Silver</SelectItem>
                 <SelectItem value="gold">Gold</SelectItem>
                 <SelectItem value="diamond">Diamond</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
 
-        {/* Course Grid */}
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Loading courses...</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            {courses.length === 0 ? "No courses yet" : "No courses match your filters"}
+            {/* Duration Dropdown Chip */}
+            <Select value={durationFilter} onValueChange={setDurationFilter}>
+              <SelectTrigger className="h-9 w-auto px-4 rounded-full border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 gap-1.5 focus:ring-0 focus:ring-offset-0 bg-white dark:bg-zinc-950">
+                <span>Duration: <span className="capitalize text-zinc-900 dark:text-zinc-100">
+                  {durationFilter === "all" ? "All" : durationFilter === "short" ? "< 2 hrs" : durationFilter === "medium" ? "2-5 hrs" : "> 5 hrs"}
+                </span></span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Durations</SelectItem>
+                <SelectItem value="short">&lt; 2 hours</SelectItem>
+                <SelectItem value="medium">2 - 5 hours</SelectItem>
+                <SelectItem value="long">&gt; 5 hours</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((course) => {
-              const locked = !canAccess(course.access_level);
-              const progress = getProgressPercent(course.id);
-              return (
-                <div key={course.id} className="relative">
+
+          {/* Grid */}
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <span className="text-zinc-500 text-sm animate-pulse">Loading courses...</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-20 text-zinc-500 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-850">
+              <p className="text-base font-medium">No courses found matching your criteria</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filtered.map((course) => {
+                const locked = !canAccess(course.access_level);
+                const progress = getProgressPercent(course.id);
+                const sCount = courseSectionsCount[course.id] || 0;
+                const lCount = courseLecturesCount[course.id] || 0;
+
+                return (
                   <CourseCard
+                    key={course.id}
                     id={course.id}
                     title={course.title}
                     description={course.description || ""}
-                    thumbnail={course.thumbnail_url || "/placeholder.svg"}
+                    thumbnail={course.thumbnail_url || ""}
                     price={course.price}
                     category={course.category || "General"}
                     accessLevel={course.access_level}
                     progress={progress}
                     locked={locked}
+                    sectionCount={sCount}
+                    lectureCount={lCount}
                     onClick={() => {
                       if (locked) return;
                       navigate(`/course-player/${course.id}`);
                     }}
+                    onContinue={() => {
+                      if (locked) return;
+                      navigate(`/course-player/${course.id}`);
+                    }}
+                    onManage={isCoachOrAdmin ? () => navigate(`/course-manage/${course.id}`) : undefined}
                   />
-                  {isCoachOrAdmin && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="absolute top-2 right-2 text-xs"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/course-manage/${course.id}`); }}
-                    >
-                      Manage
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Reorder Panel */}
-      {isCoachOrAdmin && (
-        <CourseReorderPanel
-          open={reorderOpen}
-          onOpenChange={setReorderOpen}
-          courses={courses}
-          onReordered={fetchCourses}
-        />
-      )}
+      <CourseReorderPanel
+        open={reorderOpen}
+        onOpenChange={setReorderOpen}
+        courses={courses}
+        onReordered={fetchCourses}
+      />
     </AppLayout>
   );
 }

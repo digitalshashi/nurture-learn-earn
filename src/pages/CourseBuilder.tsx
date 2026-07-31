@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import LessonRecorder from "@/components/course-manage/LessonRecorder";
+import { uploadUserFile } from "@/lib/cloud-storage";
 
 interface Section {
   id?: string;
@@ -134,21 +135,16 @@ export default function CourseBuilder() {
     setExpandedSections(next);
   };
 
-  // Upload video file
+  // Upload video file → Cloudflare R2 / AWS S3 (1corehub)
   const uploadVideoFile = async (sIdx: number, cIdx: number, file: File) => {
     const key = `${sIdx}-${cIdx}`;
     setUploadingVideo(key);
     setUploadProgress(0);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `videos/${user!.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("course-videos").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
+      const result = await uploadUserFile(user!.id, "videos", file, {
+        onProgress: setUploadProgress,
       });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("course-videos").getPublicUrl(path);
-      updateChapter(sIdx, cIdx, "video_url", urlData.publicUrl);
+      updateChapter(sIdx, cIdx, "video_url", result.publicUrl);
       updateChapter(sIdx, cIdx, "video_type", "upload");
       toast({ title: "Video uploaded successfully" });
     } catch (e: any) {
@@ -159,17 +155,13 @@ export default function CourseBuilder() {
     }
   };
 
-  // Upload thumbnail
+  // Upload thumbnail → R2/S3
   const uploadThumbnail = async (sIdx: number, cIdx: number, file: File) => {
     const key = `${sIdx}-${cIdx}`;
     setUploadingThumb(key);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `thumbnails/${user!.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("course-videos").upload(path, file, { cacheControl: "3600", upsert: false });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("course-videos").getPublicUrl(path);
-      updateChapter(sIdx, cIdx, "thumbnail_url", urlData.publicUrl);
+      const result = await uploadUserFile(user!.id, "thumbnails", file);
+      updateChapter(sIdx, cIdx, "thumbnail_url", result.publicUrl);
       toast({ title: "Thumbnail uploaded" });
     } catch (e: any) {
       toast({ title: "Upload failed", description: e.message, variant: "destructive" });
@@ -178,16 +170,13 @@ export default function CourseBuilder() {
     }
   };
 
-  // Upload resource file
+  // Upload resource file → R2/S3
   const uploadResource = async (sIdx: number, cIdx: number, file: File) => {
     try {
       const ext = file.name.split(".").pop();
-      const path = `resources/${user!.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("course-videos").upload(path, file, { cacheControl: "3600", upsert: false });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("course-videos").getPublicUrl(path);
+      const result = await uploadUserFile(user!.id, "resources", file);
       const ch = sections[sIdx].chapters[cIdx];
-      const newResources = [...(ch.resources || []), { name: file.name, url: urlData.publicUrl, type: ext }];
+      const newResources = [...(ch.resources || []), { name: file.name, url: result.publicUrl, type: ext }];
       updateChapter(sIdx, cIdx, "resources", newResources);
       toast({ title: "Resource uploaded" });
     } catch (e: any) {

@@ -88,14 +88,12 @@ export function BadgeManagement() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("badge-icons").upload(path, file);
-    if (error) {
+    try {
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const result = await uploadUserFile(user.id, "badges", file);
+      setForm((f) => ({ ...f, icon_url: result.publicUrl }));
+    } catch (error: any) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-    } else {
-      const { data: urlData } = supabase.storage.from("badge-icons").getPublicUrl(path);
-      setForm((f) => ({ ...f, icon_url: urlData.publicUrl }));
     }
     setUploading(false);
   };

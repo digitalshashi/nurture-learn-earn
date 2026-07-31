@@ -40,18 +40,14 @@ export default function AILandingPageBuilder() {
   ) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/landing-pages/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("course-resources")
-      .upload(path, file, { upsert: true });
-    if (error) {
+    try {
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const result = await uploadUserFile(user.id, "landing", file);
+      setter(result.publicUrl);
+      toast({ title: "Uploaded!" });
+    } catch (error: any) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-      return;
     }
-    const { data: urlData } = supabase.storage.from("course-resources").getPublicUrl(path);
-    setter(urlData.publicUrl);
-    toast({ title: "Uploaded!" });
   };
 
   const handleGenerate = async () => {

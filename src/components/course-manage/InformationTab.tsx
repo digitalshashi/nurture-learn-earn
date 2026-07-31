@@ -48,11 +48,9 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
     if (!user) return;
     setUploading(true);
     try {
-      const filePath = `${user.id}/${folder}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("course-videos").upload(filePath, file);
-      if (error) throw error;
-      const { data } = supabase.storage.from("course-videos").getPublicUrl(filePath);
-      onDone(data.publicUrl);
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const result = await uploadUserFile(user.id, folder, file);
+      onDone(result.publicUrl);
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {

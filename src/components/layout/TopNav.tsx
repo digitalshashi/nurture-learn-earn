@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
-import { Bell, LogOut, LayoutDashboard, icons, UserCircle, MessageCircle } from "lucide-react";
+import {
+  Bell,
+  LogOut,
+  icons,
+  UserCircle,
+  MessageCircle,
+  LayoutGrid,
+  LifeBuoy,
+  Trophy,
+  Megaphone,
+  type LucideIcon,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +19,28 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
+
+const APPS_MENU_ITEMS: { label: string; link: string; icon: LucideIcon; description: string }[] = [
+  {
+    label: "Support",
+    link: "/support",
+    icon: LifeBuoy,
+    description: "Stuck areas & FAQ",
+  },
+  {
+    label: "Gamification",
+    link: "/gamification",
+    icon: Trophy,
+    description: "Badges, XP & rewards",
+  },
+  {
+    label: "Marketing",
+    link: "/marketing/broadcasts",
+    icon: Megaphone,
+    description: "Broadcasts & campaigns",
+  },
+];
 
 interface NavMenuItem {
   id: string;
@@ -21,16 +54,15 @@ interface NavMenuItem {
 // These items ALWAYS show in the top nav for all roles
 const PINNED_NAV_ITEMS = [
   { label: "FEED", link: "/feed", icon_name: "users" },
-  { label: "COURSES", link: "/courses", icon_name: "book-open" },
   { label: "QUEST", link: "/quest", icon_name: "sword" },
+  { label: "COURSES", link: "/courses", icon_name: "book-open" },
   { label: "EVENTS", link: "/student-events", icon_name: "calendar" },
+  { label: "POLESTAR", link: "/levelup", icon_name: "sparkles" },
+  { label: "SUPPORT", link: "/support", icon_name: "life-buoy" },
 ];
 
 // Fallback static nav items when no DB items configured
-const defaultNavItems = [
-  ...PINNED_NAV_ITEMS,
-  { label: "LEVEL UP", link: "/levelup", icon_name: "trophy" },
-];
+const defaultNavItems = [...PINNED_NAV_ITEMS];
 
 // Items that require LevelUp access for students
 const LEVELUP_LINKS = ["/levelup"];
@@ -55,6 +87,7 @@ export function TopNav() {
   const [loaded, setLoaded] = useState(false);
   const [hasLevelupAccess, setHasLevelupAccess] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [appsOpen, setAppsOpen] = useState(false);
 
   useEffect(() => {
     loadNav();
@@ -135,7 +168,7 @@ export function TopNav() {
   });
 
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center px-5 sticky top-0 z-50">
+    <header className="h-16 border-b border-border bg-white dark:bg-zinc-950 flex items-center px-5 sticky top-0 z-50">
       {/* Left: Logo */}
       <div className="flex items-center shrink-0 gap-4">
         <SidebarTrigger className="text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors" />
@@ -164,7 +197,58 @@ export function TopNav() {
       </nav>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* 9-dot apps menu */}
+        <Popover open={appsOpen} onOpenChange={setAppsOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="Apps menu"
+              className={cn(
+                "p-2 rounded-lg hover:bg-secondary transition-colors",
+                appsOpen && "bg-secondary",
+              )}
+            >
+              <LayoutGrid className="h-6 w-6 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-3" align="end" sideOffset={8}>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+              Apps
+            </p>
+            <div className="grid grid-cols-3 gap-1">
+              {APPS_MENU_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.link}
+                    type="button"
+                    onClick={() => {
+                      setAppsOpen(false);
+                      navigate(item.link);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-xl p-3 text-center",
+                      "hover:bg-secondary transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    )}
+                  >
+                    <div className="h-11 w-11 rounded-xl bg-accent-tint flex items-center justify-center">
+                      <Icon className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0 w-full">
+                      <p className="text-xs font-semibold truncate">{item.label}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">
+                        {item.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
           <Bell className="h-6 w-6 text-muted-foreground" />
           {unreadCount > 0 && (

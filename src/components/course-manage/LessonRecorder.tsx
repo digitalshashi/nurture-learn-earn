@@ -2,9 +2,9 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { uploadUserFile } from "@/lib/cloud-storage";
 import {
   Video, Mic, MicOff, Monitor, Camera, CameraOff,
   Circle, Pause, Square, X, Play, Loader2, Check,
@@ -208,24 +208,17 @@ export default function LessonRecorder({ onRecordingComplete, onClose }: LessonR
       const response = await fetch(previewUrl);
       const blob = await response.blob();
 
-      setUploadProgress(30);
+      const result = await uploadUserFile(user.id, "recordings", blob, {
+        fileName: `lesson-${Date.now()}.webm`,
+        contentType: "video/webm",
+        onProgress: setUploadProgress,
+      });
 
-      const fileName = `recordings/${user.id}/${Date.now()}-lesson.webm`;
-      const { error } = await supabase.storage
-        .from("course-videos")
-        .upload(fileName, blob, { contentType: "video/webm", cacheControl: "3600" });
-
-      if (error) throw error;
-      setUploadProgress(80);
-
-      const { data: urlData } = supabase.storage.from("course-videos").getPublicUrl(fileName);
-      setUploadProgress(100);
-
-      toast({ title: "Recording saved!", description: "Video has been uploaded and attached to lesson." });
+      toast({ title: "Recording saved!", description: "Video has been uploaded to cloud storage." });
       setState("done");
 
       setTimeout(() => {
-        onRecordingComplete(urlData.publicUrl);
+        onRecordingComplete(result.publicUrl);
       }, 500);
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });

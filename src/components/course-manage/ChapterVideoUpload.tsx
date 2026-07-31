@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Video, X, Image, Loader2, File, Link2 } from "lucide-react";
 import LessonRecorder from "./LessonRecorder";
+import { uploadUserFile } from "@/lib/cloud-storage";
 
 interface ChapterVideoUploadProps {
   contentType: string;
@@ -62,14 +62,10 @@ export default function ChapterVideoUpload({
     setUploading(true);
     setProgress?.(10);
     try {
-      const filePath = `${user.id}/${folder}/${Date.now()}-${file.name}`;
-      setProgress?.(30);
-      const { error } = await supabase.storage.from("course-videos").upload(filePath, file);
-      if (error) throw error;
-      setProgress?.(80);
-      const { data: urlData } = supabase.storage.from("course-videos").getPublicUrl(filePath);
-      onDone(urlData.publicUrl);
-      setProgress?.(100);
+      const result = await uploadUserFile(user.id, folder, file, {
+        onProgress: setProgress,
+      });
+      onDone(result.publicUrl);
     } catch (err: any) {
       console.error("Upload error:", err.message);
     } finally {

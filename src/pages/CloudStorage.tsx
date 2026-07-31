@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
+import { deleteFromCloud, getCloudConfig, uploadUserFile } from "@/lib/cloud-storage";
 
 interface CloudFile {
   id: string;
@@ -63,9 +64,22 @@ export default function CloudStorage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [totalSize, setTotalSize] = useState(0);
+  const [storageInfo, setStorageInfo] = useState<{
+    provider: string;
+    bucket: string;
+    publicUrl: string;
+    configured: boolean;
+  } | null>(null);
 
   useEffect(() => {
-    if (user) loadFiles();
+    if (user) {
+      loadFiles();
+      getCloudConfig()
+        .then(setStorageInfo)
+        .catch(() =>
+          setStorageInfo({ provider: "r2", bucket: "1corehub", publicUrl: "", configured: false }),
+        );
+    }
   }, [user]);
 
   const loadFiles = async () => {
@@ -90,26 +104,20 @@ export default function CloudStorage() {
     setUploading(true);
 
     for (const file of Array.from(selectedFiles)) {
-      const filePath = `${user!.id}/cloud/${Date.now()}_${file.name}`;
-      const { data, error } = await supabase.storage
-        .from("course-resources")
-        .upload(filePath, file);
+      try {
+        const result = await uploadUserFile(user!.id, "cloud", file);
 
-      if (error) {
+        await supabase.from("cloud_files").insert({
+          user_id: user!.id,
+          file_name: file.name,
+          file_url: result.publicUrl,
+          file_size: file.size,
+          file_type: getFileCategory(file.type),
+          mime_type: file.type,
+        } as any);
+      } catch (error: any) {
         toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-        continue;
       }
-
-      const { data: urlData } = supabase.storage.from("course-resources").getPublicUrl(filePath);
-
-      await supabase.from("cloud_files").insert({
-        user_id: user!.id,
-        file_name: file.name,
-        file_url: urlData.publicUrl,
-        file_size: file.size,
-        file_type: getFileCategory(file.type),
-        mime_type: file.type,
-      } as any);
     }
 
     toast({ title: "Upload complete" });
@@ -119,10 +127,10 @@ export default function CloudStorage() {
   };
 
   const deleteFile = async (file: CloudFile) => {
-    // Extract storage path from URL
-    const pathMatch = file.file_url.split("/course-resources/")[1];
-    if (pathMatch) {
-      await supabase.storage.from("course-resources").remove([decodeURIComponent(pathMatch)]);
+    try {
+      await deleteFromCloud(file.file_url);
+    } catch {
+      // Still remove DB row if object is already gone
     }
     const { error } = await supabase.from("cloud_files").delete().eq("id", file.id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -171,6 +179,27 @@ export default function CloudStorage() {
             </Button>
           </div>
         </div>
+
+        {/* Bucket status */}
+        {storageInfo && (
+          <Card className={`card-shadow mb-4 ${storageInfo.configured ? "border-success/30" : "border-destructive/30"}`}>
+            <CardContent className="pt-4 pb-3 flex flex-wrap items-center gap-3 text-sm">
+              <HardDrive className={`h-4 w-4 ${storageInfo.configured ? "text-success" : "text-destructive"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">
+                  {storageInfo.configured ? "Cloud bucket connected" : "Cloud bucket not configured"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {storageInfo.provider.toUpperCase()} · bucket <span className="font-mono">{storageInfo.bucket || "1corehub"}</span>
+                  {storageInfo.publicUrl ? ` · ${storageInfo.publicUrl}` : " · set STORAGE_* secrets"}
+                </p>
+              </div>
+              <Badge variant={storageInfo.configured ? "default" : "destructive"} className="text-[10px]">
+                {storageInfo.configured ? "Ready" : "Setup needed"}
+              </Badge>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Storage Usage */}
         <Card className="card-shadow mb-6">

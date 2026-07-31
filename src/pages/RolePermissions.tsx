@@ -13,7 +13,7 @@ import {
   Home, MessageSquare, Hash, Trophy, Calendar, Video, Megaphone,
   LayoutDashboard, BarChart3, DollarSign, Layout, Contact,
   Send, Route, Handshake, Gift, Rocket, Settings, Award, Target,
-  FileText, Clock, PlaySquare, Navigation,
+  FileText, Clock, PlaySquare, Navigation, LifeBuoy,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,7 @@ const FEATURE_CATEGORIES: { category: string; features: { key: string; label: st
       { key: "create_post", label: "Create Posts", icon: FileText, desc: "Create posts in feed" },
       { key: "create_channels", label: "Create Channels", icon: Hash, desc: "Create new channels" },
       { key: "leaderboard", label: "Leaderboard", icon: Trophy, desc: "View leaderboard" },
+      { key: "support", label: "Support Hub", icon: LifeBuoy, desc: "Stuck areas, checklists & FAQ" },
     ],
   },
   {

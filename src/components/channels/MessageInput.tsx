@@ -30,13 +30,16 @@ export function MessageInput({ channelId, userId, parentId, placeholder, onSent 
     let fileType: string | null = null;
 
     if (file) {
-      const path = `${channelId}/${Date.now()}-${file.name}`;
-      const { data } = await supabase.storage.from("channel-files").upload(path, file);
-      if (data) {
-        const { data: urlData } = supabase.storage.from("channel-files").getPublicUrl(data.path);
-        fileUrl = urlData.publicUrl;
+      try {
+        const { uploadUserFile } = await import("@/lib/cloud-storage");
+        const result = await uploadUserFile(userId, "channels", file, {
+          fileName: `${channelId}-${file.name}`,
+        });
+        fileUrl = result.publicUrl;
         fileName = file.name;
         fileType = file.type;
+      } catch (err) {
+        console.error("Channel file upload failed", err);
       }
     }
 

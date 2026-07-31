@@ -4,11 +4,11 @@ import { NavLink } from "@/components/NavLink";
 import { MobileMenuSheet } from "./MobileMenuSheet";
 import { cn } from "@/lib/utils";
 
-// Order and icons must match the desktop TopNav's PINNED_NAV_ITEMS exactly.
+// Core student tabs (full set is in TopNav desktop)
 const TABS = [
   { label: "Feed", link: "/feed", icon: Users },
-  { label: "Courses", link: "/courses", icon: BookOpen },
   { label: "Quest", link: "/quest", icon: Sword },
+  { label: "Courses", link: "/courses", icon: BookOpen },
   { label: "Events", link: "/student-events", icon: Calendar },
 ];
 

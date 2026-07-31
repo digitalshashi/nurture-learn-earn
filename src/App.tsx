@@ -10,6 +10,7 @@ import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
+import CourseDetail from "./pages/CourseDetail";
 import CourseManage from "./pages/CourseManage";
 import Channels from "./pages/Channels";
 import Dashboard from "./pages/Dashboard";
@@ -77,6 +78,7 @@ import CrmLeadProfile from "./pages/CrmLeadProfile";
 import QuestDashboard from "./pages/QuestDashboard";
 import RolePermissions from "./pages/RolePermissions";
 import VideoLibrary from "./pages/VideoLibrary";
+import Support from "./pages/Support";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -100,7 +102,9 @@ const App = () => (
             <Route path="/ai-course-generator" element={<ProtectedRoute featureKey="ai_suite"><AICourseGenerator /></ProtectedRoute>} />
             <Route path="/course-builder" element={<ProtectedRoute featureKey="courses"><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-builder/:id" element={<ProtectedRoute featureKey="courses"><CourseBuilder /></ProtectedRoute>} />
-            <Route path="/course-player/:id" element={<ProtectedRoute featureKey="courses"><CoursePlayer /></ProtectedRoute>} />
+            <Route path="/course-player/:id" element={<ProtectedRoute featureKey="courses"><CourseDetail /></ProtectedRoute>} />
+            <Route path="/course-player/:id/watch" element={<ProtectedRoute featureKey="courses"><CoursePlayer /></ProtectedRoute>} />
+            <Route path="/course-player/:id/watch/:chapterId" element={<ProtectedRoute featureKey="courses"><CoursePlayer /></ProtectedRoute>} />
             <Route path="/course-manage/:id" element={<ProtectedRoute featureKey="courses"><CourseManage /></ProtectedRoute>} />
             <Route path="/channels" element={<ProtectedRoute featureKey="channels"><Channels /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute featureKey="analytics"><Analytics /></ProtectedRoute>} />
@@ -163,6 +167,7 @@ const App = () => (
             <Route path="/my-account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute featureKey="messages"><Messages /></ProtectedRoute>} />
             <Route path="/messages/:recipientId" element={<ProtectedRoute featureKey="messages"><Messages /></ProtectedRoute>} />
+            <Route path="/support" element={<ProtectedRoute featureKey="support"><Support /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

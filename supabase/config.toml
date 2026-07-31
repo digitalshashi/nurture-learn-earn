@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.test-email-connection]
 verify_jwt = false
+
+[functions.cloud-storage]
+verify_jwt = false
