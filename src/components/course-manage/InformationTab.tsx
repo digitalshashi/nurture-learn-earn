@@ -42,6 +42,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
   const handleImageUpload = async (
     file: File,
     folder: string,
+    dbColumns: string[],
     setUploading: (v: boolean) => void,
     onDone: (url: string) => void,
   ) => {
@@ -51,6 +52,12 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
       const { uploadUserFile } = await import("@/lib/cloud-storage");
       const result = await uploadUserFile(user.id, folder, file);
       onDone(result.publicUrl);
+      const patch: Record<string, string> = { updated_at: new Date().toISOString() };
+      dbColumns.forEach((col) => { patch[col] = result.publicUrl; });
+      const { error } = await supabase.from("courses").update(patch).eq("id", courseId);
+      if (error) throw error;
+      toast({ title: "Uploaded", description: "Image saved" });
+      onUpdate();
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
@@ -174,7 +181,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImageUpload(file, "covers", setUploadingCover, setCoverImageUrl);
+                if (file) handleImageUpload(file, "covers", ["thumbnail_url", "cover_image_url"], setUploadingCover, setCoverImageUrl);
                 e.target.value = "";
               }}
             />
@@ -219,7 +226,7 @@ export default function InformationTab({ courseId, course, onUpdate }: Props) {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImageUpload(file, "thumbnails", setUploadingThumb, setDefaultThumbnailUrl);
+                if (file) handleImageUpload(file, "thumbnails", ["default_video_thumbnail_url"], setUploadingThumb, setDefaultThumbnailUrl);
                 e.target.value = "";
               }}
             />

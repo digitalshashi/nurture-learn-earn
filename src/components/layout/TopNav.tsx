@@ -57,7 +57,7 @@ const PINNED_NAV_ITEMS = [
   { label: "QUEST", link: "/quest", icon_name: "sword" },
   { label: "COURSES", link: "/courses", icon_name: "book-open" },
   { label: "EVENTS", link: "/student-events", icon_name: "calendar" },
-  { label: "POLESTAR", link: "/levelup", icon_name: "sparkles" },
+  { label: "LEVEL UP", link: "/levelup", icon_name: "sparkles" },
   { label: "SUPPORT", link: "/support", icon_name: "life-buoy" },
 ];
 
