@@ -1,0 +1,31 @@
+project_id = "oblikiwelvgrfffbipaf"
+
+[functions.create-razorpay-order]
+verify_jwt = false
+
+[functions.verify-razorpay-payment]
+verify_jwt = false
+
+[functions.generate-ai-course]
+verify_jwt = false
+
+[functions.generate-landing-page]
+verify_jwt = false
+
+[functions.ai-lead-score]
+verify_jwt = false
+
+[functions.ai-email-writer]
+verify_jwt = false
+
+[functions.ai-sales-assistant]
+verify_jwt = false
+
+[functions.ai-content-generator]
+verify_jwt = false
+
+[functions.send-login-otp]
+verify_jwt = false
+
+[functions.verify-login-otp]
+verify_jwt = false
