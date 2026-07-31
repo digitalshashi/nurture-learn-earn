@@ -240,6 +240,39 @@ export type Database = {
           },
         ]
       }
+      affiliate_stats: {
+        Row: {
+          clicks: number | null
+          commission: number | null
+          id: string
+          product_id: string | null
+          revenue: number | null
+          sales: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicks?: number | null
+          commission?: number | null
+          id?: string
+          product_id?: string | null
+          revenue?: number | null
+          sales?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicks?: number | null
+          commission?: number | null
+          id?: string
+          product_id?: string | null
+          revenue?: number | null
+          sales?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_settings: {
         Row: {
           coach_id: string
@@ -699,6 +732,7 @@ export type Database = {
       challenge_participants: {
         Row: {
           challenge_id: string | null
+          charity_earned: number | null
           completed_at: string | null
           id: string
           is_completed: boolean | null
@@ -708,6 +742,7 @@ export type Database = {
         }
         Insert: {
           challenge_id?: string | null
+          charity_earned?: number | null
           completed_at?: string | null
           id?: string
           is_completed?: boolean | null
@@ -717,6 +752,7 @@ export type Database = {
         }
         Update: {
           challenge_id?: string | null
+          charity_earned?: number | null
           completed_at?: string | null
           id?: string
           is_completed?: boolean | null
@@ -776,6 +812,8 @@ export type Database = {
           file_url: string | null
           id: string
           is_pinned: boolean
+          message_type: string | null
+          metadata: Json | null
           parent_id: string | null
           updated_at: string
           user_id: string
@@ -789,6 +827,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_pinned?: boolean
+          message_type?: string | null
+          metadata?: Json | null
           parent_id?: string | null
           updated_at?: string
           user_id: string
@@ -802,6 +842,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_pinned?: boolean
+          message_type?: string | null
+          metadata?: Json | null
           parent_id?: string | null
           updated_at?: string
           user_id?: string
@@ -832,6 +874,9 @@ export type Database = {
           description: string | null
           id: string
           is_global: boolean
+          last_message_at: string | null
+          last_message_sender_id: string | null
+          last_message_text: string | null
           name: string
         }
         Insert: {
@@ -842,6 +887,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_global?: boolean
+          last_message_at?: string | null
+          last_message_sender_id?: string | null
+          last_message_text?: string | null
           name: string
         }
         Update: {
@@ -852,6 +900,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_global?: boolean
+          last_message_at?: string | null
+          last_message_sender_id?: string | null
+          last_message_text?: string | null
           name?: string
         }
         Relationships: [
@@ -2224,6 +2275,7 @@ export type Database = {
           description: string | null
           end_time: string
           id: string
+          image_url: string | null
           meeting_link: string | null
           meeting_type: string
           occurrence_number: number | null
@@ -2242,6 +2294,7 @@ export type Database = {
           description?: string | null
           end_time: string
           id?: string
+          image_url?: string | null
           meeting_link?: string | null
           meeting_type?: string
           occurrence_number?: number | null
@@ -2260,6 +2313,7 @@ export type Database = {
           description?: string | null
           end_time?: string
           id?: string
+          image_url?: string | null
           meeting_link?: string | null
           meeting_type?: string
           occurrence_number?: number | null
@@ -2290,6 +2344,7 @@ export type Database = {
       }
       gamification_challenges: {
         Row: {
+          charity_reward: number | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -2300,6 +2355,7 @@ export type Database = {
           xp_reward: number | null
         }
         Insert: {
+          charity_reward?: number | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -2310,6 +2366,7 @@ export type Database = {
           xp_reward?: number | null
         }
         Update: {
+          charity_reward?: number | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -2321,8 +2378,44 @@ export type Database = {
         }
         Relationships: []
       }
+      global_task_completions: {
+        Row: {
+          charity_earned: number | null
+          completed_at: string | null
+          id: string
+          task_id: string | null
+          user_id: string | null
+          xp_earned: number | null
+        }
+        Insert: {
+          charity_earned?: number | null
+          completed_at?: string | null
+          id?: string
+          task_id?: string | null
+          user_id?: string | null
+          xp_earned?: number | null
+        }
+        Update: {
+          charity_earned?: number | null
+          completed_at?: string | null
+          id?: string
+          task_id?: string | null
+          user_id?: string | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "student_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habit_logs: {
         Row: {
+          charity_earned: number | null
           completed_date: string
           created_at: string | null
           habit_id: string | null
@@ -2331,6 +2424,7 @@ export type Database = {
           xp_earned: number | null
         }
         Insert: {
+          charity_earned?: number | null
           completed_date?: string
           created_at?: string | null
           habit_id?: string | null
@@ -2339,6 +2433,7 @@ export type Database = {
           xp_earned?: number | null
         }
         Update: {
+          charity_earned?: number | null
           completed_date?: string
           created_at?: string | null
           habit_id?: string | null
@@ -2358,30 +2453,39 @@ export type Database = {
       }
       habits: {
         Row: {
+          charity_reward: number | null
+          coach_id: string | null
           color: string | null
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_global: boolean | null
           name: string
           time_of_day: string | null
           user_id: string
           xp_value: number | null
         }
         Insert: {
+          charity_reward?: number | null
+          coach_id?: string | null
           color?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           name: string
           time_of_day?: string | null
           user_id: string
           xp_value?: number | null
         }
         Update: {
+          charity_reward?: number | null
+          coach_id?: string | null
           color?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           name?: string
           time_of_day?: string | null
           user_id?: string
@@ -2602,6 +2706,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "channel_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_read_status: {
+        Row: {
+          id: string
+          message_id: string | null
+          read_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          message_id?: string | null
+          read_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          message_id?: string | null
+          read_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_read_status_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "channel_messages"
@@ -2915,37 +3048,82 @@ export type Database = {
       }
       profiles: {
         Row: {
+          about: string | null
           avatar_url: string | null
           bio: string | null
+          birthday: string | null
           created_at: string
           email: string
           full_name: string
+          gender: string | null
           id: string
           niche: string | null
+          phone: string | null
           service_level: string
           updated_at: string
         }
         Insert: {
+          about?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birthday?: string | null
           created_at?: string
           email?: string
           full_name?: string
+          gender?: string | null
           id: string
           niche?: string | null
+          phone?: string | null
           service_level?: string
           updated_at?: string
         }
         Update: {
+          about?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birthday?: string | null
           created_at?: string
           email?: string
           full_name?: string
+          gender?: string | null
           id?: string
           niche?: string | null
+          phone?: string | null
           service_level?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          product_id: string | null
+          product_name: string | null
+          purchase_type: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          purchase_type?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          purchase_type?: string | null
+          status?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3569,34 +3747,43 @@ export type Database = {
       }
       student_tasks: {
         Row: {
+          charity_reward: number | null
+          coach_id: string | null
           completed_at: string | null
           created_at: string | null
           deadline: string | null
           description: string | null
           id: string
           is_completed: boolean | null
+          is_global: boolean | null
           name: string
           user_id: string
           xp_reward: number | null
         }
         Insert: {
+          charity_reward?: number | null
+          coach_id?: string | null
           completed_at?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string | null
           id?: string
           is_completed?: boolean | null
+          is_global?: boolean | null
           name: string
           user_id: string
           xp_reward?: number | null
         }
         Update: {
+          charity_reward?: number | null
+          coach_id?: string | null
           completed_at?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string | null
           id?: string
           is_completed?: boolean | null
+          is_global?: boolean | null
           name?: string
           user_id?: string
           xp_reward?: number | null
@@ -3709,6 +3896,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_bank_details: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          country: string
+          created_at: string | null
+          id: string
+          ifsc: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          country: string
+          created_at?: string | null
+          id?: string
+          ifsc: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          ifsc?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -4032,6 +4255,7 @@ export type Database = {
           duration_minutes: number
           enable_waiting_room: boolean
           id: string
+          image_url: string | null
           is_recurring: boolean
           linked_course_id: string | null
           meeting_link: string | null
@@ -4052,6 +4276,7 @@ export type Database = {
           duration_minutes?: number
           enable_waiting_room?: boolean
           id?: string
+          image_url?: string | null
           is_recurring?: boolean
           linked_course_id?: string | null
           meeting_link?: string | null
@@ -4072,6 +4297,7 @@ export type Database = {
           duration_minutes?: number
           enable_waiting_room?: boolean
           id?: string
+          image_url?: string | null
           is_recurring?: boolean
           linked_course_id?: string | null
           meeting_link?: string | null

@@ -77,6 +77,7 @@ import CrmLeadProfile from "./pages/CrmLeadProfile";
 import QuestDashboard from "./pages/QuestDashboard";
 import RolePermissions from "./pages/RolePermissions";
 import VideoLibrary from "./pages/VideoLibrary";
+import ResetPassword from "./pages/ResetPassword";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
             <Route path="/workshop/:slug" element={<WorkshopLandingPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
