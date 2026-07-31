@@ -109,10 +109,10 @@ export default function Login() {
       if (error) throw new Error(await extractFunctionErrorMessage(error, "Verification failed"));
       if (data?.error) throw new Error(data.error);
 
+      // Only token_hash + type may be sent when verifying a hashed token.
       const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: otpEmail,
         token_hash: data.hashed_token,
-        type: "magiclink",
+        type: "email",
       });
       if (verifyError) throw verifyError;
 
