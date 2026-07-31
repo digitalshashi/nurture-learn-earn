@@ -406,7 +406,7 @@ export default function CoursePlayer() {
               className="absolute top-4 right-4 z-20 h-9 w-9 rounded-lg bg-black/60 hover:bg-black/80 flex items-center justify-center border border-zinc-700 text-zinc-300 transition-colors"
               title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {isSidebarCollapsed ? "<" : ">"}
+              {isSidebarCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </button>
 
             {/* Main Video element / Iframe */}
@@ -705,7 +705,7 @@ export default function CoursePlayer() {
                 className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center text-zinc-500"
                 title="Expand sidebar"
               >
-                &lt;
+                <ChevronLeft className="h-4 w-4" />
               </button>
               <div className="flex-1 flex flex-col gap-3 mt-4">
                 {sections.map((s, idx) => (
@@ -733,7 +733,7 @@ export default function CoursePlayer() {
                   className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center text-zinc-500"
                   title="Collapse sidebar"
                 >
-                  &gt;
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
 

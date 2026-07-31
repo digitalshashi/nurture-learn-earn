@@ -44,6 +44,7 @@ export default function Courses() {
   const [courseProgress, setCourseProgress] = useState<Record<string, { total: number; completed: number }>>({});
   const [courseLecturesCount, setCourseLecturesCount] = useState<Record<string, number>>({});
   const [courseSectionsCount, setCourseSectionsCount] = useState<Record<string, number>>({});
+  const [coachNames, setCoachNames] = useState<Record<string, string>>({});
 
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
@@ -62,7 +63,20 @@ export default function Courses() {
       .select("id, title, description, thumbnail_url, price, category, access_level, display_order, coach_id")
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false });
-    if (data) setCourses(data as Course[]);
+    if (data) {
+      setCourses(data as Course[]);
+      const coachIds = [...new Set(data.map((c) => c.coach_id).filter(Boolean))];
+      if (coachIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", coachIds);
+        if (profiles) {
+          const names: Record<string, string> = {};
+          profiles.forEach((p) => {
+            names[p.id] = p.full_name || "Instructor";
+          });
+          setCoachNames(names);
+        }
+      }
+    }
     setLoading(false);
   };
 
@@ -307,6 +321,7 @@ export default function Courses() {
                     accessLevel={course.access_level}
                     progress={progress}
                     locked={locked}
+                    instructorName={coachNames[course.coach_id] || "Instructor"}
                     sectionCount={sCount}
                     lectureCount={lCount}
                     onClick={() => {
