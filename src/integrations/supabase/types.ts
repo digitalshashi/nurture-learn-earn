@@ -1944,8 +1944,11 @@ export type Database = {
           created_at: string
           id: string
           is_default: boolean
+          is_platform_default: boolean
           is_verified: boolean
           provider: string
+          reply_to_email: string | null
+          reply_to_name: string | null
           sender_email: string
           sender_name: string
           smtp_encryption: string | null
@@ -1963,8 +1966,11 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean
+          is_platform_default?: boolean
           is_verified?: boolean
           provider?: string
+          reply_to_email?: string | null
+          reply_to_name?: string | null
           sender_email: string
           sender_name: string
           smtp_encryption?: string | null
@@ -1982,8 +1988,11 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean
+          is_platform_default?: boolean
           is_verified?: boolean
           provider?: string
+          reply_to_email?: string | null
+          reply_to_name?: string | null
           sender_email?: string
           sender_name?: string
           smtp_encryption?: string | null
@@ -2166,6 +2175,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          coach_id: string | null
+          created_at: string
+          from_name: string | null
+          id: string
+          is_active: boolean
+          reply_to_email: string | null
+          reply_to_name: string | null
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          coach_id?: string | null
+          created_at?: string
+          from_name?: string | null
+          id?: string
+          is_active?: boolean
+          reply_to_email?: string | null
+          reply_to_name?: string | null
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          coach_id?: string | null
+          created_at?: string
+          from_name?: string | null
+          id?: string
+          is_active?: boolean
+          reply_to_email?: string | null
+          reply_to_name?: string | null
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       email_unsubscribed: {
         Row: {
@@ -2639,6 +2690,36 @@ export type Database = {
           level_number?: number
           reward_description?: string | null
           xp_required?: number
+        }
+        Relationships: []
+      }
+      login_otps: {
+        Row: {
+          attempts: number
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          otp_hash: string
+        }
+        Insert: {
+          attempts?: number
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          otp_hash: string
+        }
+        Update: {
+          attempts?: number
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_hash?: string
         }
         Relationships: []
       }
