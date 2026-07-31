@@ -36,7 +36,7 @@ export default function Coupons() {
           <h1 className="text-xl font-bold font-display">Coupons</h1>
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
                 <Plus className="h-4 w-4 mr-1" /> Create Coupon
               </Button>
             </DialogTrigger>

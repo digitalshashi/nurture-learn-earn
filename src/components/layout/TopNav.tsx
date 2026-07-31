@@ -54,6 +54,7 @@ export function TopNav() {
   const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [hasLevelupAccess, setHasLevelupAccess] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     loadNav();
@@ -62,6 +63,22 @@ export function TopNav() {
   useEffect(() => {
     if (user) checkLevelupAccess();
   }, [user, roles]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", user.id)
+        .eq("is_read", false);
+      if (!cancelled) setUnreadCount(count || 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const loadNav = async () => {
     const { data } = await supabase
@@ -118,15 +135,15 @@ export function TopNav() {
   });
 
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center px-6 sticky top-0 z-50">
+    <header className="h-16 border-b border-border bg-card flex items-center px-5 sticky top-0 z-50">
       {/* Left: Logo */}
       <div className="flex items-center shrink-0 gap-4">
         <SidebarTrigger className="text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors" />
         <div
-          className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center cursor-pointer"
+          className="h-[45px] w-[45px] bg-primary rounded-lg flex items-center justify-center cursor-pointer"
           onClick={() => navigate("/dashboard")}
         >
-          <span className="text-primary-foreground text-sm font-bold">L</span>
+          <span className="text-primary-foreground text-lg font-bold">L</span>
         </div>
       </div>
 
@@ -140,8 +157,8 @@ export function TopNav() {
             className="flex flex-col items-center px-5 py-2 text-muted-foreground hover:text-accent transition-colors gap-1.5 min-w-[72px]"
             activeClassName="text-accent border-b-[3px] border-accent"
           >
-            <LucideIcon name={item.icon_name} className="h-5 w-5" />
-            <span className="text-[11px] font-semibold uppercase tracking-wide">{item.label}</span>
+            <LucideIcon name={item.icon_name} className="h-6 w-6" />
+            <span className="text-xs font-semibold uppercase tracking-wide">{item.label}</span>
           </NavLink>
         ))}
       </nav>
@@ -149,7 +166,12 @@ export function TopNav() {
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
-          <Bell className="h-5 w-5 text-muted-foreground" />
+          <Bell className="h-6 w-6 text-muted-foreground" />
+          {unreadCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center leading-none">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
 
         <Popover>

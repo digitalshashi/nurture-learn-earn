@@ -172,7 +172,7 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
               <p className="font-semibold text-sm truncate">{author}</p>
               {authorId && <UserBadges userId={authorId} maxVisible={2} size="sm" />}
             </div>
-            <p className="text-xs text-muted-foreground">{timeAgo}</p>
+            <p className="text-[13px] font-medium text-muted-foreground">{timeAgo}</p>
           </div>
         </div>
 

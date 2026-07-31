@@ -42,6 +42,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          tint: "hsl(var(--accent-tint))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",
@@ -50,6 +51,10 @@ export default {
         info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
+        },
+        link: {
+          DEFAULT: "hsl(var(--link))",
+          foreground: "hsl(var(--link-foreground))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",

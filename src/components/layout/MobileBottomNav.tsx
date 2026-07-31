@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Users, Gamepad2, BookOpen, Video, Grid3x3 } from "lucide-react";
+import { Users, Sword, BookOpen, Calendar, Grid3x3 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { MobileMenuSheet } from "./MobileMenuSheet";
 import { cn } from "@/lib/utils";
 
+// Order and icons must match the desktop TopNav's PINNED_NAV_ITEMS exactly.
 const TABS = [
   { label: "Feed", link: "/feed", icon: Users },
-  { label: "Quest", link: "/quest", icon: Gamepad2 },
   { label: "Courses", link: "/courses", icon: BookOpen },
-  { label: "Events", link: "/student-events", icon: Video },
+  { label: "Quest", link: "/quest", icon: Sword },
+  { label: "Events", link: "/student-events", icon: Calendar },
 ];
 
 export function MobileBottomNav() {

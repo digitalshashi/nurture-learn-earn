@@ -251,8 +251,8 @@ export function AppSidebar() {
                         <NavLink
                           to={item.url}
                           end={item.url === "/dashboard"}
-                          className="hover:bg-secondary/80 text-sm"
-                          activeClassName="bg-secondary text-foreground font-medium"
+                          className="hover:bg-secondary/80 text-sm rounded-[6px]"
+                          activeClassName="bg-accent-tint text-accent font-medium"
                         >
                           <item.icon className="h-5 w-5 shrink-0" />
                           <span className="truncate">{item.title}</span>
@@ -272,7 +272,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Admin">
-                    <NavLink to="/admin" className="hover:bg-secondary/80 text-sm" activeClassName="bg-secondary text-foreground font-medium">
+                    <NavLink to="/admin" className="hover:bg-secondary/80 text-sm rounded-[6px]" activeClassName="bg-accent-tint text-accent font-medium">
                       <Shield className="h-5 w-5 shrink-0" />
                       <span className="truncate">Admin</span>
                     </NavLink>
@@ -289,7 +289,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Super Admin">
-                    <NavLink to="/super-admin" className="hover:bg-secondary/80 text-sm" activeClassName="bg-secondary text-foreground font-medium">
+                    <NavLink to="/super-admin" className="hover:bg-secondary/80 text-sm rounded-[6px]" activeClassName="bg-accent-tint text-accent font-medium">
                       <Crown className="h-5 w-5 shrink-0" />
                       <span className="truncate">Super Admin</span>
                     </NavLink>
@@ -298,6 +298,20 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        )}
+
+        {!collapsed && (
+          <div className="mt-auto p-3">
+            <button
+              onClick={() => navigate("/affiliate")}
+              className="w-full text-left rounded-lg bg-[#3D1B16] p-4 hover:bg-[#4A211B] transition-colors"
+            >
+              <p className="text-white font-semibold text-base">Refer & Earn</p>
+              <p className="text-gray-300 text-xs mt-1">
+                Invite others and earn rewards for every referral that joins.
+              </p>
+            </button>
+          </div>
         )}
       </SidebarContent>
     </Sidebar>
@@ -335,8 +349,8 @@ function CollapsibleGroup({
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
-                      className="hover:bg-secondary/80 text-sm"
-                      activeClassName="bg-secondary text-foreground font-medium"
+                      className="hover:bg-secondary/80 text-sm rounded-[6px]"
+                      activeClassName="bg-accent-tint text-accent font-medium"
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       <span className="truncate">{item.title}</span>

@@ -8,26 +8,27 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
+    --background: 220 23% 97%;
+    --foreground: 0 0% 6%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 6%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 6%;
 
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 0 0% 6%;
 
     --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 24 95% 53%;
+    --accent: 7 95% 60%;
     --accent-foreground: 0 0% 100%;
+    --accent-tint: 7 95% 95%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
@@ -35,23 +36,26 @@
     --info: 239 84% 67%;
     --info-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --link: 209 100% 55%;
+    --link-foreground: 0 0% 100%;
+
+    --destructive: 352 82% 53%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 24 95% 53%;
+    --border: 0 0% 93%;
+    --input: 0 0% 93%;
+    --ring: 7 95% 60%;
 
-    --radius: 0.875rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
+    --sidebar-foreground: 0 0% 6%;
     --sidebar-primary: 0 0% 9%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-accent-foreground: 0 0% 6%;
+    --sidebar-border: 0 0% 93%;
+    --sidebar-ring: 7 95% 60%;
 
     --nav-height: 3.5rem;
   }
@@ -69,17 +73,20 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
-    --accent: 24 95% 53%;
+    --accent: 7 95% 60%;
     --accent-foreground: 0 0% 100%;
+    --accent-tint: 7 60% 18%;
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     --info: 239 84% 67%;
     --info-foreground: 0 0% 100%;
-    --destructive: 0 63% 31%;
+    --link: 209 100% 60%;
+    --link-foreground: 0 0% 100%;
+    --destructive: 352 82% 53%;
     --destructive-foreground: 210 40% 98%;
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 24 95% 53%;
+    --ring: 7 95% 60%;
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
@@ -87,7 +94,7 @@
     --sidebar-accent: 217 33% 17%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-ring: 7 95% 60%;
   }
 }
 
@@ -98,14 +105,39 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"] {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer utilities {
   .card-shadow {
-    box-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.04), 0 1px 2px -1px hsl(0 0% 0% / 0.04);
+    /* Flat design: separation comes from the border + page/card contrast, not shadow. */
+    box-shadow: none;
   }
   .card-shadow-hover {
-    box-shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.06), 0 2px 4px -2px hsl(0 0% 0% / 0.06);
+    box-shadow: none;
   }
 }
