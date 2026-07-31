@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
     });
     if (insertError) throw insertError;
 
-    const { data: account } = await adminClient
+    let { data: account } = await adminClient
       .from("email_accounts")
       .select("*")
       .eq("is_platform_default", true)
@@ -192,12 +192,34 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    // Fallback: any verified sender, then any configured sender at all.
+    if (!account) {
+      const { data: verified } = await adminClient
+        .from("email_accounts")
+        .select("*")
+        .eq("is_verified", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      account = verified;
+    }
+    if (!account) {
+      const { data: any1 } = await adminClient
+        .from("email_accounts")
+        .select("*")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      account = any1;
+    }
+
     if (!account) {
       return json(
-        { error: "Email delivery is not configured. Ask your administrator to set a platform-default sender in Email Settings." },
+        { error: "Email delivery is not configured. Ask your administrator to add a sender account in Email Settings." },
         500,
       );
     }
+
 
     const { data: template } = await adminClient
       .from("email_templates")
