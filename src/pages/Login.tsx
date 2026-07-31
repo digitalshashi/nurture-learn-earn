@@ -71,10 +71,10 @@ export default function Login() {
             <span className="text-primary-foreground text-2xl font-bold font-display">L</span>
           </div>
           <h1 className="text-2xl font-bold font-display">
-            {mode === "login" ? "Welcome back" : "Create account"}
+            {mode === "login" ? "Welcome back" : mode === "signup" ? "Create account" : "Forgot password"}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {mode === "login" ? "Sign in to your academy" : "Join the academy"}
+            {mode === "login" ? "Sign in to your academy" : mode === "signup" ? "Join the academy" : "We'll email you a reset link"}
           </p>
         </div>
 
@@ -87,14 +87,19 @@ export default function Login() {
                   <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" required />
                 </div>
                 <div>
-                  <Label htmlFor="password" className="text-sm">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm">Password</Label>
+                    <button type="button" onClick={() => { setResetSent(false); setMode("forgot"); }} className="text-xs text-accent font-medium hover:underline">
+                      Forgot password?
+                    </button>
+                  </div>
                   <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1" required />
                 </div>
                 <Button type="submit" disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                   {loading ? "Signing in..." : "Sign In"} <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>
               </form>
-            ) : (
+            ) : mode === "signup" ? (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div>
                   <Label htmlFor="fullName" className="text-sm">Full name</Label>
@@ -112,16 +117,41 @@ export default function Login() {
                   {loading ? "Creating..." : "Sign Up"} <UserPlus className="h-4 w-4 ml-1" />
                 </Button>
               </form>
+            ) : resetSent ? (
+              <div className="text-center space-y-4">
+                <Mail className="h-8 w-8 mx-auto text-accent" />
+                <p className="text-sm text-muted-foreground">
+                  If an account exists for <span className="font-medium text-foreground">{email}</span>, a reset link is on its way. Check your inbox and spam folder.
+                </p>
+                <Button variant="outline" className="w-full" onClick={() => setMode("login")}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Back to sign in
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgot} className="space-y-4">
+                <div>
+                  <Label htmlFor="reset-email" className="text-sm">Email address</Label>
+                  <Input id="reset-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" required />
+                </div>
+                <Button type="submit" disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                  {loading ? "Sending..." : "Send reset link"} <Mail className="h-4 w-4 ml-1" />
+                </Button>
+                <button type="button" onClick={() => setMode("login")} className="w-full text-xs text-muted-foreground hover:underline">
+                  Back to sign in
+                </button>
+              </form>
             )}
 
-            <div className="mt-4 text-center">
-              <p className="text-xs text-muted-foreground">
-                {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-                <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-accent font-medium hover:underline">
-                  {mode === "login" ? "Sign up" : "Sign in"}
-                </button>
-              </p>
-            </div>
+            {mode !== "forgot" && (
+              <div className="mt-4 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+                  <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-accent font-medium hover:underline">
+                    {mode === "login" ? "Sign up" : "Sign in"}
+                  </button>
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
