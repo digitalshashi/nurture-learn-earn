@@ -5,19 +5,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, ArrowRight, UserPlus } from "lucide-react";
+import { Mail, ArrowRight, UserPlus, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Login() {
   const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Couldn't send reset link", description: error.message, variant: "destructive" });
+      return;
+    }
+    setResetSent(true);
+    toast({ title: "Reset link sent", description: "Check your inbox for the password reset email." });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
