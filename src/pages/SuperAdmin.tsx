@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Shield, Users, CreditCard, Plus, Pencil, Trash2,
-  Crown, Package, DollarSign, BarChart3
+  Crown, Package, DollarSign, BarChart3, Eye, EyeOff, Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -97,6 +97,17 @@ export default function SuperAdmin() {
   const [form, setForm] = useState<any>({ ...emptyPlan });
   const [assignForm, setAssignForm] = useState({ coach_id: "", plan_id: "", expires_at: "", notes: "" });
   const [stats, setStats] = useState({ totalCoaches: 0, activeSubs: 0, totalRevenue: 0 });
+
+  // Razorpay config (admin managing a coach's gateway)
+  const [paymentDialog, setPaymentDialog] = useState(false);
+  const [paymentCoach, setPaymentCoach] = useState<UserProfile | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [razorpayKeyId, setRazorpayKeyId] = useState("");
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
+  const [coachCurrency, setCoachCurrency] = useState("INR");
+  const [coachConnected, setCoachConnected] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -191,6 +202,62 @@ export default function SuperAdmin() {
     });
     setEditingPlan(plan.id);
     setPlanDialog(true);
+  };
+
+  const openPaymentDialog = async (coach: UserProfile) => {
+    setPaymentCoach(coach);
+    setPaymentDialog(true);
+    setPaymentLoading(true);
+    setRazorpayKeyId("");
+    setRazorpayKeySecret("");
+    setCoachCurrency("INR");
+    setCoachConnected(false);
+    const { data } = await supabase
+      .from("coach_payment_settings" as any)
+      .select("razorpay_key_id, razorpay_key_secret, default_currency")
+      .eq("coach_id", coach.id)
+      .maybeSingle();
+    if (data) {
+      setRazorpayKeyId((data as any).razorpay_key_id || "");
+      setRazorpayKeySecret((data as any).razorpay_key_secret || "");
+      setCoachCurrency((data as any).default_currency || "INR");
+      setCoachConnected(!!(data as any).razorpay_key_id && !!(data as any).razorpay_key_secret);
+    }
+    setPaymentLoading(false);
+  };
+
+  const saveCoachPayment = async () => {
+    if (!paymentCoach) return;
+    if (!razorpayKeyId.trim() || !razorpayKeySecret.trim()) {
+      toast({ title: "Enter both Key ID and Key Secret", variant: "destructive" });
+      return;
+    }
+    setPaymentSaving(true);
+    const { error } = await supabase.from("coach_payment_settings" as any).upsert(
+      {
+        coach_id: paymentCoach.id,
+        razorpay_key_id: razorpayKeyId.trim(),
+        razorpay_key_secret: razorpayKeySecret.trim(),
+        default_currency: coachCurrency,
+        updated_at: new Date().toISOString(),
+      } as any,
+      { onConflict: "coach_id" },
+    );
+    setPaymentSaving(false);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Razorpay configured", description: `${paymentCoach.full_name || paymentCoach.email} can now accept payments` });
+    setCoachConnected(true);
+  };
+
+  const disconnectCoachPayment = async () => {
+    if (!paymentCoach) return;
+    setPaymentSaving(true);
+    await supabase.from("coach_payment_settings" as any).upsert(
+      { coach_id: paymentCoach.id, razorpay_key_id: null, razorpay_key_secret: null, updated_at: new Date().toISOString() } as any,
+      { onConflict: "coach_id" },
+    );
+    setRazorpayKeyId(""); setRazorpayKeySecret(""); setCoachConnected(false); setPaymentSaving(false);
+    toast({ title: "Razorpay disconnected" });
   };
 
   const assignPlan = async () => {
@@ -438,6 +505,71 @@ export default function SuperAdmin() {
               </Dialog>
             </div>
 
+            <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Razorpay — {paymentCoach?.full_name || paymentCoach?.email}</DialogTitle>
+                </DialogHeader>
+                {paymentLoading ? (
+                  <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <div className="space-y-3 mt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Configure this coach's Razorpay gateway on their behalf. Get keys from{" "}
+                      <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noreferrer" className="text-accent underline">
+                        Razorpay Dashboard
+                      </a>.
+                    </p>
+                    {coachConnected && (
+                      <Badge className="bg-success/10 text-success border-0 text-xs">Connected</Badge>
+                    )}
+                    <div>
+                      <Label className="text-xs">Razorpay Key ID</Label>
+                      <Input placeholder="rzp_live_xxxxxxxxxxxx" value={razorpayKeyId} onChange={(e) => setRazorpayKeyId(e.target.value)} className="font-mono text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Razorpay Key Secret</Label>
+                      <div className="relative">
+                        <Input
+                          type={showSecret ? "text" : "password"}
+                          placeholder="Enter key secret"
+                          value={razorpayKeySecret}
+                          onChange={(e) => setRazorpayKeySecret(e.target.value)}
+                          className="font-mono text-xs pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecret(!showSecret)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        >
+                          {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Default Currency</Label>
+                      <Select value={coachCurrency} onValueChange={setCoachCurrency}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INR">₹ INR</SelectItem>
+                          <SelectItem value="USD">$ USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveCoachPayment} disabled={paymentSaving}>
+                        {paymentSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {coachConnected ? "Update Keys" : "Connect Razorpay"}
+                      </Button>
+                      {coachConnected && (
+                        <Button variant="outline" onClick={disconnectCoachPayment} disabled={paymentSaving}>Disconnect</Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
             <Card className="card-shadow">
               <CardContent className="pt-4">
                 <div className="space-y-3">
@@ -461,6 +593,9 @@ export default function SuperAdmin() {
                         ) : (
                           <Badge variant="secondary" className="text-xs">No Plan</Badge>
                         )}
+                        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => openPaymentDialog(coach)}>
+                          <CreditCard className="h-3.5 w-3.5 mr-1" /> Razorpay
+                        </Button>
                       </div>
                     );
                   })}
