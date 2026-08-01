@@ -89,9 +89,10 @@ export default function GrowthActions() {
       const { data: existing } = await supabase.from("leaderboard_points" as any)
         .select("*").eq("user_id", user!.id).eq("week_start", weekStart).maybeSingle();
       const newTotal = ((existing as any)?.total_points || 0) + action.points;
-      await supabase.from("leaderboard_points" as any).upsert({
+      const { error: pointsError } = await supabase.from("leaderboard_points" as any).upsert({
         user_id: user!.id, week_start: weekStart, total_points: newTotal, updated_at: new Date().toISOString(),
       });
+      if (pointsError) toast({ title: "Points not recorded", description: pointsError.message, variant: "destructive" });
     }
     loadData();
   };

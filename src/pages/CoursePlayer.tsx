@@ -81,6 +81,27 @@ export default function CoursePlayer() {
   // Tabs state
   const [activeTab, setActiveTab] = useState<"description" | "resources" | "qna">("description");
 
+  // Comments state
+  const [comments, setComments] = useState<ChapterComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [visibleCommentCount, setVisibleCommentCount] = useState(5);
+  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+
+  interface ChapterComment {
+    id: string;
+    chapter_id: string;
+    user_id: string;
+    content: string;
+    parent_id: string | null;
+    created_at: string;
+    author_name: string;
+    author_avatar: string | null;
+  }
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +112,16 @@ export default function CoursePlayer() {
   useEffect(() => {
     loadCourseData();
     loadProgress();
+    loadProfile();
   }, [id]);
+
+  useEffect(() => {
+    if (selectedChapter) {
+      loadComments(selectedChapter.id);
+      setVisibleCommentCount(5);
+      setReplyingTo(null);
+    }
+  }, [selectedChapter?.id]);
 
   useEffect(() => {
     if (sections.length > 0) {
@@ -154,6 +184,102 @@ export default function CoursePlayer() {
       .eq("user_id", user.id)
       .eq("completed", true);
     if (data) setCompletedChapters(new Set(data.map((p: any) => p.chapter_id)));
+  };
+
+  const loadProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
+    if (data) setProfile(data as any);
+  };
+
+  const loadComments = async (chId: string) => {
+    setCommentsLoading(true);
+    try {
+      const { data: rows, error } = await (supabase as any)
+        .from("chapter_comments")
+        .select("*")
+        .eq("chapter_id", chId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const userIds: string[] = Array.from(new Set((rows || []).map((r: any) => String(r.user_id))));
+      const authorMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", userIds);
+        (profiles || []).forEach((p: any) => {
+          authorMap[p.id] = { full_name: p.full_name || "Member", avatar_url: p.avatar_url };
+        });
+      }
+
+      setComments(
+        (rows || []).map((r: any) => ({
+          ...r,
+          author_name: authorMap[r.user_id]?.full_name || "Member",
+          author_avatar: authorMap[r.user_id]?.avatar_url || null,
+        })),
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const postComment = async (content: string, parentId: string | null = null) => {
+    if (!user || !selectedChapter || !content.trim()) return;
+    setPostingComment(true);
+    try {
+      const { error } = await (supabase as any).from("chapter_comments").insert({
+        chapter_id: selectedChapter.id,
+        user_id: user.id,
+        content: content.trim(),
+        parent_id: parentId,
+      });
+      if (error) throw error;
+      setNewComment("");
+      setReplyText("");
+      setReplyingTo(null);
+      loadComments(selectedChapter.id);
+    } catch (err: any) {
+      toast({ title: "Couldn't post comment", description: err.message, variant: "destructive" });
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const formatRelativeTime = (iso: string) => {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "now";
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d`;
+    const months = Math.floor(days / 30);
+    return `${months}mo`;
+  };
+
+  const copyResourceLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copied", description: "Resource link copied to clipboard" });
+    } catch {
+      toast({ title: "Couldn't copy link", variant: "destructive" });
+    }
+  };
+
+  const shareChapter = async (chapter: Chapter) => {
+    const url = `${window.location.origin}/course-player/${id}/watch/${chapter.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copied", description: "Lecture link copied to clipboard" });
+    } catch {
+      toast({ title: "Couldn't copy link", variant: "destructive" });
+    }
   };
 
   const toggleComplete = async (chId: string) => {
@@ -635,6 +761,137 @@ export default function CoursePlayer() {
                       </div>
                     </div>
                   )}
+
+                  {!course?.disable_comments && (
+                    <div className="mt-8 pt-6 border-t border-zinc-800">
+                      <h3 className="text-white font-bold mb-4">Comments</h3>
+
+                      {/* Composer */}
+                      <div className="flex items-center gap-3 mb-6">
+                        <Avatar className="h-8 w-8 shrink-0">
+                          {profile?.avatar_url && <img src={profile.avatar_url} alt="" />}
+                          <AvatarFallback className="bg-zinc-800 text-zinc-300 text-xs">
+                            {(profile?.full_name || "U").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 flex items-center gap-2">
+                          <input
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                postComment(newComment);
+                              }
+                            }}
+                            placeholder="Add a comment..."
+                            disabled={postingComment}
+                            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-full px-4 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                          />
+                          <button
+                            onClick={() => postComment(newComment)}
+                            disabled={postingComment || !newComment.trim()}
+                            className="h-8 w-8 rounded-full flex items-center justify-center text-blue-400 hover:bg-zinc-800 disabled:opacity-30 transition-colors shrink-0"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* List */}
+                      {commentsLoading ? (
+                        <p className="text-xs text-zinc-500">Loading comments...</p>
+                      ) : comments.filter((c) => !c.parent_id).length === 0 ? (
+                        <p className="text-xs text-zinc-500">No comments yet. Be the first to share your thoughts.</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {comments
+                            .filter((c) => !c.parent_id)
+                            .slice(0, visibleCommentCount)
+                            .map((c) => {
+                              const replies = comments.filter((r) => r.parent_id === c.id);
+                              return (
+                                <div key={c.id}>
+                                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-850">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Avatar className="h-6 w-6 shrink-0">
+                                        {c.author_avatar && <img src={c.author_avatar} alt="" />}
+                                        <AvatarFallback className="bg-zinc-800 text-zinc-300 text-[10px]">
+                                          {c.author_name.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-xs font-bold text-zinc-100">{c.author_name}</span>
+                                      <span className="text-[10px] text-zinc-500">{formatRelativeTime(c.created_at)}</span>
+                                    </div>
+                                    <p className="text-sm text-zinc-300 ml-8">{c.content}</p>
+                                    <button
+                                      onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
+                                      className="ml-8 mt-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-300"
+                                    >
+                                      Reply
+                                    </button>
+                                  </div>
+
+                                  {replyingTo === c.id && (
+                                    <div className="flex items-center gap-2 mt-2 ml-8">
+                                      <input
+                                        autoFocus
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            postComment(replyText, c.id);
+                                          }
+                                        }}
+                                        placeholder={`Reply to ${c.author_name}...`}
+                                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-full px-3 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                                      />
+                                      <button
+                                        onClick={() => postComment(replyText, c.id)}
+                                        disabled={postingComment || !replyText.trim()}
+                                        className="text-[10px] font-bold text-blue-400 disabled:opacity-30 shrink-0"
+                                      >
+                                        Post
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {replies.length > 0 && (
+                                    <div className="mt-2 ml-8 space-y-2">
+                                      {replies.map((r) => (
+                                        <div key={r.id} className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-850">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Avatar className="h-5 w-5 shrink-0">
+                                              {r.author_avatar && <img src={r.author_avatar} alt="" />}
+                                              <AvatarFallback className="bg-zinc-800 text-zinc-300 text-[9px]">
+                                                {r.author_name.charAt(0).toUpperCase()}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-[11px] font-bold text-zinc-100">{r.author_name}</span>
+                                            <span className="text-[10px] text-zinc-500">{formatRelativeTime(r.created_at)}</span>
+                                          </div>
+                                          <p className="text-xs text-zinc-300 ml-7">{r.content}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                          {comments.filter((c) => !c.parent_id).length > visibleCommentCount && (
+                            <button
+                              onClick={() => setVisibleCommentCount((n) => n + 10)}
+                              className="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                            >
+                              View more
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -658,15 +915,24 @@ export default function CoursePlayer() {
                               <p className="text-xs text-zinc-500 font-semibold">{ext}</p>
                             </div>
                           </div>
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="h-9 w-9 rounded-full bg-red-100/10 hover:bg-red-155/20 text-red-400 flex items-center justify-center transition-colors border border-red-500/20"
-                            title="Download resource"
-                          >
-                            <Download className="h-4 w-4" />
-                          </a>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => copyResourceLink(file.url)}
+                              className="h-9 w-9 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors border border-zinc-800"
+                              title="Copy share link"
+                            >
+                              <Share2 className="h-3.5 w-3.5" />
+                            </button>
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="h-9 w-9 rounded-full bg-red-100/10 hover:bg-red-155/20 text-red-400 flex items-center justify-center transition-colors border border-red-500/20"
+                              title="Download resource"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </div>
                         </div>
                       );
                     })
@@ -784,7 +1050,9 @@ export default function CoursePlayer() {
                                   "p-3.5 flex items-start justify-between cursor-pointer transition-colors gap-3",
                                   isActive
                                     ? "bg-zinc-100/80 dark:bg-zinc-900/40"
-                                    : "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10"
+                                    : isCompleted
+                                      ? "bg-emerald-50/60 dark:bg-emerald-950/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                                      : "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10"
                                 )}
                               >
                                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -800,7 +1068,10 @@ export default function CoursePlayer() {
                                     )}>
                                       {chapter.title}
                                     </span>
-                                    <span className="text-[10px] text-zinc-400 font-semibold mt-0.5">
+                                    <span className={cn(
+                                      "text-[10px] font-semibold mt-0.5",
+                                      resCount > 0 ? "text-blue-500 dark:text-blue-400" : "text-zinc-400"
+                                    )}>
                                       {resCount > 0 ? `Video • Resources (${resCount})` : "Video"}
                                     </span>
                                   </div>
@@ -817,7 +1088,11 @@ export default function CoursePlayer() {
                                       <div className="h-4.5 w-4.5 rounded-full border border-zinc-300 dark:border-zinc-700" />
                                     )}
                                   </button>
-                                  <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+                                  <button
+                                    onClick={() => shareChapter(chapter)}
+                                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                                    title="Copy lecture link"
+                                  >
                                     <Share2 className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
