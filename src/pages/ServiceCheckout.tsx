@@ -301,7 +301,7 @@ export default function ServiceCheckout() {
     <div className="min-h-screen bg-white font-body">
       <div className="grid lg:grid-cols-2 min-h-screen">
         {/* LEFT: product */}
-        <div className="px-6 sm:px-10 lg:px-16 py-10 max-w-xl lg:ml-auto lg:mr-0 w-full">
+        <div className="px-6 sm:px-10 lg:px-16 py-10 max-w-xl mx-auto w-full">
           <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center font-extrabold text-white text-sm mb-8">
             L
           </div>
@@ -355,8 +355,8 @@ export default function ServiceCheckout() {
         </div>
 
         {/* RIGHT: payment */}
-        <div className="bg-[#F8F9FB] px-6 sm:px-10 lg:px-16 py-10 flex items-start justify-center lg:justify-start">
-          <div className="w-full max-w-md">
+        <div className="bg-[#F8F9FB] px-6 sm:px-10 lg:px-16 py-10 flex items-start justify-center">
+          <div className="w-full max-w-xl mx-auto">
             {!user && (
               <div className="flex justify-end mb-4">
                 <Button variant="outline" size="sm" onClick={() => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}>
