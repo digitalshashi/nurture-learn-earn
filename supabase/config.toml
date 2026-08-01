@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.cloud-storage]
 verify_jwt = false
+
+[functions.create-customer-user]
+verify_jwt = true

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserCheck, UserX, Plus, Download, Search, Filter, RefreshCw } from "lucide-react";
+import { Users, UserCheck, UserX, Plus, Download, Upload, Search, Filter, RefreshCw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AddCustomerDialog } from "@/components/customers/AddCustomerDialog";
+import { ImportCustomersDialog } from "@/components/customers/ImportCustomersDialog";
 import { CustomerActionsMenu } from "@/components/customers/CustomerActionsMenu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -37,6 +38,7 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CustomerRow | null>(null);
 
   const fetchCustomers = async () => {
@@ -169,6 +171,9 @@ export default function Customers() {
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-1" />Export
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-1" />Import
+            </Button>
             <Button className="bg-accent text-accent-foreground hover:bg-accent/90" size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />Add Customer
             </Button>
@@ -296,6 +301,7 @@ export default function Customers() {
       </div>
 
       <AddCustomerDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={fetchCustomers} />
+      <ImportCustomersDialog open={importOpen} onOpenChange={setImportOpen} onImported={fetchCustomers} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>

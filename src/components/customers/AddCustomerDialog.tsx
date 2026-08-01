@@ -55,32 +55,20 @@ export function AddCustomerDialog({ open, onOpenChange, onSuccess }: AddCustomer
       let userId = existingProfile?.id;
 
       if (!userId) {
-        // Create user via signup
-        const { data: signUpData, error: signUpError } = await supabase.auth.admin
-          ? await supabase.functions.invoke("create-customer-user", {
-              body: { email: form.email, name: form.name },
-            })
-          : { data: null, error: new Error("Cannot create user") };
+        const { data: createData, error: createError } = await supabase.functions.invoke("create-customer-user", {
+          body: { email: form.email, name: form.name, phone: form.phone },
+        });
 
-        if (signUpError) {
-          // If we can't create user, just use email as reference
-          toast.error("Could not create user account. Adding access record only.");
+        if (createError || createData?.error) {
+          toast.error(createData?.error || createError?.message || "Failed to create user account");
+          setLoading(false);
+          return;
         }
-        userId = signUpData?.user_id;
+        userId = createData?.user_id;
       }
 
       if (!userId) {
-        // Fallback: insert with a placeholder approach - find by email
-        const { data: profileByEmail } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", form.email)
-          .maybeSingle();
-        userId = profileByEmail?.id;
-      }
-
-      if (!userId) {
-        toast.error("No user found with this email. The user must sign up first.");
+        toast.error("Failed to create or find user account");
         setLoading(false);
         return;
       }
