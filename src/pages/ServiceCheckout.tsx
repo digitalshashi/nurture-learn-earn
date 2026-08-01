@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, CheckCircle2, Loader2, Tag, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, Tag, ShieldCheck, ChevronDown, CreditCard, Smartphone, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -54,9 +54,13 @@ export default function ServiceCheckout() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+  const [showCoupon, setShowCoupon] = useState(false);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [billingName, setBillingName] = useState("");
+  const [billingEmail, setBillingEmail] = useState("");
+  const [billingPhone, setBillingPhone] = useState("");
 
   useEffect(() => {
     loadService();
@@ -65,6 +69,11 @@ export default function ServiceCheckout() {
 
   useEffect(() => {
     if (service && user) checkExistingPurchase();
+    if (user) {
+      setBillingName(user.user_metadata?.full_name || "");
+      setBillingEmail(user.email || "");
+      setBillingPhone(user.phone || "");
+    }
   }, [service, user]);
 
   const loadRazorpayScript = () => {
@@ -209,8 +218,9 @@ export default function ServiceCheckout() {
       description: `Payment for ${service.title}`,
       order_id: orderData.order_id,
       prefill: {
-        email: user.email,
-        name: user.user_metadata?.full_name || "",
+        email: billingEmail || user.email,
+        name: billingName || user.user_metadata?.full_name || "",
+        contact: billingPhone || "",
       },
       theme: { color: "#f97316" },
       handler: async (response: any) => {
@@ -288,141 +298,224 @@ export default function ServiceCheckout() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="bg-background border-b border-border px-6 py-3 flex items-center justify-between">
-        <span className="font-display font-bold text-lg">Checkout</span>
-        {!user && (
-          <Button variant="outline" size="sm" onClick={() => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}>
-            Login
-          </Button>
-        )}
-      </header>
-
-      <div className="max-w-5xl mx-auto py-8 px-4 grid md:grid-cols-[1fr_380px] gap-8">
-        {/* LEFT */}
-        <div className="space-y-6">
-          {service.cover_image_url && (
-            <img src={service.cover_image_url} alt={service.title} className="w-full rounded-xl object-cover max-h-[320px]" />
-          )}
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">by {coachName}</p>
-            <h1 className="text-2xl font-bold font-display">{service.title}</h1>
+    <div className="min-h-screen bg-white">
+      <div className="grid lg:grid-cols-2 min-h-screen">
+        {/* LEFT: product */}
+        <div className="px-6 sm:px-10 lg:px-16 py-10 max-w-xl lg:ml-auto lg:mr-0 w-full">
+          <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center font-extrabold text-white text-sm mb-8">
+            L
           </div>
+
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{service.title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">By <span className="font-semibold text-foreground">{coachName}</span></p>
+
+          <div className="flex items-baseline gap-2 mt-3">
+            {service.discounted_price != null && (
+              <span className="text-lg text-muted-foreground line-through">
+                {service.currency === "USD" ? "$" : "₹"}{service.price}
+              </span>
+            )}
+            <span className="text-3xl font-extrabold text-zinc-900">
+              {service.is_free ? "Free" : `${service.currency === "USD" ? "$" : "₹"}${effectivePrice}`}
+            </span>
+            {service.enable_subscription && (
+              <span className="text-sm font-medium text-muted-foreground">/{service.subscription_interval}</span>
+            )}
+          </div>
+
+          {service.cover_image_url && (
+            <img src={service.cover_image_url} alt={service.title} className="w-full rounded-xl object-cover mt-6 aspect-video" />
+          )}
+
           {service.description && (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.description}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-6">{service.description}</p>
           )}
+
           {courses.length > 0 && (
-            <Card>
-              <CardContent className="p-5">
-                <h2 className="font-semibold text-base mb-3 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-accent" /> What's Included ({courses.length} courses)
-                </h2>
-                <div className="space-y-2">
-                  {courses.map((c, i) => (
-                    <div key={c.course_id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                      <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
-                        {i + 1}
-                      </div>
-                      <span className="text-sm font-medium">{(c.courses as any)?.title || "Course"}</span>
-                    </div>
-                  ))}
+            <div className="mt-6 space-y-3">
+              {courses.map((c, i) => (
+                <div key={c.course_id} className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {i + 1}
+                  </div>
+                  <span className="text-sm font-medium text-zinc-800">{(c.courses as any)?.title || "Course"}</span>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
           )}
+
+          <Separator className="my-8" />
+
+          <p className="text-[11px] text-muted-foreground">
+            You agree to share information entered on this page with <span className="font-semibold">1corehub</span> (owner of this page) and Razorpay, adhering to applicable laws.
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-4">
+            1corehub {new Date().getFullYear()}. <a href="/privacy" className="underline">Privacy</a> · <a href="/terms" className="underline">Terms</a>
+          </p>
         </div>
 
-        {/* RIGHT */}
-        <div className="space-y-4">
-          <Card className="sticky top-6 shadow-lg border-accent/20">
-            <CardContent className="p-5 space-y-4">
-              {alreadyPurchased ? (
-                <div className="text-center py-6 space-y-3">
+        {/* RIGHT: payment */}
+        <div className="bg-muted/30 px-6 sm:px-10 lg:px-16 py-10 flex items-start justify-center lg:justify-start">
+          <div className="w-full max-w-md">
+            {!user && (
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" size="sm" onClick={() => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}>
+                  Login
+                </Button>
+              </div>
+            )}
+
+            {alreadyPurchased ? (
+              <Card className="shadow-sm">
+                <CardContent className="p-6 text-center space-y-3">
                   <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
                   <h3 className="font-bold text-lg">You already have access!</h3>
                   <p className="text-sm text-muted-foreground">You've already enrolled in this service.</p>
                   <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/dashboard")}>
                     Go to Dashboard
                   </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-xl font-extrabold text-zinc-900">Payment details</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Complete your purchase by providing your payment details.</p>
                 </div>
-              ) : (
-                <>
-                  <h3 className="font-semibold text-base">Billing Summary</h3>
 
-                  {service.custom_fields && (service.custom_fields as any[]).length > 0 && (
-                    <div className="space-y-2">
-                      {(service.custom_fields as any[]).map((f: any, i: number) => (
-                        <div key={i}>
-                          <Label className="text-xs">{f.label} {f.required && "*"}</Label>
-                          <Input
-                            placeholder={f.label}
-                            value={customFieldValues[f.label] || ""}
-                            onChange={(e) => setCustomFieldValues({ ...customFieldValues, [f.label]: e.target.value })}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-xs">Coupon Code</Label>
-                    <div className="flex gap-2">
-                      <Input placeholder="Enter coupon" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
-                      <Button variant="outline" size="sm" disabled={!couponCode}>
-                        <Tag className="h-3.5 w-3.5 mr-1" /> Apply
-                      </Button>
+                {/* Billing information */}
+                <div className="bg-background rounded-xl border border-border overflow-hidden">
+                  <div className="px-4 pt-3 pb-1">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide">Billing information</span>
+                  </div>
+                  <div className="divide-y divide-border">
+                    <Input
+                      value={billingName}
+                      onChange={(e) => setBillingName(e.target.value)}
+                      placeholder="Full name"
+                      className="border-0 rounded-none h-12 focus-visible:ring-0 shadow-none"
+                    />
+                    <Input
+                      value={billingEmail}
+                      onChange={(e) => setBillingEmail(e.target.value)}
+                      placeholder="Email address"
+                      type="email"
+                      className="border-0 rounded-none h-12 focus-visible:ring-0 shadow-none"
+                    />
+                    <div className="flex items-center">
+                      <span className="pl-4 pr-2 text-sm text-muted-foreground shrink-0">+91</span>
+                      <Input
+                        value={billingPhone}
+                        onChange={(e) => setBillingPhone(e.target.value)}
+                        placeholder="Phone number"
+                        className="border-0 rounded-none h-12 focus-visible:ring-0 shadow-none pl-0"
+                      />
                     </div>
                   </div>
 
-                  <Separator />
+                  {service.custom_fields && (service.custom_fields as any[]).length > 0 && (
+                    <div className="divide-y divide-border border-t border-border">
+                      {(service.custom_fields as any[])
+                        .filter((f: any) => !f.hidden)
+                        .map((f: any, i: number) => (
+                          <div key={i} className="px-4 py-3">
+                            <Label className="text-xs">{f.label} {f.required !== false && "*"}</Label>
+                            {f.type === "dropdown" && f.options ? (
+                              <select
+                                className="w-full h-9 mt-1 text-sm bg-transparent border border-border rounded-md px-2"
+                                value={customFieldValues[f.label] || ""}
+                                onChange={(e) => setCustomFieldValues({ ...customFieldValues, [f.label]: e.target.value })}
+                              >
+                                <option value="">Select...</option>
+                                {String(f.options).split(",").map((opt: string) => (
+                                  <option key={opt.trim()} value={opt.trim()}>{opt.trim()}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <Input
+                                placeholder={f.helpText || f.label}
+                                value={customFieldValues[f.label] || ""}
+                                onChange={(e) => setCustomFieldValues({ ...customFieldValues, [f.label]: e.target.value })}
+                                className="mt-1"
+                              />
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
 
-                  <div className="space-y-2">
-                    {service.discounted_price && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Original Price</span>
-                        <span className="line-through text-muted-foreground">₹{service.price}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Amount to Pay</span>
-                      <span className="text-accent">
-                        {service.is_free ? "Free" : `₹${effectivePrice}`}
-                        {service.enable_subscription && <span className="text-xs font-normal text-muted-foreground">/{service.subscription_interval}</span>}
+                {/* Coupon */}
+                <button
+                  onClick={() => setShowCoupon(!showCoupon)}
+                  className="w-full bg-background rounded-xl border border-border px-4 py-3.5 flex items-center justify-between text-sm font-semibold"
+                >
+                  <span className="flex items-center gap-2"><Tag className="h-4 w-4 text-muted-foreground" /> Have a coupon?</span>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showCoupon ? "rotate-180" : ""}`} />
+                </button>
+                {showCoupon && (
+                  <div className="flex gap-2 -mt-2">
+                    <Input placeholder="Enter coupon code" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+                    <Button variant="outline" disabled={!couponCode}>Apply</Button>
+                  </div>
+                )}
+
+                {/* Order summary */}
+                <div className="bg-background rounded-xl border border-border overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Service</p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{service.title}</span>
+                      <span className="flex items-center gap-1.5">
+                        {service.discounted_price != null && (
+                          <span className="line-through text-muted-foreground text-xs">
+                            {service.currency === "USD" ? "$" : "₹"}{Number(service.price).toFixed(2)}
+                          </span>
+                        )}
+                        <span className="font-semibold">
+                          {service.is_free ? "Free" : `${service.currency === "USD" ? "$" : "₹"}${Number(effectivePrice).toFixed(2)}`}
+                        </span>
                       </span>
                     </div>
                   </div>
-
-                  {!service.is_free && service.price > 0 && (
-                    <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
-                      <span className="bg-muted px-2 py-0.5 rounded">UPI</span>
-                      <span className="bg-muted px-2 py-0.5 rounded">Cards</span>
-                      <span className="bg-muted px-2 py-0.5 rounded">Netbanking</span>
-                      <span className="bg-muted px-2 py-0.5 rounded">Wallets</span>
-                    </div>
-                  )}
-
-                  {service.enable_terms && service.terms_conditions && (
-                    <p className="text-[10px] text-muted-foreground">
-                      By proceeding, you agree to the Terms & Conditions.
-                    </p>
-                  )}
-
-                  <Button
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-11 text-sm font-semibold"
-                    onClick={handlePurchase}
-                    disabled={purchasing}
-                  >
-                    {purchasing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {service.is_free ? "Join Free" : `Proceed to Pay ₹${effectivePrice}`}
-                  </Button>
-
-                  <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                    <ShieldCheck className="h-3 w-3" /> Secure checkout powered by Razorpay
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <span className="text-sm font-bold">Amount to be paid :</span>
+                    <span className="text-sm font-bold">
+                      {service.is_free ? "Free" : `${service.currency === "USD" ? "$" : "₹"}${Number(effectivePrice).toFixed(2)}`}
+                    </span>
                   </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+
+                {service.enable_terms && service.terms_conditions && (
+                  <p className="text-[11px] text-muted-foreground">
+                    By proceeding, you agree to the Terms & Conditions.
+                  </p>
+                )}
+
+                <Button
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-12 text-sm font-bold"
+                  onClick={handlePurchase}
+                  disabled={purchasing}
+                >
+                  {purchasing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {service.is_free ? "Join Free" : `Proceed to pay ${service.currency === "USD" ? "$" : "₹"}${Number(effectivePrice).toFixed(2)}`}
+                </Button>
+
+                {!service.is_free && service.price > 0 && (
+                  <div className="flex items-center justify-center gap-3 text-muted-foreground">
+                    <Smartphone className="h-4 w-4" />
+                    <Wallet className="h-4 w-4" />
+                    <CreditCard className="h-4 w-4" />
+                    <span className="text-[10px] font-semibold">UPI · Cards · Netbanking · Wallets</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
+                  <ShieldCheck className="h-3 w-3" /> Secure checkout powered by Razorpay
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

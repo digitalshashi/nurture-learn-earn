@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Save, FileText, CreditCard, Settings, Plus, Image, Video, Type, Trash2, Upload } from "lucide-react";
+import { X, Save, FileText, CreditCard, Settings, Plus, Image, Video, Type, Trash2, Upload, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -114,6 +114,21 @@ export default function ServiceBuilder() {
   // Status
   const [status, setStatus] = useState("draft");
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const handleCoverUpload = async (file: File) => {
+    if (!user) return;
+    setUploadingCover(true);
+    try {
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const result = await uploadUserFile(user.id, "covers", file);
+      setCoverImageUrl(result.publicUrl);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -377,7 +392,26 @@ export default function ServiceBuilder() {
               </div>
 
               <div>
-                <Label className="flex items-center gap-1">Service cover</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1">Service cover</Label>
+                  <label>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.gif,.webp"
+                      className="hidden"
+                      disabled={uploadingCover}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleCoverUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-border bg-secondary hover:bg-secondary/80 cursor-pointer">
+                      {uploadingCover ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {uploadingCover ? "Uploading..." : "Upload images or videos"}
+                    </span>
+                  </label>
+                </div>
                 <p className="text-[10px] text-muted-foreground mb-1">Images should be horizontal, at least 1280×720px.</p>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                   {coverImageUrl ? (
@@ -386,10 +420,7 @@ export default function ServiceBuilder() {
                       <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6" onClick={() => setCoverImageUrl("")}><X className="h-3 w-3" /></Button>
                     </div>
                   ) : (
-                    <>
-                      <Input placeholder="Paste image URL" value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)} className="max-w-xs mx-auto" />
-                      <p className="text-xs text-muted-foreground mt-1">No cover images or videos uploaded.</p>
-                    </>
+                    <p className="text-xs text-muted-foreground">No cover images or videos uploaded.</p>
                   )}
                 </div>
               </div>
