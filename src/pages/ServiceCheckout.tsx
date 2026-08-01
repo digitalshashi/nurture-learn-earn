@@ -161,7 +161,7 @@ export default function ServiceCheckout() {
 
         toast({ title: "Welcome!", description: `You now have access to ${service.title}` });
         setAlreadyPurchased(true);
-        navigate("/dashboard");
+        navigate(`/checkout/${idOrSlug}/success`);
       } else {
         // Razorpay paid flow
         await initiateRazorpayPayment();
@@ -266,7 +266,7 @@ export default function ServiceCheckout() {
           if (verifyRes.ok && verifyData.success) {
             toast({ title: "Payment Successful!", description: `Welcome to ${service.title}` });
             setAlreadyPurchased(true);
-            navigate("/dashboard");
+            navigate(`/checkout/${idOrSlug}/success`);
           } else {
             toast({
               title: "Verification Failed",

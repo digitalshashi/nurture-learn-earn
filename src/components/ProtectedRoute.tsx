@@ -21,6 +21,6 @@ export function ProtectedRoute({
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (featureKey && !hasPermission(featureKey)) return <Navigate to="/feed" replace />;
+  if (featureKey && !hasPermission(featureKey)) return <Navigate to="/" replace />;
   return <>{children}</>;
 }

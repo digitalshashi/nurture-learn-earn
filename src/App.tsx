@@ -56,6 +56,7 @@ import EmailSettings from "./pages/EmailSettings";
 import Services from "./pages/Services";
 import ServiceBuilder from "./pages/ServiceBuilder";
 import ServiceCheckout from "./pages/ServiceCheckout";
+import ServiceCheckoutSuccess from "./pages/ServiceCheckoutSuccess";
 import Leaderboard from "./pages/Leaderboard";
 import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
@@ -95,6 +96,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
+            <Route path="/checkout/:idOrSlug/success" element={<ProtectedRoute><ServiceCheckoutSuccess /></ProtectedRoute>} />
             <Route path="/workshop/:slug" element={<WorkshopLandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute featureKey="dashboard"><Dashboard /></ProtectedRoute>} />
