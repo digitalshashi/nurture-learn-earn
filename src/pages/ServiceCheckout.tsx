@@ -298,7 +298,7 @@ export default function ServiceCheckout() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-body">
       <div className="grid lg:grid-cols-2 min-h-screen">
         {/* LEFT: product */}
         <div className="px-6 sm:px-10 lg:px-16 py-10 max-w-xl lg:ml-auto lg:mr-0 w-full">
@@ -306,7 +306,7 @@ export default function ServiceCheckout() {
             L
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">{service.title}</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold text-zinc-900">{service.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">By <span className="font-semibold text-foreground">{coachName}</span></p>
 
           <div className="flex items-baseline gap-2 mt-3">
@@ -315,7 +315,7 @@ export default function ServiceCheckout() {
                 {service.currency === "USD" ? "$" : "₹"}{service.price}
               </span>
             )}
-            <span className="text-3xl font-extrabold text-zinc-900">
+            <span className="font-display text-3xl font-semibold text-zinc-900">
               {service.is_free ? "Free" : `${service.currency === "USD" ? "$" : "₹"}${effectivePrice}`}
             </span>
             {service.enable_subscription && (
@@ -355,7 +355,7 @@ export default function ServiceCheckout() {
         </div>
 
         {/* RIGHT: payment */}
-        <div className="bg-muted/30 px-6 sm:px-10 lg:px-16 py-10 flex items-start justify-center lg:justify-start">
+        <div className="bg-[#F8F9FB] px-6 sm:px-10 lg:px-16 py-10 flex items-start justify-center lg:justify-start">
           <div className="w-full max-w-md">
             {!user && (
               <div className="flex justify-end mb-4">
@@ -379,7 +379,7 @@ export default function ServiceCheckout() {
             ) : (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-xl font-extrabold text-zinc-900">Payment details</h2>
+                  <h2 className="font-display text-xl font-semibold text-zinc-900">Payment details</h2>
                   <p className="text-sm text-muted-foreground mt-1">Complete your purchase by providing your payment details.</p>
                 </div>
 
