@@ -29,6 +29,7 @@ interface ServiceData {
   collect_gst: boolean;
   coach_id: string;
   status: string;
+  advanced_settings: { payment_methods?: Record<string, boolean> } | null;
 }
 
 interface LinkedCourse {
@@ -210,13 +211,25 @@ export default function ServiceCheckout() {
     }
 
     // Open Razorpay checkout
-    const options = {
+    const pm = service.advanced_settings?.payment_methods;
+    const method = pm
+      ? {
+          upi: pm.upi !== false,
+          card: pm.card !== false,
+          netbanking: pm.netbanking !== false,
+          wallet: pm.wallet !== false,
+          paylater: pm.paylater !== false,
+        }
+      : undefined;
+
+    const options: any = {
       key: orderData.key_id,
       amount: orderData.amount,
       currency: "INR",
       name: service.title,
       description: `Payment for ${service.title}`,
       order_id: orderData.order_id,
+      ...(method ? { method } : {}),
       prefill: {
         email: billingEmail || user.email,
         name: billingName || user.user_metadata?.full_name || "",

@@ -67,6 +67,7 @@ export default function ServiceBuilder() {
   const [collectAddress, setCollectAddress] = useState(false);
   const [collectGst, setCollectGst] = useState(false);
   const [customFields, setCustomFields] = useState<{ label: string; type: "short_text" | "dropdown"; options: string; helpText: string; hidden: boolean; required: boolean }[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState({ upi: true, card: true, netbanking: true, wallet: true, paylater: true });
 
   // Advance settings (persisted in services.advanced_settings jsonb)
   const [showAdvanceSettings, setShowAdvanceSettings] = useState(false);
@@ -185,6 +186,13 @@ export default function ServiceBuilder() {
 
     const adv = (s.advanced_settings as any) || {};
     setOtpLessCheckout(!!adv.otp_less_checkout);
+    setPaymentMethods({
+      upi: adv.payment_methods?.upi !== false,
+      card: adv.payment_methods?.card !== false,
+      netbanking: adv.payment_methods?.netbanking !== false,
+      wallet: adv.payment_methods?.wallet !== false,
+      paylater: adv.payment_methods?.paylater !== false,
+    });
     setEnableSeatsLimit(!!s.max_seats);
     setSeatsCount(String(s.max_seats || 50));
     setSeatsText(adv.seats_text || "{n} seats left");
@@ -265,6 +273,7 @@ export default function ServiceBuilder() {
       access_duration_days: enableValidity ? parseInt(validityDays) || null : null,
       advanced_settings: {
         otp_less_checkout: otpLessCheckout,
+        payment_methods: paymentMethods,
         seats_text: seatsText,
         start_date: enableStartDate ? startDate : null,
         notify_on_purchase: notifyOnPurchase,
@@ -654,6 +663,20 @@ export default function ServiceBuilder() {
                   <Button variant="outline" size="sm" onClick={addCustomField}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add field
                   </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-border">
+                <CardContent className="p-4 space-y-3">
+                  <Label className="font-semibold">Payment Options</Label>
+                  <p className="text-xs text-muted-foreground">Choose which payment methods buyers can use at checkout.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 text-sm"><Checkbox checked={paymentMethods.upi} onCheckedChange={(v) => setPaymentMethods({ ...paymentMethods, upi: !!v })} /> UPI</label>
+                    <label className="flex items-center gap-2 text-sm"><Checkbox checked={paymentMethods.card} onCheckedChange={(v) => setPaymentMethods({ ...paymentMethods, card: !!v })} /> Cards</label>
+                    <label className="flex items-center gap-2 text-sm"><Checkbox checked={paymentMethods.netbanking} onCheckedChange={(v) => setPaymentMethods({ ...paymentMethods, netbanking: !!v })} /> Netbanking</label>
+                    <label className="flex items-center gap-2 text-sm"><Checkbox checked={paymentMethods.wallet} onCheckedChange={(v) => setPaymentMethods({ ...paymentMethods, wallet: !!v })} /> Wallet</label>
+                    <label className="flex items-center gap-2 text-sm"><Checkbox checked={paymentMethods.paylater} onCheckedChange={(v) => setPaymentMethods({ ...paymentMethods, paylater: !!v })} /> Pay Later</label>
+                  </div>
                 </CardContent>
               </Card>
 

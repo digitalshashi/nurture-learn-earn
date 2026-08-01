@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
 
     // Payment verified! Grant access
     // 1. Insert service_user
-    await adminClient.from("service_users").insert({
+    const { error: suError } = await adminClient.from("service_users").insert({
       service_id,
       user_id: userId,
       status: "active",
@@ -117,6 +117,14 @@ Deno.serve(async (req) => {
       transaction_id: razorpay_payment_id,
       custom_fields_data: custom_fields_data || null,
     });
+
+    if (suError) {
+      console.error("service_users insert error:", suError);
+      return new Response(
+        JSON.stringify({ error: "Payment verified but failed to grant access. Contact support." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // 2. Auto-enroll in linked courses
     const { data: linkedCourses } = await adminClient
@@ -129,7 +137,8 @@ Deno.serve(async (req) => {
         course_id: c.course_id,
         user_id: userId,
       }));
-      await adminClient.from("enrollments").insert(enrollments);
+      const { error: enrollError } = await adminClient.from("enrollments").insert(enrollments);
+      if (enrollError) console.error("enrollments insert error:", enrollError);
     }
 
     return new Response(
