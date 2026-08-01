@@ -66,7 +66,32 @@ export default function ServiceBuilder() {
   const [termsConditions, setTermsConditions] = useState("");
   const [collectAddress, setCollectAddress] = useState(false);
   const [collectGst, setCollectGst] = useState(false);
-  const [customFields, setCustomFields] = useState<{ label: string; required: boolean }[]>([]);
+  const [customFields, setCustomFields] = useState<{ label: string; type: "short_text" | "dropdown"; options: string; helpText: string; hidden: boolean; required: boolean }[]>([]);
+
+  // Advance settings (persisted in services.advanced_settings jsonb)
+  const [showAdvanceSettings, setShowAdvanceSettings] = useState(false);
+  const [otpLessCheckout, setOtpLessCheckout] = useState(false);
+  const [enableSeatsLimit, setEnableSeatsLimit] = useState(false);
+  const [seatsCount, setSeatsCount] = useState("50");
+  const [seatsText, setSeatsText] = useState("{n} seats left");
+  const [enableStartDate, setEnableStartDate] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [notifyOnPurchase, setNotifyOnPurchase] = useState(true);
+  const [hideCoupon, setHideCoupon] = useState(false);
+  const [allowReregistration, setAllowReregistration] = useState(false);
+  const [enableValidity, setEnableValidity] = useState(false);
+  const [validityDays, setValidityDays] = useState("365");
+  const [enableChatRoom, setEnableChatRoom] = useState(false);
+  const [fbPixelId, setFbPixelId] = useState("");
+  const [freebieServiceId, setFreebieServiceId] = useState("");
+  const [allowMultipleQuantity, setAllowMultipleQuantity] = useState(false);
+  const [notifyOnPaymentFailure, setNotifyOnPaymentFailure] = useState(false);
+
+  // Subscription renewal card
+  const [enableRenewalCard, setEnableRenewalCard] = useState(false);
+  const [customizeRenewalCard, setCustomizeRenewalCard] = useState(false);
+  const [renewalMessage, setRenewalMessage] = useState("Your subscription is renewing soon.");
+  const [renewalButtonText, setRenewalButtonText] = useState("Renew now");
 
   // Payment success
   const [successHeading, setSuccessHeading] = useState("Payment Successful");
@@ -82,6 +107,7 @@ export default function ServiceBuilder() {
   // Linked items
   const [courses, setCourses] = useState<Course[]>([]);
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
+  const [otherServices, setOtherServices] = useState<{ id: string; title: string }[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [selectedWorkshops, setSelectedWorkshops] = useState<string[]>([]);
 
@@ -98,12 +124,14 @@ export default function ServiceBuilder() {
 
   const loadCoachProducts = async () => {
     if (!user) return;
-    const [{ data: c }, { data: w }] = await Promise.all([
+    const [{ data: c }, { data: w }, { data: svc }] = await Promise.all([
       supabase.from("courses").select("id, title").eq("coach_id", user.id),
       supabase.from("workshops").select("id, title").eq("created_by", user.id),
+      supabase.from("services").select("id, title").eq("coach_id", user.id),
     ]);
     setCourses((c as Course[]) || []);
     setWorkshops((w as Workshop[]) || []);
+    setOtherServices(((svc as any[]) || []).filter((s) => s.id !== id));
   };
 
   const loadService = async () => {
@@ -129,7 +157,38 @@ export default function ServiceBuilder() {
     setTermsConditions(s.terms_conditions || "");
     setCollectAddress(s.collect_address);
     setCollectGst(s.collect_gst);
-    setCustomFields((s.custom_fields as any) || []);
+    setCustomFields(
+      ((s.custom_fields as any) || []).map((f: any) => ({
+        label: f.label || "",
+        type: f.type || "short_text",
+        options: f.options || "",
+        helpText: f.helpText || "",
+        hidden: !!f.hidden,
+        required: !!f.required,
+      })),
+    );
+
+    const adv = (s.advanced_settings as any) || {};
+    setOtpLessCheckout(!!adv.otp_less_checkout);
+    setEnableSeatsLimit(!!s.max_seats);
+    setSeatsCount(String(s.max_seats || 50));
+    setSeatsText(adv.seats_text || "{n} seats left");
+    setEnableStartDate(!!adv.start_date);
+    setStartDate(adv.start_date || "");
+    setNotifyOnPurchase(adv.notify_on_purchase !== false);
+    setHideCoupon(!!adv.hide_coupon);
+    setAllowReregistration(!!adv.allow_reregistration);
+    setEnableValidity(!!s.access_duration_days);
+    setValidityDays(String(s.access_duration_days || 365));
+    setEnableChatRoom(!!adv.enable_chat_room);
+    setFbPixelId(adv.fb_pixel_id || "");
+    setFreebieServiceId(adv.freebie_service_id || "");
+    setAllowMultipleQuantity(!!adv.allow_multiple_quantity);
+    setNotifyOnPaymentFailure(!!adv.notify_on_payment_failure);
+    setEnableRenewalCard(!!adv.enable_renewal_card);
+    setCustomizeRenewalCard(!!adv.customize_renewal_card);
+    setRenewalMessage(adv.renewal_message || "Your subscription is renewing soon.");
+    setRenewalButtonText(adv.renewal_button_text || "Renew now");
     setSuccessHeading(s.payment_success_heading || "Payment Successful");
     setSuccessMessage(s.payment_success_message || "");
     setSuccessButtonText(s.payment_success_button_text || "Login Now");
@@ -187,6 +246,25 @@ export default function ServiceBuilder() {
       enable_terms: enableTerms,
       collect_address: collectAddress,
       collect_gst: collectGst,
+      max_seats: enableSeatsLimit ? parseInt(seatsCount) || null : null,
+      access_duration_days: enableValidity ? parseInt(validityDays) || null : null,
+      advanced_settings: {
+        otp_less_checkout: otpLessCheckout,
+        seats_text: seatsText,
+        start_date: enableStartDate ? startDate : null,
+        notify_on_purchase: notifyOnPurchase,
+        hide_coupon: hideCoupon,
+        allow_reregistration: allowReregistration,
+        enable_chat_room: enableChatRoom,
+        fb_pixel_id: fbPixelId || null,
+        freebie_service_id: freebieServiceId || null,
+        allow_multiple_quantity: allowMultipleQuantity,
+        notify_on_payment_failure: notifyOnPaymentFailure,
+        enable_renewal_card: enableRenewalCard,
+        customize_renewal_card: customizeRenewalCard,
+        renewal_message: renewalMessage,
+        renewal_button_text: renewalButtonText,
+      },
       status,
       service_tier: serviceTier,
       enable_levelup: enableLevelup,
@@ -229,7 +307,7 @@ export default function ServiceBuilder() {
   };
 
   const addCustomField = () => {
-    setCustomFields([...customFields, { label: "", required: false }]);
+    setCustomFields([...customFields, { label: "", type: "short_text", options: "", helpText: "", hidden: false, required: false }]);
   };
 
   const addSuccessSection = () => {
@@ -285,7 +363,7 @@ export default function ServiceBuilder() {
             <TabsList className="mb-4">
               <TabsTrigger value="details" className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Service details</TabsTrigger>
               <TabsTrigger value="payment" className="flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Payment details</TabsTrigger>
-              <TabsTrigger value="success" className="flex items-center gap-1.5"><Settings className="h-3.5 w-3.5" /> Payment success page</TabsTrigger>
+              <TabsTrigger value="success" className="flex items-center gap-1.5"><Settings className="h-3.5 w-3.5" /> {isFree ? "Registration success page" : "Payment success page"}</TabsTrigger>
             </TabsList>
 
             {/* TAB 1: Service Details */}
@@ -346,6 +424,18 @@ export default function ServiceBuilder() {
                     <div>
                       <Label className="text-xs">Subscription Price</Label>
                       <Input type="number" value={subscriptionPrice} onChange={(e) => setSubscriptionPrice(e.target.value)} />
+                    </div>
+                    <div className="col-span-2 space-y-2 pt-1">
+                      <label className="flex items-center gap-2 text-sm"><Checkbox checked={enableRenewalCard} onCheckedChange={(v) => setEnableRenewalCard(!!v)} /> Show renewal card to subscribers</label>
+                      {enableRenewalCard && (
+                        <label className="flex items-center gap-2 text-sm pl-6"><Checkbox checked={customizeRenewalCard} onCheckedChange={(v) => setCustomizeRenewalCard(!!v)} /> Customise Renewal Card</label>
+                      )}
+                      {enableRenewalCard && customizeRenewalCard && (
+                        <div className="pl-6 space-y-2">
+                          <div><Label className="text-xs">Renewal message</Label><Textarea rows={2} value={renewalMessage} onChange={(e) => setRenewalMessage(e.target.value)} /></div>
+                          <div><Label className="text-xs">Button text</Label><Input value={renewalButtonText} onChange={(e) => setRenewalButtonText(e.target.value)} className="w-48" /></div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -494,25 +584,42 @@ export default function ServiceBuilder() {
                   <div className="flex items-center justify-between">
                     <Label className="font-semibold">Custom field</Label>
                   </div>
-                  {customFields.map((cf, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Input placeholder="Field label" value={cf.label} onChange={(e) => {
-                        const updated = [...customFields];
-                        updated[i].label = e.target.value;
-                        setCustomFields(updated);
-                      }} className="flex-1" />
-                      <label className="flex items-center gap-1 text-xs">
-                        <Checkbox checked={cf.required} onCheckedChange={(v) => {
-                          const updated = [...customFields];
-                          updated[i].required = !!v;
-                          setCustomFields(updated);
-                        }} /> Required
-                      </label>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setCustomFields(customFields.filter((_, idx) => idx !== i))}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
+                  {customFields.map((cf, i) => {
+                    const update = (patch: Partial<typeof cf>) => {
+                      const updated = [...customFields];
+                      updated[i] = { ...updated[i], ...patch };
+                      setCustomFields(updated);
+                    };
+                    return (
+                      <div key={i} className="p-3 border border-border rounded-lg space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input placeholder="Field title" value={cf.label} onChange={(e) => update({ label: e.target.value })} className="flex-1" />
+                          <Select value={cf.type} onValueChange={(v: "short_text" | "dropdown") => update({ type: v })}>
+                            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="short_text">Short Text</SelectItem>
+                              <SelectItem value="dropdown">Drop Down</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setCustomFields(customFields.filter((_, idx) => idx !== i))}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <Input placeholder="Help text (optional)" value={cf.helpText} onChange={(e) => update({ helpText: e.target.value })} className="text-xs" />
+                        {cf.type === "dropdown" && (
+                          <Input placeholder="Options, comma separated" value={cf.options} onChange={(e) => update({ options: e.target.value })} className="text-xs" />
+                        )}
+                        <div className="flex items-center gap-4 pt-1">
+                          <label className="flex items-center gap-1.5 text-xs">
+                            <Checkbox checked={cf.hidden} onCheckedChange={(v) => update({ hidden: !!v })} /> Hidden
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs">
+                            <Checkbox checked={!cf.required} onCheckedChange={(v) => update({ required: !v })} /> Optional
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
                   <Button variant="outline" size="sm" onClick={addCustomField}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add field
                   </Button>
@@ -536,14 +643,113 @@ export default function ServiceBuilder() {
 
               <Card className="border border-border">
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-semibold">Advance settings</Label>
-                    <Switch checked={collectAddress || collectGst} onCheckedChange={(v) => { setCollectAddress(v); setCollectGst(v); }} />
-                  </div>
-                  {(collectAddress || collectGst) && (
-                    <div className="space-y-2 pl-2">
-                      <label className="flex items-center gap-2 text-sm"><Checkbox checked={collectAddress} onCheckedChange={(v) => setCollectAddress(!!v)} /> Collect address</label>
-                      <label className="flex items-center gap-2 text-sm"><Checkbox checked={collectGst} onCheckedChange={(v) => setCollectGst(!!v)} /> Collect GST details</label>
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full"
+                    onClick={() => setShowAdvanceSettings(!showAdvanceSettings)}
+                  >
+                    <Label className="font-semibold cursor-pointer">Advance settings</Label>
+                    <span className="text-xs text-muted-foreground">{showAdvanceSettings ? "Hide" : "Show"}</span>
+                  </button>
+
+                  {showAdvanceSettings && (
+                    <div className="space-y-4 pt-2">
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm"><Checkbox checked={collectAddress} onCheckedChange={(v) => setCollectAddress(!!v)} /> Collect address</label>
+                        <label className="flex items-center gap-2 text-sm"><Checkbox checked={collectGst} onCheckedChange={(v) => setCollectGst(!!v)} /> Collect GST details</label>
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">OTP-less checkout</Label>
+                        <Switch checked={otpLessCheckout} onCheckedChange={setOtpLessCheckout} />
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Limit seats available for sale</Label>
+                        <Switch checked={enableSeatsLimit} onCheckedChange={setEnableSeatsLimit} />
+                      </div>
+                      {enableSeatsLimit && (
+                        <div className="grid grid-cols-2 gap-3 pl-4">
+                          <div><Label className="text-xs">Seat count</Label><Input type="number" value={seatsCount} onChange={(e) => setSeatsCount(e.target.value)} /></div>
+                          <div><Label className="text-xs">"Seats left" text</Label><Input value={seatsText} onChange={(e) => setSeatsText(e.target.value)} placeholder="{n} seats left" /></div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Add start date</Label>
+                        <Switch checked={enableStartDate} onCheckedChange={setEnableStartDate} />
+                      </div>
+                      {enableStartDate && (
+                        <div className="pl-4"><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-48" /></div>
+                      )}
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Email notification on every purchase</Label>
+                        <Switch checked={notifyOnPurchase} onCheckedChange={setNotifyOnPurchase} />
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Hide the coupon code field</Label>
+                        <Switch checked={hideCoupon} onCheckedChange={setHideCoupon} />
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Enable re-registration / re-purchase</Label>
+                        <Switch checked={allowReregistration} onCheckedChange={setAllowReregistration} />
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Set service validity</Label>
+                        <Switch checked={enableValidity} onCheckedChange={setEnableValidity} />
+                      </div>
+                      {enableValidity && (
+                        <div className="pl-4 space-y-3">
+                          <div><Label className="text-xs">Validity (days)</Label><Input type="number" value={validityDays} onChange={(e) => setValidityDays(e.target.value)} className="w-32" /></div>
+                          <label className="flex items-center gap-2 text-sm"><Checkbox checked={enableRenewalCard} onCheckedChange={(v) => setEnableRenewalCard(!!v)} /> Show renewal card</label>
+                          {enableRenewalCard && (
+                            <label className="flex items-center gap-2 text-sm pl-6"><Checkbox checked={customizeRenewalCard} onCheckedChange={(v) => setCustomizeRenewalCard(!!v)} /> Customise renewal card</label>
+                          )}
+                          {enableRenewalCard && customizeRenewalCard && (
+                            <div className="pl-6 space-y-2">
+                              <div><Label className="text-xs">Renewal message</Label><Textarea rows={2} value={renewalMessage} onChange={(e) => setRenewalMessage(e.target.value)} /></div>
+                              <div><Label className="text-xs">Button text</Label><Input value={renewalButtonText} onChange={(e) => setRenewalButtonText(e.target.value)} className="w-48" /></div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Create a chat room for buyers</Label>
+                        <Switch checked={enableChatRoom} onCheckedChange={setEnableChatRoom} />
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Facebook Pixel ID</Label>
+                        <Input value={fbPixelId} onChange={(e) => setFbPixelId(e.target.value)} placeholder="123456789012345" className="w-48" />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Attach a freebie service</Label>
+                        <Select value={freebieServiceId || "none"} onValueChange={(v) => setFreebieServiceId(v === "none" ? "" : v)}>
+                          <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {otherServices.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Enable multiple-quantity purchases</Label>
+                        <Switch checked={allowMultipleQuantity} onCheckedChange={setAllowMultipleQuantity} />
+                      </div>
+
+                      <div className="flex items-center justify-between py-1.5">
+                        <Label className="text-sm">Notify me when a payment fails</Label>
+                        <Switch checked={notifyOnPaymentFailure} onCheckedChange={setNotifyOnPaymentFailure} />
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -610,21 +816,31 @@ export default function ServiceBuilder() {
 
           {/* Right: Mobile Preview */}
           <div className="sticky top-20">
-            <div className="bg-muted rounded-[2rem] p-3 shadow-lg max-w-[280px] mx-auto">
-              <div className="bg-background rounded-[1.5rem] overflow-hidden min-h-[480px]">
-                <div className="p-4 text-center">
-                  <div className="w-10 h-10 bg-accent/20 rounded-full mx-auto mb-3" />
-                  <p className="text-xs text-muted-foreground">by Coach</p>
-                  {title && <p className="font-semibold text-sm mt-1">{title}</p>}
-                  {description && <p className="text-[10px] text-muted-foreground mt-1 line-clamp-3">{description}</p>}
+            <div className="bg-zinc-900 rounded-[2.5rem] p-2.5 shadow-xl max-w-[280px] mx-auto border-[6px] border-zinc-900">
+              <div className="bg-background rounded-[2rem] overflow-hidden min-h-[520px] flex flex-col relative">
+                <div className="h-6 flex items-center justify-center shrink-0">
+                  <div className="w-20 h-4 bg-zinc-900 rounded-full" />
                 </div>
-                <div className="px-4 pb-4 mt-auto">
-                  <div className="flex items-center justify-between mt-8">
-                    <span className="text-lg font-bold">{isFree ? "Free" : `${currencySymbol}${price || 0}`}</span>
-                    <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs px-4">
-                      Buy Now
-                    </Button>
+                <div className="flex-1 flex flex-col">
+                  <div className="p-4 text-center">
+                    <div className="w-10 h-10 bg-accent/20 rounded-full mx-auto mb-3 flex items-center justify-center text-accent font-bold text-sm">
+                      {(title || "S").charAt(0).toUpperCase()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">by <span className="font-semibold text-foreground">1corehub</span></p>
+                    {title && <p className="font-semibold text-sm mt-1">{title}</p>}
+                    {description && <p className="text-[10px] text-muted-foreground mt-1 line-clamp-3">{description}</p>}
+                    {!title && !description && (
+                      <p className="text-[10px] text-muted-foreground mt-6">
+                        You agree to share information entered on this page with 1corehub (owner of this page), adhering to applicable laws.
+                      </p>
+                    )}
                   </div>
+                </div>
+                <div className="px-4 pb-5 border-t border-border pt-3 flex items-center justify-between">
+                  <span className="text-lg font-bold">{isFree ? "Free" : `${currencySymbol}${price || 0}`}</span>
+                  <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs px-5 font-bold">
+                    Buy Now
+                  </Button>
                 </div>
               </div>
             </div>

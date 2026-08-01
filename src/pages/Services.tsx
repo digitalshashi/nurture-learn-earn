@@ -63,6 +63,29 @@ export default function Services() {
     loadServices();
   };
 
+  const cloneService = async (s: Service) => {
+    const { id: _id, service_users: _su, created_at: _ca, ...rest } = s as any;
+    const { data: full } = await supabase.from("services").select("*").eq("id", s.id).single();
+    if (!full) return;
+    const { id: _fid, created_at: _fca, updated_at: _fua, ...payload } = full as any;
+    const { error } = await supabase.from("services").insert({
+      ...payload,
+      title: `${s.title} (Copy)`,
+      slug: `${s.slug || s.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-copy-${Date.now()}`,
+      status: "draft",
+    } as any);
+    if (error) { toast({ title: "Clone failed", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Service cloned" });
+    loadServices();
+  };
+
+  const toggleHide = async (s: Service) => {
+    const nextStatus = s.status === "paused" ? "active" : "paused";
+    await supabase.from("services").update({ status: nextStatus }).eq("id", s.id);
+    toast({ title: nextStatus === "paused" ? "Service hidden" : "Service unhidden" });
+    loadServices();
+  };
+
   const statusBadge = (status: string) => {
     const cls = status === "active" ? "bg-green-500/10 text-green-600" :
                 status === "paused" ? "bg-yellow-500/10 text-yellow-600" :
@@ -148,11 +171,23 @@ export default function Services() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/service-builder/${s.id}`)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => cloneService(s)}>
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Clone
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toggleHide(s)}>
+                              {s.status === "paused" ? "Unhide" : "Hide"}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => {
                               navigator.clipboard.writeText(`${window.location.origin}/checkout/${s.slug || s.id}`);
-                              toast({ title: "Link copied!" });
+                              toast({ title: "Checkout link copied!" });
                             }}>
-                              <Copy className="h-3.5 w-3.5 mr-2" /> Copy Link
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Copy checkout link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/checkout/${s.slug || s.id}/success`);
+                              toast({ title: "Payment success page link copied!" });
+                            }}>
+                              <Copy className="h-3.5 w-3.5 mr-2" /> Copy payment success page link
                             </DropdownMenuItem>
                             <DropdownMenuItem>Analytics</DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={() => deleteService(s.id)}>Delete</DropdownMenuItem>
