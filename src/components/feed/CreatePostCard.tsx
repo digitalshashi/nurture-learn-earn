@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Image, Video, Link2, Send } from "lucide-react";
+import { Image, Video, Link2, Send, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { extractEmbeds } from "@/lib/link-embed";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface CreatePostCardProps {
   onPostCreated: () => void;
@@ -24,6 +27,9 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
   const [linkUrl, setLinkUrl] = useState("");
   const [showMedia, setShowMedia] = useState<"image" | "video" | "link" | null>(null);
   const [posting, setPosting] = useState(false);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
+  const [hideCommentCount, setHideCommentCount] = useState(false);
+  const [hideLikeCount, setHideLikeCount] = useState(false);
 
   // Real-time link detection from content
   const detectedEmbeds = useMemo(() => extractEmbeds(content), [content]);
@@ -40,6 +46,9 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
         link_url: linkUrl || null,
         is_feed_post: !channelId,
         channel_id: channelId || null,
+        comments_enabled: commentsEnabled,
+        hide_comment_count: hideCommentCount,
+        hide_like_count: hideLikeCount,
       });
       if (error) throw error;
       setContent("");
@@ -47,6 +56,9 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
       setVideoUrl("");
       setLinkUrl("");
       setShowMedia(null);
+      setCommentsEnabled(true);
+      setHideCommentCount(false);
+      setHideLikeCount(false);
       onPostCreated();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -98,6 +110,28 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
             <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2" onClick={() => setShowMedia(showMedia === "link" ? null : "link")}>
               <Link2 className="h-4 w-4" />
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2" title="Change post settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 space-y-3" align="start">
+                <p className="text-xs font-semibold text-muted-foreground">Post settings</p>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="hide-comment-count" className="text-sm font-normal">Hide comment count</Label>
+                  <Switch id="hide-comment-count" checked={hideCommentCount} onCheckedChange={setHideCommentCount} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="comments-off" className="text-sm font-normal">Turn off commenting</Label>
+                  <Switch id="comments-off" checked={!commentsEnabled} onCheckedChange={(v) => setCommentsEnabled(!v)} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="hide-like-count" className="text-sm font-normal">Hide like count</Label>
+                  <Switch id="hide-like-count" checked={hideLikeCount} onCheckedChange={setHideLikeCount} />
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 px-4" onClick={handleSubmit} disabled={posting}>
             <Send className="h-3.5 w-3.5 mr-1" /> {posting ? "Posting..." : "Post"}

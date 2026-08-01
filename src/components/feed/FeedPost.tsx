@@ -1,8 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
-import { Heart, MessageCircle, Share2, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Heart, MessageCircle, Share2, Send, ChevronDown, ChevronUp, Eye, Pin, Trash2, MoreHorizontal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { extractEmbeds, removeEmbedUrls, parseEmbed } from "@/lib/link-embed";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +17,7 @@ interface Comment {
   content: string;
   user_id: string;
   created_at: string;
+  is_pinned: boolean;
   profile?: { full_name: string; avatar_url: string | null };
 }
 
@@ -30,11 +33,21 @@ interface FeedPostProps {
   timeAgo: string;
   likes: number;
   comments: number;
+  viewCount?: number;
+  commentsEnabled?: boolean;
+  hideCommentCount?: boolean;
+  hideLikeCount?: boolean;
+  isCreatorPost?: boolean;
 }
 
-export function FeedPost({ id, author, authorAvatar, authorId, content, image, videoUrl, linkUrl, timeAgo, likes: initialLikes, comments: initialComments }: FeedPostProps) {
-  const { user } = useAuth();
+export function FeedPost({
+  id, author, authorAvatar, authorId, content, image, videoUrl, linkUrl, timeAgo,
+  likes: initialLikes, comments: initialComments, viewCount = 0,
+  commentsEnabled = true, hideCommentCount = false, hideLikeCount = false, isCreatorPost = false,
+}: FeedPostProps) {
+  const { user, hasRole } = useAuth();
   const { toast } = useToast();
+  const isModerator = user?.id === authorId || hasRole("admin") || hasRole("super_admin");
 
   const [likeCount, setLikeCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
@@ -45,6 +58,8 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const viewedRef = useRef(false);
 
   // Check if user already liked + fetch counts
   useEffect(() => {
@@ -61,6 +76,33 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
       setCommentCount(commentTotal || 0);
     };
     fetchLikeState();
+  }, [id, user]);
+
+  // Record a view once the post has been in viewport for ~1.5s, once per session
+  useEffect(() => {
+    if (!user || !cardRef.current) return;
+    const node = cardRef.current;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewedRef.current) {
+          timer = setTimeout(async () => {
+            if (viewedRef.current) return;
+            viewedRef.current = true;
+            await supabase.from("post_views" as any).upsert(
+              { post_id: id, user_id: user.id, viewed_on: new Date().toISOString().slice(0, 10) } as any,
+              { onConflict: "post_id,user_id,viewed_on", ignoreDuplicates: true },
+            );
+          }, 1500);
+        } else if (timer) {
+          clearTimeout(timer);
+        }
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(node);
+    return () => { observer.disconnect(); if (timer) clearTimeout(timer); };
   }, [id, user]);
 
   const handleLike = async () => {
@@ -86,18 +128,19 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
 
   const loadComments = async () => {
     setLoadingComments(true);
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("comments")
-      .select("id, content, user_id, created_at")
+      .select("id, content, user_id, created_at, is_pinned")
       .eq("post_id", id)
+      .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: true })
       .limit(50);
-    
+
     if (data && data.length > 0) {
-      const userIds = [...new Set(data.map((c) => c.user_id))];
+      const userIds: string[] = Array.from(new Set(data.map((c: any) => String(c.user_id))));
       const { data: profiles } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", userIds);
       setCommentsList(
-        data.map((c) => ({
+        data.map((c: any) => ({
           ...c,
           profile: profiles?.find((p) => p.id === c.user_id) || { full_name: "User", avatar_url: null },
         }))
@@ -108,6 +151,19 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
     setLoadingComments(false);
   };
 
+  const togglePinComment = async (comment: Comment) => {
+    const { error } = await (supabase as any).from("comments").update({ is_pinned: !comment.is_pinned }).eq("id", comment.id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    loadComments();
+  };
+
+  const deleteComment = async (commentId: string) => {
+    const { error } = await supabase.from("comments").delete().eq("id", commentId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    setCommentCount((c) => Math.max(0, c - 1));
+    loadComments();
+  };
+
   const toggleComments = () => {
     const next = !showComments;
     setShowComments(next);
@@ -115,7 +171,7 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
   };
 
   const submitComment = async () => {
-    if (!user || !newComment.trim() || posting) return;
+    if (!user || !newComment.trim() || posting || !commentsEnabled) return;
     setPosting(true);
     try {
       const { error } = await supabase.from("comments").insert({
@@ -158,7 +214,7 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border card-shadow overflow-hidden">
+    <div ref={cardRef} className="bg-card rounded-xl border border-border card-shadow overflow-hidden">
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10">
@@ -168,8 +224,9 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <p className="font-semibold text-sm truncate">{author}</p>
+              {isCreatorPost && <Badge className="bg-accent/15 text-accent border-0 text-[9px] px-1.5 py-0 h-4">CREATOR</Badge>}
               {authorId && <UserBadges userId={authorId} maxVisible={2} size="sm" />}
             </div>
             <p className="text-[13px] font-medium text-muted-foreground">{timeAgo}</p>
@@ -213,15 +270,16 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
           }`}
         >
           <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-          {likeCount > 0 && <span className="font-medium">{likeCount}</span>}
+          {!hideLikeCount && likeCount > 0 && <span className="font-medium">{likeCount}</span>}
         </button>
         <button
           onClick={toggleComments}
-          className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm"
+          disabled={!commentsEnabled}
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm disabled:opacity-50 disabled:hover:text-muted-foreground"
         >
           <MessageCircle className="h-4 w-4" />
-          {commentCount > 0 && <span className="font-medium">{commentCount}</span>}
-          {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          {!hideCommentCount && commentCount > 0 && <span className="font-medium">{commentCount}</span>}
+          {commentsEnabled && (showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
         </button>
         <button
           onClick={() => {
@@ -232,66 +290,103 @@ export function FeedPost({ id, author, authorAvatar, authorId, content, image, v
         >
           <Share2 className="h-4 w-4" />
         </button>
+        <div className="flex items-center gap-1.5 text-muted-foreground text-sm ml-auto">
+          <Eye className="h-3.5 w-3.5" />
+          {viewCount > 0 && <span className="text-xs font-medium">{viewCount}</span>}
+        </div>
       </div>
 
       {/* Comments Section */}
       {showComments && (
         <div className="border-t border-border">
-          {/* Comment input */}
-          <div className="p-3 flex gap-2">
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback className="bg-secondary text-xs font-semibold">
-                {user?.email?.charAt(0).toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 flex gap-2">
-              <Textarea
-                placeholder="Write a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="min-h-[36px] max-h-[100px] text-sm resize-none py-2"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
-                }}
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                className="shrink-0 h-9 w-9"
-                onClick={submitComment}
-                disabled={posting || !newComment.trim()}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Comments list */}
-          {loadingComments ? (
-            <div className="px-4 pb-3 text-xs text-muted-foreground">Loading comments...</div>
+          {!commentsEnabled ? (
+            <p className="px-4 py-3 text-xs text-muted-foreground text-center">Commenting has been turned off for this post.</p>
           ) : (
-            <div className="px-4 pb-3 space-y-3">
-              {commentsList.map((comment) => (
-                <div key={comment.id} className="flex gap-2">
-                  <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarImage src={comment.profile?.avatar_url || ""} />
-                    <AvatarFallback className="bg-secondary text-[10px] font-semibold">
-                      {(comment.profile?.full_name || "U").charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="bg-secondary rounded-lg px-3 py-2">
-                      <p className="text-xs font-semibold">{comment.profile?.full_name || "User"}</p>
-                      <p className="text-sm mt-0.5">{comment.content}</p>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1 px-1">{getTimeAgoShort(comment.created_at)}</p>
-                  </div>
+            <>
+              {/* Comment input */}
+              <div className="p-3 flex gap-2">
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarFallback className="bg-secondary text-xs font-semibold">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 flex gap-2">
+                  <Textarea
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="min-h-[36px] max-h-[100px] text-sm resize-none py-2"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="shrink-0 h-9 w-9"
+                    onClick={submitComment}
+                    disabled={posting || !newComment.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
-              {commentsList.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-2">No comments yet. Be the first!</p>
+              </div>
+
+              {/* Comments list */}
+              {loadingComments ? (
+                <div className="px-4 pb-3 text-xs text-muted-foreground">Loading comments...</div>
+              ) : (
+                <div className="px-4 pb-3 space-y-3">
+                  {commentsList.map((comment) => {
+                    const canModerate = isModerator || comment.user_id === user?.id;
+                    return (
+                      <div key={comment.id} className="flex gap-2">
+                        <Avatar className="h-7 w-7 shrink-0">
+                          <AvatarImage src={comment.profile?.avatar_url || ""} />
+                          <AvatarFallback className="bg-secondary text-[10px] font-semibold">
+                            {(comment.profile?.full_name || "U").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className={`rounded-lg px-3 py-2 ${comment.is_pinned ? "bg-accent/10 border border-accent/20" : "bg-secondary"}`}>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-semibold flex items-center gap-1">
+                                {comment.is_pinned && <Pin className="h-3 w-3 text-accent" />}
+                                {comment.profile?.full_name || "User"}
+                              </p>
+                              {canModerate && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="text-muted-foreground hover:text-foreground shrink-0">
+                                      <MoreHorizontal className="h-3.5 w-3.5" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {isModerator && (
+                                      <DropdownMenuItem onClick={() => togglePinComment(comment)}>
+                                        <Pin className="h-3.5 w-3.5 mr-2" /> {comment.is_pinned ? "Unpin" : "Pin"} comment
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem className="text-destructive" onClick={() => deleteComment(comment.id)}>
+                                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            <p className="text-sm mt-0.5">{comment.content}</p>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1 px-1">{getTimeAgoShort(comment.created_at)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {commentsList.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">No comments yet. Be the first!</p>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
