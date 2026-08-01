@@ -22,7 +22,11 @@ import {
   Share2,
   ChevronDown,
   ExternalLink,
-  Minimize2
+  Minimize2,
+  Sun,
+  Moon,
+  List,
+  X
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +70,16 @@ export default function CoursePlayer() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem(`sidebar-collapsed-${id}`) === "true";
   });
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Player theme: light by default, user can opt into dark
+  const [playerDark, setPlayerDark] = useState(() => {
+    return localStorage.getItem("course-player-theme") === "dark";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("course-player-theme", playerDark ? "dark" : "light");
+  }, [playerDark]);
 
   // Video playback states
   const [isPlaying, setIsPlaying] = useState(false);
@@ -311,6 +325,7 @@ export default function CoursePlayer() {
 
   const navigateToChapter = (chapter: Chapter) => {
     navigate(`/course-player/${id}/watch/${chapter.id}`);
+    setIsMobileSidebarOpen(false);
   };
 
   const nextChapter = () => {
@@ -449,43 +464,57 @@ export default function CoursePlayer() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-zinc-950 text-zinc-400">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-zinc-950 text-zinc-500 dark:text-zinc-400">
         <span className="animate-pulse">Loading lecture watch room...</span>
       </div>
     );
   }
 
-  const isThirdPartyVideo = selectedChapter?.video_url && 
+  const isThirdPartyVideo = selectedChapter?.video_url &&
     (selectedChapter.video_type !== "upload" && !selectedChapter.video_url.includes("course-videos"));
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950 text-white overflow-hidden select-none">
-      
+    <div className={cn(playerDark && "dark", "h-screen flex flex-col bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white overflow-hidden select-none")}>
+
       {/* Minimal Top Bar */}
-      <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900 shrink-0">
-        <div className="flex items-center gap-4">
+      <header className="h-14 sm:h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-3 sm:px-6 bg-white dark:bg-zinc-900 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <button
             onClick={() => navigate(`/course-player/${id}`)}
-            className="h-9 w-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors text-white"
+            className="h-9 w-9 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-700 dark:text-white shrink-0"
             title="Back to course detail"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="h-[35px] w-[35px] bg-primary rounded-lg flex items-center justify-center font-extrabold text-white text-base">
+          <div className="h-[35px] w-[35px] bg-primary rounded-lg flex items-center justify-center font-extrabold text-white text-base shrink-0">
             L
           </div>
-          <span className="text-sm font-semibold tracking-wide text-zinc-300 truncate max-w-[280px]">
+          <span className="text-sm font-semibold tracking-wide text-zinc-700 dark:text-zinc-300 truncate max-w-[140px] sm:max-w-[280px]">
             {course?.title}
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-xs font-semibold text-zinc-200">
-            <Video className="h-4 w-4 text-indigo-400" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+            <Video className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
             <span>{completedCount} of {totalChapters} complete</span>
           </div>
-          <Avatar className="h-8 w-8 border border-zinc-700">
-            <AvatarFallback className="bg-zinc-800 text-xs font-bold text-zinc-300">
+          <button
+            onClick={() => setPlayerDark(!playerDark)}
+            className="h-9 w-9 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-700 dark:text-zinc-200 shrink-0"
+            title={playerDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {playerDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="lg:hidden h-9 w-9 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-700 dark:text-zinc-200 shrink-0"
+            title="Course content"
+          >
+            <List className="h-4 w-4" />
+          </button>
+          <Avatar className="h-8 w-8 border border-zinc-200 dark:border-zinc-700 shrink-0">
+            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300">
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -493,7 +522,7 @@ export default function CoursePlayer() {
       </header>
 
       {/* Main Body Columns */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden pb-14 lg:pb-0">
         
         {/* Left Column: Video player & Tabs (approx 75% width on large screens) */}
         <div className="flex-1 flex flex-col overflow-hidden bg-black relative">
@@ -698,19 +727,19 @@ export default function CoursePlayer() {
           </div>
 
           {/* Lecture Info Panel (Bottom 35%) */}
-          <div className="flex-1 overflow-auto bg-zinc-900 p-6 flex flex-col border-t border-zinc-800">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4 mb-5">
-              <h2 className="text-xl font-extrabold text-white">
+          <div className="flex-1 overflow-auto bg-white dark:bg-zinc-900 p-4 sm:p-6 flex flex-col border-t border-zinc-200 dark:border-zinc-800">
+            <div className="flex flex-col gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-5">
+              <h2 className="text-lg sm:text-xl font-extrabold text-zinc-900 dark:text-white">
                 {selectedChapter?.title}
               </h2>
-              
-              {/* Tab Header Row */}
-              <div className="flex gap-4 border-b border-transparent">
+
+              {/* Tab Header Row (pill style) */}
+              <div className="flex gap-2 flex-wrap">
                 {[
                   { id: "description", label: "Description" },
-                  { 
-                    id: "resources", 
-                    label: selectedChapter ? `Resources (${getResources(selectedChapter).length})` : "Resources" 
+                  {
+                    id: "resources",
+                    label: selectedChapter ? `Resources (${getResources(selectedChapter).length})` : "Resources"
                   },
                   { id: "qna", label: "QnA" }
                 ].map((tab) => {
@@ -718,18 +747,18 @@ export default function CoursePlayer() {
                   const isDisabled = isQna && course?.disable_qna;
 
                   return (
-                    <div 
-                      key={tab.id} 
+                    <div
+                      key={tab.id}
                       className="relative group shrink-0"
                     >
                       <button
                         disabled={isDisabled}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={cn(
-                          "pb-2 text-sm font-semibold transition-colors focus:outline-none",
+                          "px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors focus:outline-none",
                           activeTab === tab.id
-                            ? "text-blue-400 border-b-2 border-blue-400"
-                            : "text-zinc-400 hover:text-zinc-200",
+                            ? "bg-accent/10 text-accent"
+                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
                           isDisabled && "opacity-50 cursor-not-allowed"
                         )}
                       >
@@ -749,28 +778,28 @@ export default function CoursePlayer() {
             </div>
 
             {/* Tab Body Contents */}
-            <div className="flex-1 text-zinc-300 text-sm leading-relaxed">
+            <div className="flex-1 text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">
               {activeTab === "description" && (
                 <div>
                   <p>{selectedChapter?.video_description || "No description provided for this lecture."}</p>
                   {selectedChapter?.content && (
-                    <div className="mt-4 p-4 rounded-xl bg-zinc-950 border border-zinc-850">
-                      <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Lesson Notes</p>
-                      <div className="prose prose-invert max-w-none text-zinc-300">
+                    <div className="mt-4 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850">
+                      <p className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Lesson Notes</p>
+                      <div className="prose dark:prose-invert max-w-none text-zinc-700 dark:text-zinc-300">
                         {selectedChapter.content}
                       </div>
                     </div>
                   )}
 
                   {!course?.disable_comments && (
-                    <div className="mt-8 pt-6 border-t border-zinc-800">
-                      <h3 className="text-white font-bold mb-4">Comments</h3>
+                    <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                      <h3 className="text-zinc-900 dark:text-white font-bold mb-4">Comments</h3>
 
                       {/* Composer */}
                       <div className="flex items-center gap-3 mb-6">
                         <Avatar className="h-8 w-8 shrink-0">
                           {profile?.avatar_url && <img src={profile.avatar_url} alt="" />}
-                          <AvatarFallback className="bg-zinc-800 text-zinc-300 text-xs">
+                          <AvatarFallback className="bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs">
                             {(profile?.full_name || "U").charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -786,12 +815,12 @@ export default function CoursePlayer() {
                             }}
                             placeholder="Add a comment..."
                             disabled={postingComment}
-                            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-full px-4 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                            className="flex-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-full px-4 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600"
                           />
                           <button
                             onClick={() => postComment(newComment)}
                             disabled={postingComment || !newComment.trim()}
-                            className="h-8 w-8 rounded-full flex items-center justify-center text-blue-400 hover:bg-zinc-800 disabled:opacity-30 transition-colors shrink-0"
+                            className="h-8 w-8 rounded-full flex items-center justify-center text-accent hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 transition-colors shrink-0"
                           >
                             <ChevronRight className="h-4 w-4" />
                           </button>
@@ -812,21 +841,21 @@ export default function CoursePlayer() {
                               const replies = comments.filter((r) => r.parent_id === c.id);
                               return (
                                 <div key={c.id}>
-                                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-850">
+                                  <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850">
                                     <div className="flex items-center gap-2 mb-1">
                                       <Avatar className="h-6 w-6 shrink-0">
                                         {c.author_avatar && <img src={c.author_avatar} alt="" />}
-                                        <AvatarFallback className="bg-zinc-800 text-zinc-300 text-[10px]">
+                                        <AvatarFallback className="bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[10px]">
                                           {c.author_name.charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                       </Avatar>
-                                      <span className="text-xs font-bold text-zinc-100">{c.author_name}</span>
+                                      <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{c.author_name}</span>
                                       <span className="text-[10px] text-zinc-500">{formatRelativeTime(c.created_at)}</span>
                                     </div>
-                                    <p className="text-sm text-zinc-300 ml-8">{c.content}</p>
+                                    <p className="text-sm text-zinc-700 dark:text-zinc-300 ml-8">{c.content}</p>
                                     <button
                                       onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
-                                      className="ml-8 mt-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-300"
+                                      className="ml-8 mt-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                                     >
                                       Reply
                                     </button>
@@ -845,12 +874,12 @@ export default function CoursePlayer() {
                                           }
                                         }}
                                         placeholder={`Reply to ${c.author_name}...`}
-                                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-full px-3 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                                        className="flex-1 bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-full px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600"
                                       />
                                       <button
                                         onClick={() => postComment(replyText, c.id)}
                                         disabled={postingComment || !replyText.trim()}
-                                        className="text-[10px] font-bold text-blue-400 disabled:opacity-30 shrink-0"
+                                        className="text-[10px] font-bold text-accent disabled:opacity-30 shrink-0"
                                       >
                                         Post
                                       </button>
@@ -860,18 +889,18 @@ export default function CoursePlayer() {
                                   {replies.length > 0 && (
                                     <div className="mt-2 ml-8 space-y-2">
                                       {replies.map((r) => (
-                                        <div key={r.id} className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-850">
+                                        <div key={r.id} className="p-3 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-850">
                                           <div className="flex items-center gap-2 mb-1">
                                             <Avatar className="h-5 w-5 shrink-0">
                                               {r.author_avatar && <img src={r.author_avatar} alt="" />}
-                                              <AvatarFallback className="bg-zinc-800 text-zinc-300 text-[9px]">
+                                              <AvatarFallback className="bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[9px]">
                                                 {r.author_name.charAt(0).toUpperCase()}
                                               </AvatarFallback>
                                             </Avatar>
-                                            <span className="text-[11px] font-bold text-zinc-100">{r.author_name}</span>
+                                            <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100">{r.author_name}</span>
                                             <span className="text-[10px] text-zinc-500">{formatRelativeTime(r.created_at)}</span>
                                           </div>
-                                          <p className="text-xs text-zinc-300 ml-7">{r.content}</p>
+                                          <p className="text-xs text-zinc-700 dark:text-zinc-300 ml-7">{r.content}</p>
                                         </div>
                                       ))}
                                     </div>
@@ -883,7 +912,7 @@ export default function CoursePlayer() {
                           {comments.filter((c) => !c.parent_id).length > visibleCommentCount && (
                             <button
                               onClick={() => setVisibleCommentCount((n) => n + 10)}
-                              className="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                              className="text-xs font-semibold text-accent hover:opacity-80"
                             >
                               View more
                             </button>
@@ -902,23 +931,23 @@ export default function CoursePlayer() {
                       const name = file.name || "Resource file";
                       const ext = name.split(".").pop()?.toUpperCase() || "FILE";
                       return (
-                        <div 
+                        <div
                           key={index}
-                          className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-950 border border-zinc-850 hover:border-zinc-750 transition-colors"
+                          className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 hover:border-zinc-300 dark:hover:border-zinc-750 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-450 border border-zinc-800">
+                            <div className="h-10 w-10 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-500 dark:text-zinc-450 border border-zinc-200 dark:border-zinc-800">
                               <FileText className="h-5 w-5" />
                             </div>
                             <div>
-                              <p className="font-bold text-zinc-100">{name}</p>
+                              <p className="font-bold text-zinc-900 dark:text-zinc-100">{name}</p>
                               <p className="text-xs text-zinc-500 font-semibold">{ext}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <button
                               onClick={() => copyResourceLink(file.url)}
-                              className="h-9 w-9 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors border border-zinc-800"
+                              className="h-9 w-9 rounded-full bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition-colors border border-zinc-200 dark:border-zinc-800"
                               title="Copy share link"
                             >
                               <Share2 className="h-3.5 w-3.5" />
@@ -927,7 +956,7 @@ export default function CoursePlayer() {
                               href={file.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="h-9 w-9 rounded-full bg-red-100/10 hover:bg-red-155/20 text-red-400 flex items-center justify-center transition-colors border border-red-500/20"
+                              className="h-9 w-9 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 flex items-center justify-center transition-colors border border-red-500/20"
                               title="Download resource"
                             >
                               <Download className="h-4 w-4" />
@@ -946,8 +975,8 @@ export default function CoursePlayer() {
 
               {activeTab === "qna" && !course?.disable_qna && (
                 <div className="space-y-4">
-                  <p className="text-zinc-400 text-xs font-semibold">Discuss the lecture topic below.</p>
-                  <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/40 text-center text-zinc-500 text-xs">
+                  <p className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold">Discuss the lecture topic below.</p>
+                  <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-center text-zinc-500 text-xs">
                     QnA section is ready. Submit queries or discuss lessons directly inside Course Detail.
                   </div>
                 </div>
@@ -956,15 +985,35 @@ export default function CoursePlayer() {
           </div>
         </div>
 
-        {/* Right Column: Sidebar (Collapsible) */}
-        <aside 
+        {/* Mobile sidebar backdrop */}
+        {isMobileSidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 z-40 bg-black/50"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Right Column: Sidebar (Collapsible on desktop, drawer on mobile) */}
+        <aside
           className={cn(
-            "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 border-l border-zinc-200 dark:border-zinc-850 flex flex-col transition-all duration-300",
-            isSidebarCollapsed ? "w-[60px]" : "w-[340px]"
+            "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 border-l border-zinc-200 dark:border-zinc-850 flex-col transition-all duration-300",
+            "fixed inset-y-0 right-0 z-50 w-[85vw] max-w-[340px]",
+            isMobileSidebarOpen ? "flex" : "hidden",
+            "lg:static lg:z-auto lg:flex lg:max-w-none",
+            isSidebarCollapsed ? "lg:w-[60px]" : "lg:w-[340px]"
           )}
         >
-          {isSidebarCollapsed ? (
-            // Collapsed View: Thin strip with section indicators and re-expand trigger
+          <div className="lg:hidden p-4 border-b border-zinc-200 dark:border-zinc-850 flex items-center justify-between shrink-0">
+            <span className="font-extrabold text-base">Content</span>
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center text-zinc-500"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {isSidebarCollapsed && !isMobileSidebarOpen ? (
+            // Collapsed View: Thin strip with section indicators and re-expand trigger (desktop only)
             <div className="flex flex-col items-center py-4 gap-4 flex-1">
               <button
                 onClick={() => setIsSidebarCollapsed(false)}
@@ -989,8 +1038,8 @@ export default function CoursePlayer() {
           ) : (
             // Expanded View: Full Contents List
             <>
-              {/* Sidebar Header */}
-              <div className="p-4 border-b border-zinc-200 dark:border-zinc-850 flex items-center justify-between shrink-0">
+              {/* Sidebar Header (desktop only — mobile has its own header above) */}
+              <div className="hidden lg:flex p-4 border-b border-zinc-200 dark:border-zinc-850 items-center justify-between shrink-0">
                 <span className="font-extrabold text-base text-zinc-900 dark:text-zinc-50">
                   Content
                 </span>
@@ -1109,6 +1158,24 @@ export default function CoursePlayer() {
           )}
         </aside>
 
+      </div>
+
+      {/* Mobile bottom Previous/Next bar */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-4 py-3">
+        <button
+          onClick={prevChapter}
+          disabled={currentChapterIndex <= 0}
+          className="flex items-center gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="h-4 w-4" /> Previous
+        </button>
+        <button
+          onClick={nextChapter}
+          disabled={currentChapterIndex >= totalChapters - 1}
+          className="flex items-center gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Next <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );
