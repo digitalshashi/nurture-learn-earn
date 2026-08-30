@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, RefreshCw, Pencil, Trash2, Share2, MoreHorizontal, Eye, Copy } from "lucide-react";
+import { Plus, Search, RefreshCw, Pencil, Trash2, Share2, MoreHorizontal, Eye, Copy, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { serviceMeta } from "@/lib/seo";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { ServiceAffiliateDialog } from "@/components/affiliate/ServiceAffiliateDialog";
+import { fetchServiceAffiliateRates } from "@/lib/affiliate/api";
+import type { ServiceAffiliateRates } from "@/lib/affiliate/types";
 
 interface Service {
   id: string;
@@ -43,6 +46,18 @@ export default function Services() {
   const [showFree, setShowFree] = useState(false);
   const [loading, setLoading] = useState(true);
   const [shareService, setShareService] = useState<Service | null>(null);
+  // The service whose affiliate switch is open, and the rates for the whole
+  // table — fetched once rather than once per row.
+  const [affiliateService, setAffiliateService] = useState<Service | null>(null);
+  const [affiliateRates, setAffiliateRates] = useState<ServiceAffiliateRates>({});
+
+  const loadAffiliateRates = useCallback(async () => {
+    setAffiliateRates(await fetchServiceAffiliateRates());
+  }, []);
+
+  useEffect(() => {
+    if (user) void loadAffiliateRates();
+  }, [user, loadAffiliateRates]);
 
   const loadServices = async () => {
     if (!user) return;
@@ -151,7 +166,16 @@ export default function Services() {
                 ) : filtered.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell>
-                      <p className="font-medium text-sm">{s.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{s.title}</p>
+                        {/* Says at a glance which services are earning members
+                            a commission, without opening anything. */}
+                        {affiliateRates[s.id]?.enabled && (
+                          <Badge className="bg-accent/15 text-accent text-[10px] hover:bg-accent/15">
+                            {affiliateRates[s.id].commission_rate}% affiliate
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-[10px] text-muted-foreground">service id: {s.id.slice(0, 24)}</p>
                     </TableCell>
                     <TableCell>
@@ -172,12 +196,28 @@ export default function Services() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShareService(s)}>
                           <Share2 className="h-3.5 w-3.5" />
                         </Button>
+                        {/* Beside Share rather than buried in the menu: sharing
+                            a service and letting others share it for a cut are
+                            the same intent, one press apart. */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Affiliate link"
+                          aria-label={`Affiliate settings for ${s.title}`}
+                          onClick={() => setAffiliateService(s)}
+                        >
+                          <Megaphone className="h-3.5 w-3.5" />
+                        </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/service-builder/${s.id}`)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setAffiliateService(s)}>
+                              Affiliates{affiliateRates[s.id]?.enabled ? ` (${affiliateRates[s.id].commission_rate}%)` : ""}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => cloneService(s)}>
                               <Copy className="h-3.5 w-3.5 mr-2" /> Clone
                             </DropdownMenuItem>
@@ -209,6 +249,13 @@ export default function Services() {
           </CardContent>
         </Card>
       </div>
+
+      <ServiceAffiliateDialog
+        service={affiliateService}
+        onOpenChange={(open) => !open && setAffiliateService(null)}
+        // The rate badge in the table is now stale by definition.
+        onSaved={loadAffiliateRates}
+      />
 
       {shareService && (
         // Built from the same `serviceMeta` the edge Worker serves to crawlers,

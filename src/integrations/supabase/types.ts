@@ -5887,7 +5887,9 @@ export type Database = {
         }[]
       }
       my_affiliate_bank_details: { Args: never; Returns: Json }
+      my_affiliate_link: { Args: { _product_id: string }; Returns: Json }
       my_referral_code: { Args: never; Returns: string }
+      my_service_affiliate_rates: { Args: never; Returns: Json }
       my_referral_stats: {
         Args: never
         Returns: {
@@ -5932,6 +5934,18 @@ export type Database = {
       record_referral_visit: {
         Args: { _code: string; _visitor_key?: string }
         Returns: boolean
+      }
+      service_affiliate_status: {
+        Args: { _service_id: string }
+        Returns: Json
+      }
+      set_service_affiliate: {
+        Args: {
+          _active?: boolean
+          _commission_rate: number
+          _service_id: string
+        }
+        Returns: Json
       }
       save_affiliate_bank_details: {
         Args: {

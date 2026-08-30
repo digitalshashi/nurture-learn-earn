@@ -25,6 +25,8 @@ import type {
   AffiliateProductsResponse,
   AffiliateSalesQuery,
   AffiliateSalesResponse,
+  ServiceAffiliateRates,
+  ServiceAffiliateStatus,
 } from "./types";
 
 const EMPTY_PRODUCTS: AffiliateProductsResponse = { affiliate_code: null, products: [] };
@@ -145,6 +147,56 @@ export async function fetchBankDetails(): Promise<AffiliateBankDetails> {
     return { has_details: false };
   }
   return shape<AffiliateBankDetails>(data, { has_details: false });
+}
+
+// ------------------------------------------------- per-service switch ------
+
+/**
+ * The affiliate switch on one service, as it currently stands.
+ *
+ * Throws rather than failing soft, unlike the dashboard reads above: this one
+ * is opened by a deliberate press on a specific service, so "nothing happened"
+ * would be worse than an error the dialog can show.
+ */
+export async function fetchServiceAffiliate(
+  serviceId: string,
+): Promise<{ status: ServiceAffiliateStatus | null; error: string | null }> {
+  const { data, error } = await supabase.rpc("service_affiliate_status", {
+    _service_id: serviceId,
+  });
+  if (error) return { status: null, error: error.message };
+  return { status: shape<ServiceAffiliateStatus | null>(data, null), error: null };
+}
+
+/**
+ * Switches affiliates on (or off) for one service and sets the rate.
+ *
+ * Creates the programme and the product if neither exists, so a coach never
+ * has to visit a second screen before their service can be promoted. Returns
+ * the same shape as the read, link included.
+ */
+export async function saveServiceAffiliate(input: {
+  serviceId: string;
+  commissionRate: number;
+  active: boolean;
+}): Promise<{ status: ServiceAffiliateStatus | null; error: string | null }> {
+  const { data, error } = await supabase.rpc("set_service_affiliate", {
+    _service_id: input.serviceId,
+    _commission_rate: input.commissionRate,
+    _active: input.active,
+  });
+  if (error) return { status: null, error: error.message };
+  return { status: shape<ServiceAffiliateStatus | null>(data, null), error: null };
+}
+
+/** Every rate the caller owns, keyed by service id — one call for a whole table. */
+export async function fetchServiceAffiliateRates(): Promise<ServiceAffiliateRates> {
+  const { data, error } = await supabase.rpc("my_service_affiliate_rates");
+  if (error) {
+    console.error("my_service_affiliate_rates failed:", error.message);
+    return {};
+  }
+  return shape<ServiceAffiliateRates>(data, {});
 }
 
 /**

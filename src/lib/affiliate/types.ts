@@ -78,6 +78,43 @@ export interface AffiliatePaymentsResponse {
   totals: { paid: number; due: number };
 }
 
+/** The caller's own link for one product. */
+export interface AffiliateLinkSummary {
+  product_id: string;
+  name: string;
+  affiliate_code: string | null;
+  full_url: string | null;
+  clicks: number;
+}
+
+/**
+ * The affiliate switch on a single service.
+ *
+ * `enabled` is false and there is no `product_id` until a coach has set a rate
+ * — that is the state every service starts in, and the dialog's job is to get
+ * it out of that state in one press.
+ */
+export interface ServiceAffiliateStatus {
+  service_id: string;
+  title: string;
+  enabled: boolean;
+  commission_rate: number;
+  product_id?: string | null;
+  checkout_base_url?: string | null;
+  link?: AffiliateLinkSummary | null;
+  /** How many people hold a link for it, across the whole platform. */
+  affiliates?: number;
+  clicks?: number;
+  sales_count?: number;
+  commission_total?: number;
+}
+
+/** service id -> its rate, for badging the Services table without a query per row. */
+export type ServiceAffiliateRates = Record<
+  string,
+  { enabled: boolean; commission_rate: number }
+>;
+
 /**
  * What the browser is allowed to know about stored bank details.
  *
