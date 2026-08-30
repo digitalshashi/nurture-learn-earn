@@ -1,6 +1,16 @@
 // URL detection and embed metadata extraction
 
-export type EmbedType = "youtube" | "instagram" | "twitter" | "vimeo" | "tiktok" | "loom" | "generic";
+export type EmbedType =
+  | "youtube"
+  | "instagram"
+  | "twitter"
+  | "vimeo"
+  | "tiktok"
+  | "loom"
+  /** A media file served straight from our own bucket — or anywhere else. */
+  | "video"
+  | "image"
+  | "generic";
 
 export interface EmbedData {
   type: EmbedType;
@@ -21,6 +31,34 @@ const TRUSTED_DOMAINS = [
   "tiktok.com", "www.tiktok.com", "vm.tiktok.com",
   "loom.com", "www.loom.com",
 ];
+
+/**
+ * Media the app stores itself, rather than a page to embed.
+ *
+ * An upload lands in R2 under its own file name, so the public URL carries the
+ * extension — `…/1712345678-clip.mp4`. Without this the parser called such a
+ * URL "generic" and the feed rendered the raw R2 link as a link card, which is
+ * why uploaded videos never played.
+ *
+ * `.m3u8` is deliberately absent: a bare <video> cannot play HLS outside
+ * Safari, so a stream stays a link rather than becoming a dead player.
+ */
+const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".m4v", ".ogv"];
+const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".bmp", ".svg"];
+
+export function directMediaKind(url: string): "video" | "image" | null {
+  let path: string;
+  try {
+    // A signed R2/S3 URL keeps the extension in the path and appends a query
+    // string after it, so the path alone is what to match on.
+    path = new URL(url).pathname.toLowerCase();
+  } catch {
+    path = url.split(/[?#]/)[0].toLowerCase();
+  }
+  if (VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext))) return "video";
+  if (IMAGE_EXTENSIONS.some((ext) => path.endsWith(ext))) return "image";
+  return null;
+}
 
 function getDomain(url: string): string {
   try {
@@ -140,6 +178,18 @@ export function parseEmbed(url: string): EmbedData | null {
         videoId: match?.[1],
         platformIcon: "🎵",
         platformName: "TikTok",
+      };
+    }
+
+    // A direct media file — played or shown inline instead of linked to.
+    const media = directMediaKind(url);
+    if (media) {
+      return {
+        type: media,
+        url,
+        embedUrl: url,
+        platformIcon: media === "video" ? "🎬" : "🖼",
+        platformName: media === "video" ? "Video" : "Image",
       };
     }
 

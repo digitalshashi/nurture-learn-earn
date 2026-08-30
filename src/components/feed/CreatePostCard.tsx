@@ -1,14 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Image, Video, Link2, Send, Settings } from "lucide-react";
+import { Image, Video, Link2, Send, Settings, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { extractEmbeds } from "@/lib/link-embed";
+import { extractEmbeds, parseEmbed } from "@/lib/link-embed";
+import { errorMessage } from "@/lib/errorMessage";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
+import { PostImage } from "@/components/feed/PostImage";
+import { PostVideo } from "@/components/feed/PostVideo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -30,11 +33,40 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [hideCommentCount, setHideCommentCount] = useState(false);
   const [hideLikeCount, setHideLikeCount] = useState(false);
+  const [uploading, setUploading] = useState<"image" | "video" | null>(null);
+  const [progress, setProgress] = useState(0);
+  const imageFileRef = useRef<HTMLInputElement>(null);
+  const videoFileRef = useRef<HTMLInputElement>(null);
 
   // Real-time link detection from content
   const detectedEmbeds = useMemo(() => extractEmbeds(content), [content]);
+  // What the attached video is: a platform embed, or a file we play ourselves.
+  const videoPreview = useMemo(() => (videoUrl ? parseEmbed(videoUrl) : null), [videoUrl]);
+
+  /**
+   * Uploads go to the same bucket as every other piece of media, so a post's
+   * attachment shows up in the creator's media library like anything else —
+   * and the feed gets a plain file URL it can play.
+   */
+  const handleFile = async (kind: "image" | "video", file: File | undefined) => {
+    if (!file || !user) return;
+    setUploading(kind);
+    setProgress(0);
+    try {
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const { publicUrl } = await uploadUserFile(user.id, "feed", file, { onProgress: setProgress });
+      if (kind === "image") setImageUrl(publicUrl);
+      else setVideoUrl(publicUrl);
+    } catch (err) {
+      toast({ title: "Upload failed", description: errorMessage(err), variant: "destructive" });
+    } finally {
+      setUploading(null);
+      setProgress(0);
+    }
+  };
 
   const handleSubmit = async () => {
+    if (uploading) return;
     if (!content.trim() && !imageUrl && !videoUrl && !linkUrl) return;
     setPosting(true);
     try {
@@ -90,13 +122,66 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
         )}
 
         {showMedia === "image" && (
-          <Input placeholder="Image URL (jpg, png, gif)" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-2 text-sm" />
+          <div className="mt-2 flex gap-2">
+            <Input placeholder="Image URL, or upload a file" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="text-sm" />
+            <Button variant="outline" size="sm" className="h-10 shrink-0" disabled={uploading !== null} onClick={() => imageFileRef.current?.click()}>
+              <Upload className="mr-1 h-3.5 w-3.5" /> Upload
+            </Button>
+          </div>
         )}
         {showMedia === "video" && (
-          <Input placeholder="Video URL (youtube, loom, mp4)" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="mt-2 text-sm" />
+          <div className="mt-2 flex gap-2">
+            <Input placeholder="Video URL (youtube, loom, mp4), or upload a file" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="text-sm" />
+            <Button variant="outline" size="sm" className="h-10 shrink-0" disabled={uploading !== null} onClick={() => videoFileRef.current?.click()}>
+              <Upload className="mr-1 h-3.5 w-3.5" /> Upload
+            </Button>
+          </div>
         )}
         {showMedia === "link" && (
           <Input placeholder="Link URL" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} className="mt-2 text-sm" />
+        )}
+
+        <input
+          ref={imageFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { handleFile("image", e.target.files?.[0]); e.target.value = ""; }}
+        />
+        <input
+          ref={videoFileRef}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => { handleFile("video", e.target.files?.[0]); e.target.value = ""; }}
+        />
+
+        {uploading && (
+          <div className="mt-2">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+              <div className="h-full bg-accent transition-all" style={{ width: `${progress}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Uploading {uploading}… {progress}%</p>
+          </div>
+        )}
+
+        {/* Attached media previews exactly as the feed will render them, so
+            nobody has to post to find out whether a video plays. */}
+        {imageUrl && (
+          <div className="relative mt-2">
+            <PostImage src={imageUrl} className="max-h-64 w-full rounded-lg border border-border object-contain" />
+            <RemoveAttachment label="Remove image" onClick={() => setImageUrl("")} />
+          </div>
+        )}
+        {videoUrl && (
+          <div className="relative mt-2">
+            {videoPreview && videoPreview.type !== "generic" && videoPreview.type !== "video" ? (
+              <LinkEmbed embed={videoPreview} lazy={false} />
+            ) : (
+              <PostVideo url={videoUrl} />
+            )}
+            <RemoveAttachment label="Remove video" onClick={() => setVideoUrl("")} />
+          </div>
         )}
 
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -133,11 +218,24 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
               </PopoverContent>
             </Popover>
           </div>
-          <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 px-4" onClick={handleSubmit} disabled={posting}>
+          <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 px-4" onClick={handleSubmit} disabled={posting || uploading !== null}>
             <Send className="h-3.5 w-3.5 mr-1" /> {posting ? "Posting..." : "Post"}
           </Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RemoveAttachment({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="absolute right-2 top-2 z-10 rounded-full bg-black/55 p-1 text-white transition-colors hover:bg-black/75"
+    >
+      <X className="h-3.5 w-3.5" />
+    </button>
   );
 }

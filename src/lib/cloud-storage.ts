@@ -15,6 +15,7 @@ export type CloudFolder =
   | "content"
   | "badges"
   | "channels"
+  | "feed"
   | "landing"
   | "covers";
 

@@ -83,6 +83,7 @@ const KNOWN_FOLDERS: Record<string, string> = {
   branding: "Branding",
   badges: "Badges",
   channels: "Channels",
+  feed: "Community feed",
   landing: "Landing pages",
   cloud: "Files",
 };

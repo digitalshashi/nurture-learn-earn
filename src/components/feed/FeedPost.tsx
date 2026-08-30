@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { extractEmbeds, removeEmbedUrls, parseEmbed } from "@/lib/link-embed";
+import { extractEmbeds, removeEmbedUrls, parseEmbed, directMediaKind } from "@/lib/link-embed";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
+import { PostImage } from "@/components/feed/PostImage";
+import { PostVideo } from "@/components/feed/PostVideo";
 import { supabase } from "@/integrations/supabase/client";
 import { appLink, excerpt, notify } from "@/lib/notify";
 import { useAuth } from "@/contexts/AuthContext";
@@ -230,11 +232,29 @@ export function FeedPost({
     [content, richEmbeds]
   );
 
-  // Legacy video_url support
-  const legacyVideoEmbed = useMemo(() => {
+  /**
+   * The video attached to the post.
+   *
+   * A file uploaded to our bucket has no platform to embed — it is just an
+   * MP4 — and anything the parser cannot place is still a video by virtue of
+   * the column it arrived in. Both go to the player, which falls back to a
+   * link card only if the browser turns out not to be able to play the file.
+   */
+  const postVideo = useMemo(() => {
     if (!videoUrl || richEmbeds.some((e) => e.url === videoUrl)) return null;
-    return parseEmbed(videoUrl);
+    const embed = parseEmbed(videoUrl);
+    if (!embed || embed.type === "video" || embed.type === "generic") {
+      return { kind: "file" as const, url: videoUrl };
+    }
+    return { kind: "embed" as const, embed };
   }, [videoUrl, richEmbeds]);
+
+  // An attachment saved in image_url that is actually a video — the composer
+  // has two fields and nothing stops a video URL landing in the wrong one.
+  const attachment = useMemo(() => {
+    if (!image || image === "/placeholder.svg") return null;
+    return { url: image, isVideo: directMediaKind(image) === "video" };
+  }, [image]);
 
   const getTimeAgoShort = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -274,9 +294,14 @@ export function FeedPost({
         )}
       </div>
 
-      {image && image !== "/placeholder.svg" && (
-        <img src={image} alt="" className="w-full max-h-96 object-cover" loading="lazy" />
-      )}
+      {attachment &&
+        (attachment.isVideo ? (
+          <div className="px-4 pb-3">
+            <PostVideo url={attachment.url} />
+          </div>
+        ) : (
+          <PostImage src={attachment.url} className="max-h-96 w-full object-cover" />
+        ))}
 
       {richEmbeds.length > 0 && (
         <div className="px-4 pb-3 space-y-3">
@@ -286,9 +311,13 @@ export function FeedPost({
         </div>
       )}
 
-      {legacyVideoEmbed && (
+      {postVideo && (
         <div className="px-4 pb-3">
-          <LinkEmbed embed={legacyVideoEmbed} />
+          {postVideo.kind === "file" ? (
+            <PostVideo url={postVideo.url} />
+          ) : (
+            <LinkEmbed embed={postVideo.embed} />
+          )}
         </div>
       )}
 
@@ -430,7 +459,7 @@ export function FeedPost({
         url={`${window.location.origin}/feed#post-${id}`}
         title={`${author} on the community feed`}
         description={content.slice(0, 160)}
-        imageUrl={image}
+        imageUrl={attachment && !attachment.isVideo ? attachment.url : undefined}
       />
     </div>
   );

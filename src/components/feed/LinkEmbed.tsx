@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { type EmbedData } from "@/lib/link-embed";
 import { safeUrl } from "@/lib/safeUrl";
+import { PostImage } from "@/components/feed/PostImage";
+import { PostVideo } from "@/components/feed/PostVideo";
 import { ExternalLink } from "lucide-react";
 
 interface LinkEmbedProps {
@@ -27,6 +29,22 @@ export function LinkEmbed({ embed, lazy = true }: LinkEmbedProps) {
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [lazy]);
+
+  // Uploaded media — a file of ours, so it plays/shows rather than links out.
+  // These need no lazy gate: the video only fetches metadata and the image
+  // carries loading="lazy" of its own.
+  if (embed.type === "video") {
+    return <PostVideo url={embed.url} />;
+  }
+
+  if (embed.type === "image") {
+    return (
+      <PostImage
+        src={embed.url}
+        className="max-h-[70vh] w-full rounded-lg border border-border bg-secondary object-contain"
+      />
+    );
+  }
 
   // YouTube / Vimeo / Loom — iframe embeds
   if ((embed.type === "youtube" || embed.type === "vimeo" || embed.type === "loom") && embed.embedUrl) {
