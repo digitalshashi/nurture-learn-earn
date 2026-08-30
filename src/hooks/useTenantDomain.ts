@@ -12,8 +12,22 @@ export interface TenantDomain {
   domain: string;
 }
 
-/** Hostnames that are the platform itself, never a tenant. */
-const PLATFORM_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+/**
+ * Hostnames that are the platform itself, never a tenant.
+ *
+ * The primary domain belongs here even though nothing breaks without it today:
+ * resolveTenant only matches a verified, live domain_settings row, so an
+ * unlisted host is already treated as the platform. But learn.jointeluguai.com
+ * is shaped exactly like a customer domain, and the day someone adds it as
+ * their white-label host the main sign-in would start enforcing that coach's
+ * membership rules on everyone.
+ */
+const PLATFORM_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "[::1]",
+  "learn.jointeluguai.com",
+]);
 
 export function isPlatformHost(hostname: string): boolean {
   const host = hostname.toLowerCase();

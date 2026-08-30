@@ -1,12 +1,12 @@
 project_id = "cxaieaasrwnscshfdcbp"
 
 [auth]
-# Renamed with the platform. The Worker now deploys as "1corehub", so its
+# The platform moved to learn.jointeluguai.com. These are what magic links and
 # workers.dev hostname changed with it and the old one no longer resolves.
 # Update these in the Supabase dashboard too (Authentication -> URL
 # Configuration) — magic links and OTP redirects are built from them.
-site_url = "https://1corehub.sasivanga.workers.dev"
-additional_redirect_urls = ["https://1corehub.sasivanga.workers.dev/**"]
+site_url = "https://learn.jointeluguai.com"
+additional_redirect_urls = ["https://learn.jointeluguai.com/**"]
 
 [auth.mfa.totp]
 enroll_enabled = true

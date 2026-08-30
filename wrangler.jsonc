@@ -3,15 +3,21 @@
   "name": "1corehub",
   "main": "worker/index.ts",
   "compatibility_date": "2026-07-31",
-  // Only this one hostname is bound to the Worker. The rest of 1corehub.com —
-  // the apex, www, mail and the cPanel records — stays DNS-only on Cloudflare
-  // and resolves to HostGator exactly as it did before the nameserver move.
-  // Declaring the domain here (rather than clicking it into the dashboard)
-  // means a fresh `wrangler deploy` re-attaches it instead of silently
-  // dropping the site back to the workers.dev URL.
+  // Only this one hostname is bound to the Worker. Declaring the domain here
+  // (rather than clicking it into the dashboard) means a fresh
+  // `wrangler deploy` re-attaches it instead of silently dropping the site
+  // back to the workers.dev URL.
+  //
+  // This was levelup.1corehub.com until the platform moved to
+  // jointeluguai.com. 1corehub.com's nameservers went back to HostGator with
+  // that move, which left no Cloudflare zone to attach to — deploys then
+  // failed with "Can't infer zone from route" while still uploading the code,
+  // so the Worker was current and unreachable at the same time. If that error
+  // appears again, check whose nameservers the domain is on before anything
+  // else.
   "routes": [
     {
-      "pattern": "levelup.1corehub.com",
+      "pattern": "learn.jointeluguai.com",
       "custom_domain": true
     }
   ],

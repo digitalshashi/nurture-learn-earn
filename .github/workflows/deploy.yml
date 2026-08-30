@@ -93,7 +93,7 @@ jobs:
 
       - name: Smoke check the deployment
         env:
-          SITE: https://1corehub.sasivanga.workers.dev
+          SITE: https://learn.jointeluguai.com
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -s -o /dev/null -w "%{http_code}" "$SITE/" || true)

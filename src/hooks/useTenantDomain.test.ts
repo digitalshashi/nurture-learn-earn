@@ -11,6 +11,9 @@ describe("isPlatformHost", () => {
       "127.0.0.1",
       "1corehub.sasivanga.workers.dev",
       "preview.pages.dev",
+      // The primary domain. Shaped exactly like a customer's own host, so it
+      // is only safe because it is named — see PLATFORM_HOSTS.
+      "learn.jointeluguai.com",
     ]) {
       expect(isPlatformHost(host), host).toBe(true);
     }

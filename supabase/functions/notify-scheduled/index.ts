@@ -13,7 +13,7 @@ import { sendTemplatedEmail } from "../_shared/email.ts";
 import { AUTO_LINKS, NOTIFICATIONS } from "../_shared/notifications.ts";
 
 const site = () =>
-  (Deno.env.get("PUBLIC_SITE_URL") || "https://1corehub.sasivanga.workers.dev").replace(/\/+$/, "");
+  (Deno.env.get("PUBLIC_SITE_URL") || "https://learn.jointeluguai.com").replace(/\/+$/, "");
 
 const links = () => {
   const base = site();

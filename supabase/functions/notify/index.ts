@@ -27,7 +27,7 @@ interface Profile {
 
 /** Where links in an email should point. */
 function siteUrl(): string {
-  return (Deno.env.get("PUBLIC_SITE_URL") || "https://1corehub.sasivanga.workers.dev").replace(
+  return (Deno.env.get("PUBLIC_SITE_URL") || "https://learn.jointeluguai.com").replace(
     /\/+$/,
     "",
   );
