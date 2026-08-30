@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trophy, Star, Medal, Target, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BadgeManagement } from "@/components/badges/BadgeManagement";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface XpRule {
   id: string;
@@ -50,6 +51,9 @@ interface Challenge {
 }
 
 export default function Gamification() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["xp-rules", "levels", "badge-mgmt", "badges", "challenges"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [rules, setRules] = useState<XpRule[]>([]);
@@ -158,7 +162,7 @@ export default function Gamification() {
           <Card className="card-shadow"><CardContent className="pt-4 pb-3 text-center"><Target className="h-6 w-6 text-destructive mx-auto mb-1" /><p className="text-xs text-muted-foreground">Challenges</p><p className="text-xl font-bold">{challenges.length}</p></CardContent></Card>
         </div>
 
-        <Tabs defaultValue="xp-rules">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="xp-rules">XP Rules</TabsTrigger>
             <TabsTrigger value="levels">Levels</TabsTrigger>

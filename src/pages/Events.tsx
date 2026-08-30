@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, Clock, DollarSign, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Calendar, Clock, Trash2, ExternalLink } from "lucide-react";
+import { CurrencyIcon } from "@/components/CurrencyIcon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -432,7 +433,7 @@ export default function Events() {
           </Card>
           <Card className="card-shadow">
             <CardContent className="pt-5 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10"><DollarSign className="h-5 w-5 text-accent" /></div>
+              <div className="p-2 rounded-lg bg-accent/10"><CurrencyIcon className="h-5 w-5 text-accent" /></div>
               <div><p className="text-2xl font-bold">{events.filter(e => e.recurring).length}</p><p className="text-xs text-muted-foreground">Recurring</p></div>
             </CardContent>
           </Card>

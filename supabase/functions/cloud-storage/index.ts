@@ -77,6 +77,16 @@ function getS3Client() {
       },
       // Path-style works reliably with custom endpoints (R2) and many S3-compatible APIs.
       forcePathStyle: !!cfg.endpoint,
+      // From SDK 3.729 the default is "WHEN_SUPPORTED", which adds a CRC32
+      // checksum to PutObject. On a *presigned* URL that lands in
+      // X-Amz-SignedHeaders, so the browser is then required to send
+      // x-amz-checksum-crc32 and x-amz-sdk-checksum-algorithm — and its
+      // preflight asks the bucket for permission to do so. A bucket that
+      // allows only Content-Type refuses, the PUT never leaves, and the
+      // upload fails as an opaque network error. We do not need the checksum:
+      // the signature already covers the object.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
     }),
     cfg,
   };

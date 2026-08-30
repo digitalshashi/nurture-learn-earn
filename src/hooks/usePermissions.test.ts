@@ -15,6 +15,17 @@ vi.mock("@/integrations/supabase/client", () => ({
         eq: mockEq,
       }),
     }),
+    // usePermissions also opens a realtime channel to pick up permission
+    // changes without a reload.
+    channel: () => ({
+      on() {
+        return this;
+      },
+      subscribe() {
+        return this;
+      },
+    }),
+    removeChannel: () => {},
   },
 }));
 

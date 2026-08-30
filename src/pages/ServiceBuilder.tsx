@@ -16,6 +16,12 @@ import { X, Save, FileText, CreditCard, Settings, Plus, Image, Video, Type, Tras
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTabParam } from "@/hooks/useTabParam";
+import { symbolFor } from "@/lib/currency";
+import { AttachedPageCard } from "@/components/pages/AttachedPageCard";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { AiWriteButton } from "@/components/ai/AiWriteButton";
+import { richTextToPlain } from "@/lib/richText";
 
 interface Course { id: string; title: string; }
 interface Workshop { id: string; title: string; }
@@ -27,6 +33,9 @@ interface CustomSection {
 }
 
 export default function ServiceBuilder() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["details", "payment", "success"] as const);
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -349,7 +358,21 @@ export default function ServiceBuilder() {
     setSelectedWorkshops(prev => prev.includes(wid) ? prev.filter(x => x !== wid) : [...prev, wid]);
   };
 
-  const currencySymbol = currency === "USD" ? "$" : "₹";
+  const currencySymbol = symbolFor(currency);
+
+  // Handed to the page generator so a design carries the real product, not a
+  // placeholder the coach then has to correct by hand.
+  // Only a saved service has an id to attach a page to.
+  const pageAttachment = id ? ({ kind: "service", serviceId: id } as const) : null;
+
+  const pageContext = {
+    product_name: title,
+    price: isFree ? "Free" : `${currencySymbol}${discountedPrice || price}`,
+    currency,
+    // The generator writes a whole HTML page, so it wants the prose, not the
+    // asterisks around it.
+    description: richTextToPlain(description).slice(0, 600),
+  };
 
   return (
     <AppLayout>
@@ -383,7 +406,7 @@ export default function ServiceBuilder() {
 
         <div className="grid grid-cols-[1fr_320px] gap-6">
           {/* Left: form tabs */}
-          <Tabs defaultValue="details">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="details" className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Service details</TabsTrigger>
               <TabsTrigger value="payment" className="flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Payment details</TabsTrigger>
@@ -406,7 +429,7 @@ export default function ServiceBuilder() {
                   <label>
                     <input
                       type="file"
-                      accept=".jpg,.jpeg,.png,.gif,.webp"
+                      accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.avif"
                       className="hidden"
                       disabled={uploadingCover}
                       onChange={(e) => {
@@ -435,8 +458,53 @@ export default function ServiceBuilder() {
               </div>
 
               <div>
-                <Label>Service description *</Label>
-                <Textarea placeholder="Add Service description here..." value={description} onChange={(e) => setDescription(e.target.value)} rows={6} />
+                <Label htmlFor="service-description">Service description *</Label>
+                <p className="text-[10px] text-muted-foreground mb-1">
+                  Formatting shows on the checkout page. Select text and use the toolbar, or press
+                  Ctrl/Cmd+B and Ctrl/Cmd+I.
+                </p>
+                <RichTextEditor
+                  id="service-description"
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Add Service description here..."
+                  rows={8}
+                  toolbarExtra={
+                    <AiWriteButton
+                      task="the description on a sales page for a coaching service"
+                      label="Write with AI"
+                      className="h-7 px-2 text-xs"
+                      context={{
+                        "Service name": title,
+                        "Service type": serviceType,
+                        Price: isFree ? "Free" : `${currencySymbol}${discountedPrice || price}`,
+                        "Included courses": selectedCourses.length
+                          ? `${selectedCourses.length} course(s)`
+                          : "",
+                        "Included workshops": selectedWorkshops.length
+                          ? `${selectedWorkshops.length} workshop(s)`
+                          : "",
+                        "Existing draft": description.slice(0, 400),
+                      }}
+                      fields={[
+                        {
+                          key: "description",
+                          // The model writes the stored format directly, so what
+                          // it produces is formatted on the page rather than
+                          // arriving as one flat block the coach has to mark up.
+                          hint:
+                            "A short sales description. Open with one or two sentences on who it " +
+                            "is for and what changes for them, then a bulleted list of what they " +
+                            "get, then a one-line close. Use this markup and nothing else: " +
+                            "**bold** for emphasis, *italic* sparingly, lines beginning '- ' for " +
+                            "bullets, and a blank line between paragraphs. No headings, no HTML, " +
+                            "no markdown other than what is listed.",
+                        },
+                      ]}
+                      onResult={(r) => r.description && setDescription(r.description)}
+                    />
+                  }
+                />
               </div>
 
               <div className="space-y-3">
@@ -619,6 +687,15 @@ export default function ServiceBuilder() {
 
             {/* TAB 2: Payment Details */}
             <TabsContent value="payment" className="space-y-4">
+              <AttachedPageCard
+                pageType="checkout"
+                attachment={pageAttachment}
+                ownerName={title}
+                context={pageContext}
+                emptyHint="Save the service first — the page is attached to it."
+                defaultLabel="default page"
+              />
+
               <Card className="border border-border">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
@@ -812,6 +889,15 @@ export default function ServiceBuilder() {
 
             {/* TAB 3: Payment Success Page */}
             <TabsContent value="success" className="space-y-4">
+              <AttachedPageCard
+                pageType="success"
+                attachment={pageAttachment}
+                ownerName={title}
+                context={pageContext}
+                emptyHint="Save the service first — the page is attached to it."
+                defaultLabel="default page"
+              />
+
               <Card className="border border-border">
                 <CardContent className="p-4 space-y-3">
                   <Label className="font-semibold">Custom section</Label>
@@ -882,7 +968,13 @@ export default function ServiceBuilder() {
                     </div>
                     <p className="text-xs text-muted-foreground">by <span className="font-semibold text-foreground">1corehub</span></p>
                     {title && <p className="font-semibold text-sm mt-1">{title}</p>}
-                    {description && <p className="text-[10px] text-muted-foreground mt-1 line-clamp-3">{description}</p>}
+                    {/* The phone mock is three lines tall, so it gets the prose
+                        rather than a formatted block that would not fit. */}
+                    {description && (
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-3">
+                        {richTextToPlain(description)}
+                      </p>
+                    )}
                     {!title && !description && (
                       <p className="text-[10px] text-muted-foreground mt-6">
                         You agree to share information entered on this page with 1corehub (owner of this page), adhering to applicable laws.

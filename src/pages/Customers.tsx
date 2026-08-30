@@ -261,7 +261,7 @@ export default function Customers() {
                     {filtered.map((c) => (
                       <TableRow key={c.id}>
                         <TableCell className="font-medium text-sm">
-                          {c.profiles?.full_name || "Unknown"}
+                          {c.profiles?.full_name || "Member"}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {c.profiles?.email || "—"}

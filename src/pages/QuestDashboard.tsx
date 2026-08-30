@@ -432,7 +432,7 @@ export default function QuestDashboard() {
                       {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{entry.profiles?.full_name || "User"}</p>
+                      <p className="text-sm font-medium truncate">{entry.profiles?.full_name || "Member"}</p>
                     </div>
                     <div className="flex items-center gap-1 text-xs">
                       <Flame className="h-3.5 w-3.5" style={{ color: "hsl(25 95% 53%)" }} />

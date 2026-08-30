@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { TemplatePicker } from "@/components/automation/TemplatePicker";
 
 interface WhatsAppTemplate {
   id: string;
@@ -133,6 +134,19 @@ export default function WhatsAppAutomation() {
                 </div>
                 {form.header_type !== "none" && (
                   <div><Label className="text-xs">Header Content</Label><Input placeholder={form.header_type === "image" ? "Image URL" : "Header text"} value={form.header_content} onChange={(e) => setForm({ ...form, header_content: e.target.value })} /></div>
+                )}
+                {/* Reusable copy from /automation/templates. The WABA form
+                    below is what Meta approves; this is just where the words
+                    come from. */}
+                {user && (
+                  <TemplatePicker
+                    coachId={user.id}
+                    channel="whatsapp"
+                    content={form.body_text}
+                    onApply={(t) =>
+                      setForm((f) => ({ ...f, body_text: t.content ?? f.body_text }))
+                    }
+                  />
                 )}
                 <div>
                   <Label>Body Text</Label>

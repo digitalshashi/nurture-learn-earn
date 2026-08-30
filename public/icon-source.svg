@@ -1,4 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#18181b"/>
-  <text x="256" y="330" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="260" fill="#ffffff" text-anchor="middle">L</text>
+  <defs>
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d1d26"/>
+      <stop offset="1" stop-color="#111116"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7a45"/>
+      <stop offset="1" stop-color="#fa4f38"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#field)"/>
+  <g transform="translate(256 256) scale(1) translate(-256 -256)">
+    <circle cx="256" cy="256" r="174.08" fill="none" stroke="url(#ring)" stroke-width="36.864"/>
+    <circle cx="256" cy="81.91999999999999" r="33.792" fill="#ff7a45" stroke="#111116" stroke-width="15.36"/>
+    <text x="256" y="335.36" font-family="Poppins, Segoe UI Semibold, Segoe UI, Inter, Arial, sans-serif" font-weight="700"
+          font-size="215.04" fill="#ffffff" text-anchor="middle">1</text>
+  </g>
 </svg>

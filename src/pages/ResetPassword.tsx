@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -44,16 +44,16 @@ export default function ResetPassword() {
       return;
     }
     toast({ title: "Password updated", description: "You're all set." });
-    navigate("/feed");
+    // "/" (HomeRedirect) picks a landing this user actually has permission for;
+    // hardcoding /feed strands anyone without community_feed.
+    navigate("/");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <div className="h-16 w-16 bg-primary rounded-2xl mx-auto mb-4 flex items-center justify-center">
-            <KeyRound className="h-7 w-7 text-primary-foreground" />
-          </div>
+          <BrandMark size={64} className="mb-4 justify-center" />
           <h1 className="text-2xl font-bold font-display">Set a new password</h1>
           <p className="text-muted-foreground text-sm mt-1">Choose a strong password you'll remember</p>
         </div>

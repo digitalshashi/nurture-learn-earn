@@ -1,5 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { htmlToText } from "../_shared/email.ts";
+
+/**
+ * Headers every sign-in code carries.
+ *
+ * A one-time code is transactional, so it gets no List-Unsubscribe — but it is
+ * still machine-generated, and saying so stops autoresponders replying to it
+ * and stops filters guessing.
+ */
+const OTP_HEADERS = { "Auto-Submitted": "auto-generated" };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +19,18 @@ const corsHeaders = {
 
 const OTP_TTL_MINUTES = 10;
 const RESEND_COOLDOWN_SECONDS = 60;
+
+/**
+ * The most sign-in codes one address can be sent in a day.
+ *
+ * The 60-second cooldown alone bounds nothing that matters: a script honouring
+ * it can still put 1,400 emails in someone's inbox in a day, and the address it
+ * targets belongs to a real person who did not ask for any of them. They report
+ * it as spam — correctly — and the sending domain's reputation pays for it
+ * across every tenant on the platform. Ten is far above what a person locked
+ * out of their account will ever legitimately need.
+ */
+const MAX_OTPS_PER_DAY = 10;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -63,6 +85,9 @@ async function sendEmail({ account, to, subject, html, fromName, replyToName, re
   const resolvedFromEmail = account.sender_email;
   const resolvedReplyToName = replyToName || account.reply_to_name || resolvedFromName;
   const resolvedReplyToEmail = replyToEmail || account.reply_to_email || resolvedFromEmail;
+  // An HTML-only message is a spam signal in its own right, and a login code is
+  // the one email that absolutely has to arrive.
+  const text = htmlToText(html);
 
   if (account.provider === "smtp" || account.provider === "ses") {
     // Amazon SES: use the SMTP interface with SES SMTP credentials (from the
@@ -84,7 +109,9 @@ async function sendEmail({ account, to, subject, html, fromName, replyToName, re
         to,
         replyTo: resolvedReplyToEmail,
         subject,
+        content: text,
         html,
+        headers: OTP_HEADERS,
       });
     } finally {
       await client.close();
@@ -103,6 +130,8 @@ async function sendEmail({ account, to, subject, html, fromName, replyToName, re
         reply_to: resolvedReplyToEmail,
         subject,
         html,
+        text,
+        headers: OTP_HEADERS,
       }),
     });
     if (!res.ok) throw new Error(`Resend send failed: ${res.status} ${await res.text()}`);
@@ -120,6 +149,8 @@ async function sendEmail({ account, to, subject, html, fromName, replyToName, re
         reply_to: { email: resolvedReplyToEmail, name: resolvedReplyToName },
         subject,
         html,
+        text,
+        headers: Object.entries(OTP_HEADERS).map(([name, value]) => ({ name, value })),
       }),
     });
     if (!res.ok) throw new Error(`MailerSend send failed: ${res.status} ${await res.text()}`);
@@ -161,14 +192,16 @@ Deno.serve(async (req) => {
     // Account resolution is collapsed into a single ordered query
     // (platform-default+verified first, else newest verified, else newest
     // any) instead of up to 3 sequential fallback queries.
-    const [{ data: lastOtp }, { data: account }, { data: template }] = await Promise.all([
+    // One read covers both limits: the newest row gives the cooldown, the row
+    // count gives the daily ceiling.
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const [{ data: recentOtps }, { data: account }, { data: template }] = await Promise.all([
       adminClient
         .from("login_otps")
         .select("created_at")
         .eq("email", normalizedEmail)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .gte("created_at", dayAgo)
+        .order("created_at", { ascending: false }),
       adminClient
         .from("email_accounts")
         .select("*")
@@ -186,6 +219,9 @@ Deno.serve(async (req) => {
         .maybeSingle(),
     ]);
 
+    const otpsToday = recentOtps ?? [];
+    const lastOtp = otpsToday[0];
+
     if (lastOtp) {
       const secondsSinceLast = (Date.now() - new Date(lastOtp.created_at).getTime()) / 1000;
       if (secondsSinceLast < RESEND_COOLDOWN_SECONDS) {
@@ -194,6 +230,17 @@ Deno.serve(async (req) => {
           429,
         );
       }
+    }
+
+    if (otpsToday.length >= MAX_OTPS_PER_DAY) {
+      // Deliberately vague to the caller — the exact ceiling is not something
+      // an attacker needs — but loud in the logs, because an address hitting
+      // this is either under attack or the sign-in flow is looping.
+      console.warn(`daily OTP cap reached for ${normalizedEmail} (${otpsToday.length})`);
+      return json(
+        { error: "Too many sign-in codes requested today. Try again tomorrow or contact support." },
+        429,
+      );
     }
 
     if (!account) {
@@ -219,10 +266,15 @@ Deno.serve(async (req) => {
       template?.body_html ||
       "<p>Hi {{full_name}},</p><p>Your one-time login code is:</p><h2>{{otp_code}}</h2><p>This code expires in {{expiry_minutes}} minutes.</p>";
 
+    // academy_name and year appear in the shared email layout. renderTemplate
+    // leaves unknown placeholders visible, so omitting them would print a
+    // literal "{{academy_name}}" in a login email.
     const vars = {
       otp_code: code,
       full_name: profile.full_name || "there",
       expiry_minutes: String(OTP_TTL_MINUTES),
+      academy_name: account.sender_name || "Your academy",
+      year: String(new Date().getFullYear()),
     };
 
     const sendPromise = sendEmail({

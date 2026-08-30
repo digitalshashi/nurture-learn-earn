@@ -21,7 +21,8 @@ interface ChannelSidebarProps {
   channels: Channel[];
   selectedChannelId: string | null;
   onSelectChannel: (ch: Channel) => void;
-  onCreateChannel: (name: string, type: string, description: string) => void;
+  /** Opens the channel editor; it collects everything itself. */
+  onCreateChannel: () => void;
   isCoachOrAdmin: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -36,24 +37,11 @@ export function ChannelSidebar({
   searchQuery,
   onSearchChange,
 }: ChannelSidebarProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState("public");
-  const [newDesc, setNewDesc] = useState("");
   const [publicOpen, setPublicOpen] = useState(true);
   const [privateOpen, setPrivateOpen] = useState(true);
 
   const publicChannels = channels.filter((c) => c.channel_type !== "private");
   const privateChannels = channels.filter((c) => c.channel_type === "private");
-
-  const handleCreate = () => {
-    if (!newName.trim()) return;
-    onCreateChannel(newName.trim(), newType, newDesc.trim());
-    setNewName("");
-    setNewType("public");
-    setNewDesc("");
-    setDialogOpen(false);
-  };
 
   const getIcon = (type: string) => {
     if (type === "announcement") return <Megaphone className="h-4 w-4 shrink-0 text-muted-foreground" />;
@@ -92,60 +80,15 @@ export function ChannelSidebar({
             Channels
           </h2>
           {isCoachOrAdmin && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Channel</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Channel name</Label>
-                    <Input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="e.g. ai-video-creation"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea
-                      value={newDesc}
-                      onChange={(e) => setNewDesc(e.target.value)}
-                      placeholder="What is this channel about?"
-                      className="mt-1 min-h-[60px]"
-                    />
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    <Select value={newType} onValueChange={setNewType}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="public">
-                          <span className="flex items-center gap-2"><Hash className="h-3.5 w-3.5" /> Public</span>
-                        </SelectItem>
-                        <SelectItem value="private">
-                          <span className="flex items-center gap-2"><Lock className="h-3.5 w-3.5" /> Private</span>
-                        </SelectItem>
-                        <SelectItem value="announcement">
-                          <span className="flex items-center gap-2"><Megaphone className="h-3.5 w-3.5" /> Announcement</span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button className="w-full" onClick={handleCreate}>
-                    Create Channel
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => onCreateChannel()}
+              aria-label="New channel"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           )}
         </div>
         {/* Search */}

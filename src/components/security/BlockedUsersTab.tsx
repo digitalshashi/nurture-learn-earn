@@ -160,7 +160,7 @@ export function BlockedUsersTab() {
                 <TableRow key={blocked.id}>
                   <TableCell>
                     <div>
-                      <p className="text-xs font-medium">{profiles[blocked.user_id]?.full_name || "Unknown"}</p>
+                      <p className="text-xs font-medium">{profiles[blocked.user_id]?.full_name || "Member"}</p>
                       <p className="text-[10px] text-muted-foreground">{profiles[blocked.user_id]?.email || blocked.user_id}</p>
                     </div>
                   </TableCell>

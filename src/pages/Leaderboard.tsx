@@ -103,7 +103,7 @@ export default function Leaderboard() {
       .map((uid) => ({
         user_id: uid,
         total_xp: userXP[uid],
-        full_name: profiles?.find((p) => p.id === uid)?.full_name || "User",
+        full_name: profiles?.find((p) => p.id === uid)?.full_name || "Member",
         avatar_url: profiles?.find((p) => p.id === uid)?.avatar_url || null,
       }))
       .sort((a, b) => b.total_xp - a.total_xp);

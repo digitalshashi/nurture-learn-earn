@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { ChannelForm, type ChannelRecord } from "@/components/channels/ChannelForm";
+import { ChannelMembersDialog } from "@/components/channels/ChannelMembersDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ChannelSidebar } from "@/components/channels/ChannelSidebar";
@@ -163,21 +165,29 @@ export default function Channels() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedChannel?.id]);
 
-  const createChannel = async (name: string, type: string, description: string) => {
-    const { error } = await supabase.from("channels").insert({
-      name,
-      channel_type: type,
-      description,
-      created_by: user!.id,
-      is_global: type !== "private",
-    });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-    fetchChannels();
-    toast({ title: "Channel created!" });
+  /** Open with no channel to create one, or with one to edit it. */
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<ChannelRecord | null>(null);
+  const [membersOpen, setMembersOpen] = useState(false);
+
+  const openNewChannel = () => {
+    setEditing(null);
+    setFormOpen(true);
   };
+
+  const openChannelSettings = () => {
+    if (!selectedChannel) return;
+    setEditing(selectedChannel as unknown as ChannelRecord);
+    setFormOpen(true);
+  };
+
+  // Only the owner may rename a channel, change its picture or manage who is
+  // in it. Everyone else gets the same panel without the controls.
+  const ownsSelected =
+    !!selectedChannel &&
+    !!user &&
+    ((selectedChannel as { coach_id?: string }).coach_id === user.id ||
+      (selectedChannel as { created_by?: string }).created_by === user.id);
 
   const handleReact = async (msgId: string, emoji: string) => {
     if (!user) return;
@@ -254,7 +264,7 @@ export default function Channels() {
           channels={filteredChannels}
           selectedChannelId={selectedChannel?.id || null}
           onSelectChannel={setSelectedChannel}
-          onCreateChannel={createChannel}
+          onCreateChannel={openNewChannel}
           isCoachOrAdmin={isCoachOrAdmin}
           searchQuery={sidebarSearch}
           onSearchChange={setSidebarSearch}
@@ -267,7 +277,13 @@ export default function Channels() {
               <ChannelHeader
                 name={selectedChannel.name}
                 type={selectedChannel.channel_type}
-                description={selectedChannel.description}
+                description={(selectedChannel as { topic?: string | null }).topic || selectedChannel.description}
+                avatarUrl={(selectedChannel as { avatar_url?: string | null }).avatar_url ?? null}
+                coverUrl={(selectedChannel as { cover_url?: string | null }).cover_url ?? null}
+                postPolicy={(selectedChannel as { post_policy?: string }).post_policy ?? "everyone"}
+                canManage={ownsSelected}
+                onOpenSettings={openChannelSettings}
+                onOpenMembers={() => setMembersOpen(true)}
                 memberCount={members.length}
                 pinnedCount={pinnedCount}
                 onTogglePins={() => { setShowPins(!showPins); setShowMembers(false); setShowSearch(false); }}
@@ -401,6 +417,22 @@ export default function Channels() {
           </div>
         )}
       </div>
+
+      <ChannelForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        channel={editing}
+        onSaved={fetchChannels}
+      />
+
+      {selectedChannel && (
+        <ChannelMembersDialog
+          open={membersOpen}
+          onOpenChange={setMembersOpen}
+          channelId={selectedChannel.id}
+          canManage={ownsSelected}
+        />
+      )}
     </AppLayout>
   );
 }

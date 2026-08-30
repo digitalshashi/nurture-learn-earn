@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface EventToggle {
   event_key: string;
@@ -62,6 +63,9 @@ const DEFAULT_WHATSAPP_EVENTS: EventToggle[] = [
 ];
 
 export default function EventsPersonalisation() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["email", "whatsapp"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [emailEvents, setEmailEvents] = useState(DEFAULT_EMAIL_EVENTS);
@@ -139,7 +143,7 @@ export default function EventsPersonalisation() {
       <div className="max-w-4xl mx-auto py-6 px-4">
         <h1 className="text-xl font-bold font-display mb-6">Events Personalisation</h1>
 
-        <Tabs defaultValue="email">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="email" className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email</TabsTrigger>
             <TabsTrigger value="whatsapp" className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> WhatsApp</TabsTrigger>

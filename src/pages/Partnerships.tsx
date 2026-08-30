@@ -16,12 +16,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Handshake, DollarSign, Users, TrendingUp, Search, Copy, Share2, ExternalLink,
+  Handshake, Users, TrendingUp, Search, Copy, Share2, ExternalLink,
   Trophy, ArrowUpRight, ArrowDownRight, MousePointerClick, ShoppingCart, Eye, Filter,
   CheckCircle2, XCircle, Clock, MessageSquare as MessageIcon
 } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
+import { CurrencyIcon } from "@/components/CurrencyIcon";
 
 export default function Partnerships() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["marketplace", "my-partners", "revenue", "leaderboard", "requests"] as const);
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
   const isCoach = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
@@ -249,7 +254,7 @@ export default function Partnerships() {
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
+              <div className="p-2 rounded-lg bg-success/10"><CurrencyIcon className="h-5 w-5 text-success" /></div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Earnings</p>
                 <p className="text-xl font-bold">₹{totalEarnings.toLocaleString()}</p>
@@ -285,7 +290,7 @@ export default function Partnerships() {
           </Card>
         </div>
 
-        <Tabs defaultValue="marketplace">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4 flex-wrap">
             <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
             <TabsTrigger value="my-partners">My Partners</TabsTrigger>
@@ -453,7 +458,7 @@ export default function Partnerships() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardContent className="pt-6 text-center">
-                  <DollarSign className="h-8 w-8 mx-auto text-success mb-2" />
+                  <CurrencyIcon className="h-8 w-8 mx-auto text-success mb-2" />
                   <p className="text-sm text-muted-foreground">Total Affiliate Earnings</p>
                   <p className="text-3xl font-bold mt-1">₹{totalEarnings.toLocaleString()}</p>
                 </CardContent>

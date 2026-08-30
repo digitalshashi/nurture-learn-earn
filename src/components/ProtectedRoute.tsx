@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions, FeatureKey } from "@/hooks/usePermissions";
+import { NoAccess } from "@/components/NoAccess";
 
 export function ProtectedRoute({
   children,
@@ -21,6 +22,6 @@ export function ProtectedRoute({
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (featureKey && !hasPermission(featureKey)) return <Navigate to="/" replace />;
+  if (featureKey && !hasPermission(featureKey)) return <NoAccess feature={featureKey} />;
   return <>{children}</>;
 }

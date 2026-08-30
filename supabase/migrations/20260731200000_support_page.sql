@@ -367,7 +367,7 @@ BEGIN
     (aid, 'DM one member with a genuine compliment', 'Start a real relationship, not a pitch.', 4),
     (aid, 'Ask one specific question when stuck', 'Vague “help me” posts get vague answers.', 5);
   INSERT INTO public.support_stuck_resources (area_id, title, description, resource_type, url, sort_order) VALUES
-    (aid, 'ILH Community guide', 'How to get the most from the community.', 'article', '/support?topic=ilh-community', 1),
+    (aid, '1corehub Community guide', 'How to get the most from the community.', 'article', '/support?topic=community', 1),
     (aid, 'Open the Feed', 'Post and engage with members.', 'link', '/feed', 2),
     (aid, 'Channels', 'Topic-based rooms for deeper discussion.', 'link', '/channels', 3);
 
@@ -395,7 +395,7 @@ INSERT INTO public.support_faq_topics (slug, title, icon_name, sort_order) VALUE
   ('curriculum-design', 'Curriculum Design', 'book-open', 4),
   ('company-setup', 'Company Setup', 'building-2', 5),
   ('personal-branding', 'Personal Branding', 'sparkles', 6),
-  ('ilh-community', 'ILH Community', 'users', 7),
+  ('community', '1corehub Community', 'users', 7),
   ('technical-tools', 'Technical Tools', 'wrench', 8),
   ('success-mindset', 'Success Mindset', 'brain', 9)
 ON CONFLICT (slug) DO UPDATE SET
@@ -473,8 +473,8 @@ BEGIN
     (tid, 'How do I handle haters or judgment?', 'Moderate comments, do not argue in public, and keep posting for the people you serve. Fear of judgment shrinks with reps.', 6),
     (tid, 'Can AI help with my personal brand content?', 'Yes — use AI Content Generator for drafts, then edit in your voice. Never publish raw AI without your stories and opinions.', 7);
 
-  -- ILH Community (13)
-  SELECT id INTO tid FROM public.support_faq_topics WHERE slug = 'ilh-community';
+  -- Community (13)
+  SELECT id INTO tid FROM public.support_faq_topics WHERE slug = 'community';
   DELETE FROM public.support_faq_articles WHERE topic_id = tid;
   INSERT INTO public.support_faq_articles (topic_id, title, content, sort_order) VALUES
     (tid, 'How do I introduce myself?', 'Post in the Feed: your name, niche, current goal, and one thing you need help with. Keep it specific.', 1),

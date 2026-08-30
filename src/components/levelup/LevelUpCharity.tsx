@@ -67,8 +67,7 @@ export function LevelUpCharity() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Charity</h2>
+      <div className="flex items-center justify-end">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
@@ -112,15 +111,16 @@ export function LevelUpCharity() {
       {/* Filters */}
       <div>
         <p className="text-sm font-medium mb-2">Filter By Date</p>
-        <div className="flex items-center gap-2">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="max-w-[180px]" placeholder="Start date" />
-          <span className="text-muted-foreground">→</span>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="max-w-[180px]" placeholder="End date" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full sm:w-[180px]" placeholder="Start date" />
+          <span className="text-muted-foreground hidden sm:inline">→</span>
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full sm:w-[180px]" placeholder="End date" />
         </div>
       </div>
 
-      {/* Table */}
-      <Card className="card-shadow overflow-auto">
+      {/* Table — <Table> supplies its own horizontal scroll container, so the
+          Card must not add a second one that clips its rounded border. */}
+      <Card className="card-shadow">
         <Table>
           <TableHeader>
             <TableRow>

@@ -10,9 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Users, UserPlus, DollarSign, TrendingUp, Plus, Search, Eye, Edit2, Trash2, ArrowRight } from "lucide-react";
+import { Users, UserPlus, TrendingUp, Plus, Search, Eye, Edit2, Trash2, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyIcon } from "@/components/CurrencyIcon";
 
 export default function CrmDashboard() {
   const { user } = useAuth();
@@ -130,7 +131,7 @@ export default function CrmDashboard() {
           <Card className="card-shadow"><CardContent className="pt-5"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-primary/10"><Users className="h-5 w-5 text-primary" /></div><div><p className="text-2xl font-bold">{totalLeads}</p><p className="text-xs text-muted-foreground">Total Leads</p></div></div></CardContent></Card>
           <Card className="card-shadow"><CardContent className="pt-5"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-accent/10"><UserPlus className="h-5 w-5 text-accent" /></div><div><p className="text-2xl font-bold">{newLeads}</p><p className="text-xs text-muted-foreground">New Leads</p></div></div></CardContent></Card>
           <Card className="card-shadow"><CardContent className="pt-5"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-green-500/10"><TrendingUp className="h-5 w-5 text-green-500" /></div><div><p className="text-2xl font-bold">{converted}</p><p className="text-xs text-muted-foreground">Converted</p></div></div></CardContent></Card>
-          <Card className="card-shadow"><CardContent className="pt-5"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-amber-500/10"><DollarSign className="h-5 w-5 text-amber-500" /></div><div><p className="text-2xl font-bold">₹{pipelineValue.toLocaleString()}</p><p className="text-xs text-muted-foreground">Pipeline Value</p></div></div></CardContent></Card>
+          <Card className="card-shadow"><CardContent className="pt-5"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-amber-500/10"><CurrencyIcon className="h-5 w-5 text-amber-500" /></div><div><p className="text-2xl font-bold">₹{pipelineValue.toLocaleString()}</p><p className="text-xs text-muted-foreground">Pipeline Value</p></div></div></CardContent></Card>
         </div>
 
         {/* Filters */}

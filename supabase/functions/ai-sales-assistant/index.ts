@@ -1,20 +1,42 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Sales intelligence for one CRM lead, using the coach's configured text
+// provider.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders, json, requireUser } from "../_shared/edge.ts";
+import { AiError, generateJson, resolveModel } from "../_shared/aiClient.ts";
+
+interface SalesAnalysis {
+  purchase_probability: number;
+  recommended_action: string;
+  best_contact_time: string;
+  follow_up_message: string;
+  insights: string[];
+}
+
+const SHAPE = `{
+  "purchase_probability": 0,
+  "recommended_action": "best next action to take",
+  "best_contact_time": "suggested best time to reach out",
+  "follow_up_message": "suggested follow-up message",
+  "insights": ["3-5 key insights about this lead"]
+}`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const { userId, error: authError } = await requireUser(req);
+  if (authError) return authError;
+
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
     const { lead, notes, follow_ups } = await req.json();
+    if (!lead) return json({ error: "Lead data required" }, 400);
 
-    const prompt = `Analyze this CRM lead and provide sales intelligence.
+    const resolved = await resolveModel(userId, "text");
+    const result = await generateJson<SalesAnalysis>(resolved, {
+      system:
+        "You are an expert sales coach AI. Provide actionable, specific sales recommendations.",
+      shape: SHAPE,
+      prompt: `Analyze this CRM lead and provide sales intelligence.
 
 Lead:
 - Name: ${lead.name}
@@ -28,71 +50,32 @@ Lead:
 - Lead Score: ${lead.lead_score || "not scored"}
 
 Notes (${(notes || []).length}):
-${(notes || []).slice(0, 5).map((n: any) => `- ${n.content}`).join("\n") || "No notes"}
+${(notes || []).slice(0, 5).map((n: { content: string }) => `- ${n.content}`).join("\n") || "No notes"}
 
 Follow-ups (${(follow_ups || []).length}):
-${(follow_ups || []).slice(0, 5).map((f: any) => `- ${f.task} (${f.status}, due: ${f.due_date})`).join("\n") || "No follow-ups"}
+${
+        (follow_ups || [])
+          .slice(0, 5)
+          .map(
+            (f: { task: string; status: string; due_date: string }) =>
+              `- ${f.task} (${f.status}, due: ${f.due_date})`,
+          )
+          .join("\n") || "No follow-ups"
+      }
 
-Provide actionable sales insights.`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: "You are an expert sales coach AI. Provide actionable, specific sales recommendations." },
-          { role: "user", content: prompt },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "sales_analysis",
-            description: "Return sales intelligence for this lead",
-            parameters: {
-              type: "object",
-              properties: {
-                purchase_probability: { type: "number", description: "Purchase probability 0-100" },
-                recommended_action: { type: "string", description: "Best next action to take" },
-                best_contact_time: { type: "string", description: "Suggested best time to reach out" },
-                follow_up_message: { type: "string", description: "Suggested follow-up message" },
-                insights: { type: "array", items: { type: "string" }, description: "3-5 key insights about this lead" },
-              },
-              required: ["purchase_probability", "recommended_action", "best_contact_time", "follow_up_message", "insights"],
-              additionalProperties: false,
-            },
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "sales_analysis" } },
-      }),
+Provide actionable sales insights.`,
     });
 
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error("AI gateway error");
-    }
-
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    let result = { purchase_probability: 50, recommended_action: "Follow up", best_contact_time: "Morning", follow_up_message: "", insights: [] };
-
-    if (toolCall?.function?.arguments) {
-      try { result = JSON.parse(toolCall.function.arguments); } catch {}
-    }
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return json({
+      purchase_probability: Number(result.purchase_probability) || 0,
+      recommended_action: result.recommended_action || "Follow up",
+      best_contact_time: result.best_contact_time || "Morning",
+      follow_up_message: result.follow_up_message || "",
+      insights: Array.isArray(result.insights) ? result.insights : [],
     });
   } catch (e) {
+    if (e instanceof AiError) return json({ error: e.message }, e.status);
     console.error("ai-sales-assistant error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

@@ -100,8 +100,7 @@ export function LevelUpHabits() {
   return (
     <div className="p-6 space-y-6">
       {/* Week navigation */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Habits</h2>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
             Today
@@ -118,37 +117,46 @@ export function LevelUpHabits() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar */}
         <div className="lg:col-span-2">
-          <Card className="card-shadow overflow-auto">
+          <Card className="card-shadow">
             <CardContent className="pt-4 pb-2">
-              <div className="grid grid-cols-7 gap-1 min-w-[600px]">
-                {weekDays.map((day) => (
-                  <div key={day.toISOString()} className="text-center">
-                    <p className="text-xs font-semibold text-muted-foreground">{format(day, "EEE")}</p>
-                    <p className={`text-sm font-bold ${isSameDay(day, today) ? "text-primary" : ""}`}>
-                      {format(day, "d")}
-                    </p>
+              {/* One scroll container around the whole week grid: scrolling the
+                  Card itself clipped its own border, and giving every row its
+                  own min-width let the header drift out of line with the rows
+                  underneath it. */}
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px]">
+                  <div className="grid grid-cols-7 gap-1">
+                    {weekDays.map((day) => (
+                      <div key={day.toISOString()} className="text-center">
+                        <p className="text-xs font-semibold text-muted-foreground">{format(day, "EEE")}</p>
+                        <p className={`text-sm font-bold ${isSameDay(day, today) ? "text-primary" : ""}`}>
+                          {format(day, "d")}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              {habits.map((habit) => (
-                <div key={habit.id} className="grid grid-cols-7 gap-1 mt-1 min-w-[600px]">
-                  {weekDays.map((day) => {
-                    const done = isCompleted(habit.id, day);
-                    return (
-                      <button
-                        key={day.toISOString()}
-                        onClick={() => toggleHabit(habit.id, day)}
-                        className={`text-xs py-1.5 px-1 rounded truncate transition-colors ${
-                          done ? "text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
-                        }`}
-                        style={done ? { backgroundColor: habit.color } : {}}
-                      >
-                        {habit.name}
-                      </button>
-                    );
-                  })}
+                  {habits.map((habit) => (
+                    <div key={habit.id} className="grid grid-cols-7 gap-1 mt-1">
+                      {weekDays.map((day) => {
+                        const done = isCompleted(habit.id, day);
+                        return (
+                          <button
+                            key={day.toISOString()}
+                            onClick={() => toggleHabit(habit.id, day)}
+                            title={habit.name}
+                            className={`text-xs py-1.5 px-1 rounded truncate transition-colors ${
+                              done ? "text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                            }`}
+                            style={done ? { backgroundColor: habit.color } : {}}
+                          >
+                            {habit.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
               {habits.length === 0 && (
                 <p className="text-center text-sm text-muted-foreground py-8">No habits yet. Create one to get started!</p>
               )}

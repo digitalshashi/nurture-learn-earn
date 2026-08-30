@@ -3,19 +3,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Video, X, Image, Loader2, File, Link2 } from "lucide-react";
+import { Upload, Video, X, Image, Loader2, File, Link2, Film } from "lucide-react";
 import LessonRecorder from "./LessonRecorder";
 import { uploadUserFile } from "@/lib/cloud-storage";
+import { VideoLibraryPicker } from "@/components/video-library/VideoLibraryPicker";
 
 interface ChapterVideoUploadProps {
   contentType: string;
   contentUrl: string;
   thumbnailUrl: string;
+  /** The course's default video thumbnail, offered when this lesson has none. */
+  fallbackThumbnailUrl?: string;
+  durationSeconds?: number | null;
   onContentChange: (url: string) => void;
   onThumbnailChange: (url: string) => void;
+  /** Called once a direct video file reports its length, so runtime totals are real. */
+  onDurationChange?: (seconds: number | null) => void;
 }
 
-const ALL_FORMATS = ".mp4,.mov,.webm,.avi,.mkv,.pdf,.doc,.docx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.gif,.svg,.txt,.csv,.xls,.xlsx,.mp3,.wav,.m4a";
+const ALL_FORMATS = ".mp4,.mov,.webm,.m4v,.pdf,.doc,.docx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.gif,.svg,.txt,.csv,.xls,.xlsx,.mp3,.wav,.m4a";
 const THUMB_FORMATS = ".jpg,.jpeg,.png,.webp";
 const EXTERNAL_TYPES = new Set(["youtube", "vimeo", "loom", "drive", "iframe", "link"]);
 
@@ -27,8 +33,11 @@ export default function ChapterVideoUpload({
   contentType,
   contentUrl,
   thumbnailUrl,
+  fallbackThumbnailUrl = "",
+  durationSeconds,
   onContentChange,
   onThumbnailChange,
+  onDurationChange,
 }: ChapterVideoUploadProps) {
   const { user } = useAuth();
   const [uploadingContent, setUploadingContent] = useState(false);
@@ -37,8 +46,14 @@ export default function ChapterVideoUpload({
   const [sourceMode, setSourceMode] = useState<"upload" | "link" | "record">("upload");
   const [externalUrl, setExternalUrl] = useState(contentUrl || "");
   const [showRecorder, setShowRecorder] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const contentRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
+  const probedUrl = useRef<string | null>(null);
+  const durationRef = useRef<number | null | undefined>(durationSeconds);
+  const durationCallback = useRef(onDurationChange);
+  durationRef.current = durationSeconds;
+  durationCallback.current = onDurationChange;
 
   const externalType = useMemo(() => EXTERNAL_TYPES.has(contentType), [contentType]);
   const canUseThumbnail = useMemo(
@@ -50,6 +65,56 @@ export default function ChapterVideoUpload({
     setSourceMode(externalType ? "link" : "upload");
     setExternalUrl(contentUrl || "");
   }, [externalType, contentUrl]);
+
+  /**
+   * Read the video's own length rather than asking the coach to type it.
+   * Runtime totals, the "8:05" on a lesson row and the course length on the
+   * landing page all come from `duration_seconds`, which nothing was setting,
+   * so every course read as having no length at all.
+   */
+  useEffect(() => {
+    // The parent re-renders on every keystroke, so the URL — not the callback
+    // identity — decides whether a probe is due. Without this, each render
+    // would start another one.
+    if (probedUrl.current === contentUrl) return;
+    const firstLook = probedUrl.current === null;
+    const previous = probedUrl.current;
+    probedUrl.current = contentUrl;
+
+    if (!contentUrl || !isVideoFile(contentUrl)) {
+      // Swapping a video out for a link or a PDF has to drop the old length,
+      // or the lesson keeps advertising a runtime it no longer has.
+      if (!firstLook && previous) durationCallback.current?.(null);
+      return;
+    }
+    // A length already on the row is trusted on the way in; once the coach
+    // swaps the file, the new one is measured and overwrites it.
+    if (firstLook && durationRef.current && durationRef.current > 0) return;
+
+    let cancelled = false;
+    const probe = document.createElement("video");
+    probe.preload = "metadata";
+    probe.muted = true;
+    probe.addEventListener(
+      "loadedmetadata",
+      () => {
+        if (cancelled) return;
+        const secs = Number.isFinite(probe.duration) ? Math.round(probe.duration) : 0;
+        if (secs > 0) durationCallback.current?.(secs);
+        probe.removeAttribute("src");
+      },
+      { once: true },
+    );
+    // A cross-origin or still-processing file simply yields no length; the
+    // coach can carry on, the runtime line just stays blank.
+    probe.addEventListener("error", () => { cancelled = true; }, { once: true });
+    probe.src = contentUrl;
+
+    return () => {
+      cancelled = true;
+      probe.removeAttribute("src");
+    };
+  }, [contentUrl]);
 
   const uploadFile = async (
     file: File,
@@ -93,6 +158,18 @@ export default function ChapterVideoUpload({
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-medium">Content Source</p>
         <div className="flex gap-1">
+          {/* Library first: for a creator who has already uploaded their
+              videos, picking one is the common case and re-uploading the
+              same file into a second chapter is the wasteful one. */}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-[10px]"
+            onClick={() => setShowLibrary(true)}
+          >
+            <Film className="h-3 w-3" /> Library
+          </Button>
           <Button
             type="button"
             size="sm"
@@ -209,9 +286,16 @@ export default function ChapterVideoUpload({
             )}
           </div>
           <div className="flex-1 space-y-1">
-            <p className="text-xs font-medium">Video Thumbnail</p>
+            <p className="text-xs font-medium">
+              Video Thumbnail
+              {durationSeconds ? (
+                <span className="ml-2 font-normal text-muted-foreground">
+                  {Math.floor(durationSeconds / 60)}:{String(Math.round(durationSeconds % 60)).padStart(2, "0")} long
+                </span>
+              ) : null}
+            </p>
             <p className="text-[10px] text-muted-foreground">JPG, PNG, WEBP</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -222,6 +306,20 @@ export default function ChapterVideoUpload({
               >
                 {uploadingThumb ? <Loader2 className="h-3 w-3 animate-spin" /> : "Upload Thumbnail"}
               </Button>
+              {/* Most lessons want the course's default rather than their own
+                  image, and setting that one field per lesson by hand was the
+                  slowest part of building a curriculum. */}
+              {fallbackThumbnailUrl && fallbackThumbnailUrl !== thumbnailUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => onThumbnailChange(fallbackThumbnailUrl)}
+                >
+                  Use course default
+                </Button>
+              )}
               {thumbnailUrl && (
                 <Button
                   type="button"
@@ -238,6 +336,15 @@ export default function ChapterVideoUpload({
           </div>
         </div>
       )}
+
+      <VideoLibraryPicker
+        open={showLibrary}
+        onOpenChange={setShowLibrary}
+        onSelect={(video) => {
+          onContentChange(video.publicUrl);
+          setSourceMode("upload");
+        }}
+      />
     </div>
   );
 }

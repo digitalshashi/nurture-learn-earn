@@ -230,7 +230,7 @@ export function BadgeManagement() {
               <div>
                 <Label className="text-xs">Or Upload Icon (PNG/SVG)</Label>
                 <div className="flex items-center gap-2">
-                  <Input type="file" accept=".png,.svg,.jpg,.webp" onChange={handleIconUpload} className="text-xs" />
+                  <Input type="file" accept=".png,.svg,.jpg,.jpeg,.webp,.heic,.heif,.avif" onChange={handleIconUpload} className="text-xs" />
                   {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
                 </div>
                 {form.icon_url && <img src={form.icon_url} className="h-8 w-8 rounded mt-1" alt="preview" />}

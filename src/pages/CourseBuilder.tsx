@@ -18,6 +18,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import LessonRecorder from "@/components/course-manage/LessonRecorder";
 import { uploadUserFile } from "@/lib/cloud-storage";
+import { saveCurriculum } from "@/lib/courseSave";
+import { PLAYABLE_VIDEO_ACCEPT } from "@/lib/videoFormats";
+import { VideoLibraryPicker } from "@/components/video-library/VideoLibraryPicker";
+import { UploadProgress } from "@/components/video-library/UploadProgress";
+import { useVideoUpload, type UploadJob } from "@/hooks/useVideoUpload";
 
 interface Section {
   id?: string;
@@ -36,9 +41,12 @@ interface Chapter {
   thumbnail_url: string;
   video_description: string;
   resources: any[];
+  /** Read from the file itself at upload time; drives the durations shown
+      in the player queue and on the course overview. */
+  duration_seconds?: number | null;
 }
 
-const VIDEO_ACCEPT = ".mp4,.mov,.webm,.avi,.mkv";
+const VIDEO_ACCEPT = PLAYABLE_VIDEO_ACCEPT;
 const THUMB_ACCEPT = ".jpg,.jpeg,.png,.webp";
 const RESOURCE_ACCEPT = ".pdf,.doc,.docx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp";
 
@@ -60,6 +68,7 @@ export default function CourseBuilder() {
   const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
   const [uploadingThumb, setUploadingThumb] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const { job, upload, reset } = useVideoUpload();
 
   useEffect(() => {
     if (isEditing) loadCourse();
@@ -90,6 +99,7 @@ export default function CourseBuilder() {
           thumbnail_url: c.thumbnail_url || "",
           video_description: c.video_description || "",
           resources: Array.isArray(c.resources) ? c.resources : [],
+          duration_seconds: c.duration_seconds ?? null,
         })),
       })));
     }
@@ -139,20 +149,21 @@ export default function CourseBuilder() {
   const uploadVideoFile = async (sIdx: number, cIdx: number, file: File) => {
     const key = `${sIdx}-${cIdx}`;
     setUploadingVideo(key);
-    setUploadProgress(0);
-    try {
-      const result = await uploadUserFile(user!.id, "videos", file, {
-        onProgress: setUploadProgress,
-      });
-      updateChapter(sIdx, cIdx, "video_url", result.publicUrl);
-      updateChapter(sIdx, cIdx, "video_type", "upload");
-      toast({ title: "Video uploaded successfully" });
-    } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
-    } finally {
-      setUploadingVideo(null);
-      setUploadProgress(0);
+    const [result] = await upload(user!.id, "videos", [file]);
+    setUploadingVideo(null);
+    if (!result) {
+      toast({ title: "Upload failed", description: job.error, variant: "destructive" });
+      return;
     }
+    updateChapter(sIdx, cIdx, "video_url", result.publicUrl);
+    updateChapter(sIdx, cIdx, "video_type", "upload");
+    // The probe ran while uploading, so the lecture's length is known without
+    // anyone typing it — this is what the player and overview read.
+    if (result.probe.durationSeconds) {
+      updateChapter(sIdx, cIdx, "duration_seconds", result.probe.durationSeconds);
+    }
+    toast({ title: "Video uploaded successfully" });
+    setTimeout(reset, 2000);
   };
 
   // Upload thumbnail → R2/S3
@@ -195,57 +206,54 @@ export default function CourseBuilder() {
       toast({ title: "Error", description: "Course title is required", variant: "destructive" });
       return;
     }
+    // An empty price field is free, not NaN — which the column rejects, and
+    // which used to fail the whole save with an opaque database message.
+    const parsedPrice = price.trim() === "" ? 0 : Number(price);
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      toast({ title: "Error", description: "Price must be a number", variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
     try {
       let courseId = id;
+      const details = {
+        title,
+        description,
+        price: parsedPrice,
+        category,
+        thumbnail_url: thumbnailUrl || null,
+      };
+
       if (isEditing) {
-        await supabase.from("courses").update({
-          title, description, price: parseFloat(price), category,
-          thumbnail_url: thumbnailUrl || null, updated_at: new Date().toISOString(),
-        }).eq("id", id);
+        // Asking for the row back is what distinguishes a real update from one
+        // RLS silently dropped — see saveCurriculum for the full reasoning.
+        const { data, error } = await supabase
+          .from("courses")
+          .update({ ...details, updated_at: new Date().toISOString() })
+          .eq("id", id!)
+          .select("id");
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error("This course was not saved — you may not have permission to edit it.");
+        }
       } else {
-        const { data, error } = await supabase.from("courses").insert({
-          title, description, price: parseFloat(price), category,
-          thumbnail_url: thumbnailUrl || null, coach_id: user!.id, is_published: false,
-        }).select("id").single();
+        const { data, error } = await supabase
+          .from("courses")
+          .insert({ ...details, coach_id: user!.id, is_published: false })
+          .select("id")
+          .single();
         if (error) throw error;
         courseId = data.id;
       }
 
-      for (let i = 0; i < sections.length; i++) {
-        const sec = sections[i];
-        let sectionId = sec.id;
-        if (sectionId) {
-          await supabase.from("sections").update({ title: sec.title, sort_order: i }).eq("id", sectionId);
-        } else {
-          const { data } = await supabase.from("sections").insert({
-            course_id: courseId!, title: sec.title, sort_order: i,
-          }).select("id").single();
-          sectionId = data?.id;
-        }
-        if (!sectionId) continue;
-
-        for (let j = 0; j < sec.chapters.length; j++) {
-          const ch = sec.chapters[j];
-          const chapterData = {
-            title: ch.title, video_url: ch.video_url || null, video_type: ch.video_type,
-            content: ch.content || null, sort_order: j,
-            thumbnail_url: ch.thumbnail_url || null,
-            video_description: ch.video_description || null,
-            resources: ch.resources?.length > 0 ? ch.resources : null,
-          };
-          if (ch.id) {
-            await supabase.from("chapters").update(chapterData).eq("id", ch.id);
-          } else {
-            await supabase.from("chapters").insert({ section_id: sectionId, ...chapterData });
-          }
-        }
-      }
+      const savedSections = await saveCurriculum(courseId!, sections);
+      setSections(savedSections as typeof sections);
 
       toast({ title: "Saved!", description: "Course saved successfully" });
       if (!isEditing) navigate(`/course-builder/${courseId}`);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Could not save", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -327,6 +335,7 @@ export default function CourseBuilder() {
                       uploadingVideo={uploadingVideo}
                       uploadingThumb={uploadingThumb}
                       uploadProgress={uploadProgress}
+                      uploadJob={job}
                       onUpdate={updateChapter}
                       onRemove={removeChapter}
                       onUploadVideo={uploadVideoFile}
@@ -357,11 +366,12 @@ export default function CourseBuilder() {
 // Chapter Editor Component
 function ChapterEditor({
   chapter, sIdx, cIdx,
-  uploadingVideo, uploadingThumb, uploadProgress,
+  uploadingVideo, uploadingThumb, uploadProgress, uploadJob,
   onUpdate, onRemove, onUploadVideo, onUploadThumb, onUploadResource, onRemoveResource,
 }: {
   chapter: Chapter; sIdx: number; cIdx: number;
   uploadingVideo: string | null; uploadingThumb: string | null; uploadProgress: number;
+  uploadJob: UploadJob;
   onUpdate: (s: number, c: number, f: string, v: any) => void;
   onRemove: (s: number, c: number) => void;
   onUploadVideo: (s: number, c: number, f: File) => void;
@@ -370,6 +380,7 @@ function ChapterEditor({
   onRemoveResource: (s: number, c: number, r: number) => void;
 }) {
   const [showRecorder, setShowRecorder] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
   const resourceInputRef = useRef<HTMLInputElement>(null);
@@ -391,9 +402,19 @@ function ChapterEditor({
       {/* Video Source */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground">Video Source</Label>
-        <Select value={chapter.video_type} onValueChange={v => { onUpdate(sIdx, cIdx, "video_type", v); if (v === "record") setShowRecorder(true); }}>
+        <Select
+          value={chapter.video_type}
+          onValueChange={(v) => {
+            onUpdate(sIdx, cIdx, "video_type", v);
+            if (v === "record") setShowRecorder(true);
+            // Picking the library source is the same gesture as opening the
+            // picker — nobody chooses it and then wants a second click.
+            if (v === "library") setShowLibrary(true);
+          }}
+        >
           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="library">🎞️ Choose from Video Library</SelectItem>
             <SelectItem value="upload">📤 Upload Video File</SelectItem>
             <SelectItem value="record">🎥 Record Lesson</SelectItem>
             <SelectItem value="youtube">▶️ YouTube Link</SelectItem>
@@ -403,6 +424,37 @@ function ChapterEditor({
             <SelectItem value="iframe">🌐 Custom Iframe</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Video library picker */}
+        {chapter.video_type === "library" && (
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/40 p-2.5">
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate text-xs">
+              {chapter.video_url ? (
+                <span className="font-medium">{decodeURIComponent(chapter.video_url.split("/").pop() || "")}</span>
+              ) : (
+                <span className="text-muted-foreground">No video chosen yet</span>
+              )}
+            </span>
+            <Button type="button" variant="outline" size="sm" className="h-7 shrink-0 text-xs" onClick={() => setShowLibrary(true)}>
+              {chapter.video_url ? "Change" : "Choose video"}
+            </Button>
+          </div>
+        )}
+
+        <VideoLibraryPicker
+          open={showLibrary}
+          onOpenChange={setShowLibrary}
+          onSelect={(video) => {
+            onUpdate(sIdx, cIdx, "video_url", video.publicUrl);
+            onUpdate(sIdx, cIdx, "video_type", "library");
+            if (video.durationSeconds) onUpdate(sIdx, cIdx, "duration_seconds", video.durationSeconds);
+            if (!chapter.title?.trim()) {
+              // A blank chapter titled after the file beats "Untitled".
+              onUpdate(sIdx, cIdx, "title", video.name.replace(/\.[^.]+$/, ""));
+            }
+          }}
+        />
 
         {/* Lesson Recorder */}
         {(chapter.video_type === "record" || showRecorder) && !chapter.video_url && (
@@ -437,10 +489,9 @@ function ChapterEditor({
                 onDrop={e => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files[0]; if (f) onUploadVideo(sIdx, cIdx, f); }}
               >
                 {isUploadingVid ? (
-                  <div className="space-y-2">
-                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-                    <p className="text-xs text-muted-foreground">Uploading video...</p>
-                  </div>
+                  // The staged panel replaces a bare spinner: which stage, how
+                  // far in, how fast, and how much longer.
+                  <UploadProgress job={uploadJob} className="border-0 bg-transparent p-0 text-left" />
                 ) : (
                   <>
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />

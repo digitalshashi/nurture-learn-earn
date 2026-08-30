@@ -138,7 +138,7 @@ export default function Feed() {
                 <FeedPost
                   key={post.id}
                   id={post.id}
-                  author={post.profiles?.full_name || "Unknown"}
+                  author={post.profiles?.full_name || "Member"}
                   authorAvatar={post.profiles?.avatar_url || ""}
                   authorId={post.user_id}
                   content={post.content || ""}

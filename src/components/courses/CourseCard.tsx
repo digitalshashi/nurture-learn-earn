@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Download, Lock, MoreHorizontal } from "lucide-react";
+import { ChevronDown, Download, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CourseCardProps {
@@ -25,7 +25,8 @@ interface CourseCardProps {
   isPaid?: boolean;
   onClick: () => void;
   onContinue?: () => void;
-  onManage?: () => void;
+  /** Present only for someone who may edit the course. `tab` deep-links a section of the editor. */
+  onManage?: (tab?: string) => void;
 }
 
 export function CourseCard({
@@ -95,12 +96,17 @@ export function CourseCard({
                 </DropdownMenuItem>
               )}
               {onManage && (
-                <DropdownMenuItem onClick={onManage}>Manage</DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onClick={() => onManage()}>Edit course</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onManage("curriculum")}>
+                    Edit curriculum &amp; videos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onManage("information")}>
+                    Change cover photo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onManage("reports")}>View reports</DropdownMenuItem>
+                </>
               )}
-              <DropdownMenuItem disabled className="text-muted-foreground">
-                <MoreHorizontal className="h-3.5 w-3.5 mr-2" />
-                More soon
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -151,6 +157,23 @@ export function CourseCard({
           >
             {ctaLabel}
           </button>
+          {/* Editing a course is a first-class action for its coach, so it sits
+              on the card rather than two clicks down inside the options menu. */}
+          {onManage && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onManage();
+              }}
+              className="h-10 shrink-0 rounded-lg border border-border px-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+              title="Manage this course"
+            >
+              <span className="flex items-center gap-1.5">
+                <Pencil className="h-3.5 w-3.5" /> Manage
+              </span>
+            </button>
+          )}
           {progress > 0 && !locked && (
             <button
               type="button"

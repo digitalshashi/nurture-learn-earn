@@ -11,6 +11,8 @@ export default function ChatbotTab({ courseId }: { courseId: string }) {
   const [questions, setQuestions] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   useEffect(() => { loadData(); }, [courseId]);
 
@@ -30,10 +32,18 @@ export default function ChatbotTab({ courseId }: { courseId: string }) {
   const satRate = rated > 0 ? Math.round((satisfied / rated) * 100) : 0;
 
   const filtered = questions.filter(q => {
+    // The satisfaction dropdown and the date range were both rendered but
+    // never consulted, so every control on this tab except search was inert.
+    if (filterType === "satisfied" && q.is_satisfied !== true) return false;
+    if (filterType === "unsatisfied" && q.is_satisfied !== false) return false;
+    if (from && q.created_at < from) return false;
+    if (to && q.created_at > `${to}T23:59:59.999Z`) return false;
     if (search) {
       const name = (q.profiles as any)?.full_name?.toLowerCase() || "";
       const qText = q.question?.toLowerCase() || "";
-      if (!name.includes(search.toLowerCase()) && !qText.includes(search.toLowerCase())) return false;
+      const answer = q.bot_answer?.toLowerCase() || "";
+      const needle = search.toLowerCase();
+      if (!name.includes(needle) && !qText.includes(needle) && !answer.includes(needle)) return false;
     }
     return true;
   });
@@ -58,7 +68,9 @@ export default function ChatbotTab({ courseId }: { courseId: string }) {
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">Start Date → End Date</div>
+        <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[150px]" />
+        <span className="text-sm text-muted-foreground">to</span>
+        <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-[150px]" />
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-40 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>

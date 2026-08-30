@@ -80,8 +80,7 @@ export function LevelUpTasks() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Tasks</h2>
+      <div className="flex items-center justify-end">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
@@ -101,7 +100,7 @@ export function LevelUpTasks() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="bg-accent/5 border-accent/20">
           <CardContent className="pt-4 pb-3">
             <p className="text-xs text-muted-foreground">Total Tasks Pending</p>

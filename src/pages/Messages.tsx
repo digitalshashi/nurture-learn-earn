@@ -1,251 +1,265 @@
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, ArrowLeft } from "lucide-react";
+import { Loader2, PenSquare, Search, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { MessageThread } from "@/components/messages/MessageThread";
+import { NewChatDialog } from "@/components/messages/NewChatDialog";
+import {
+  fetchConversations,
+  initials,
+  shortAge,
+  type ConversationSummary,
+} from "@/lib/messaging";
 
-interface Conversation {
-  user_id: string;
-  full_name: string;
-  avatar_url: string | null;
-  last_message: string;
-  last_time: string;
-  unread: number;
-}
-
-interface Message {
+interface Party {
   id: string;
-  sender_id: string;
-  receiver_id: string;
-  message: string;
-  created_at: string;
-  is_read: boolean;
+  full_name: string | null;
+  avatar_url: string | null;
 }
 
+/**
+ * The inbox.
+ *
+ * Two panes side by side on desktop, one at a time on mobile — the route is
+ * the same either way, so a link to a conversation works from anywhere and the
+ * back button behaves. /messages is the list; /messages/:id is the thread.
+ */
 export default function Messages() {
   const { recipientId } = useParams<{ recipientId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [recipient, setRecipient] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
-  const [newMsg, setNewMsg] = useState("");
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [composing, setComposing] = useState(false);
+  const [other, setOther] = useState<Party | null>(null);
+
+  const reload = useCallback(async () => {
+    const rows = await fetchConversations();
+    setConversations(rows);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    if (recipientId) {
-      loadChat();
-    } else {
-      loadConversations();
-    }
-  }, [recipientId, user]);
-
-  useEffect(() => {
-    if (!recipientId || !user) return;
-    const channel = supabase
-      .channel("chat-" + recipientId)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
-        const msg = payload.new as Message;
-        if (
-          (msg.sender_id === user.id && msg.receiver_id === recipientId) ||
-          (msg.sender_id === recipientId && msg.receiver_id === user.id)
-        ) {
-          setMessages((prev) => [...prev, msg]);
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [recipientId, user]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const loadConversations = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-      .order("created_at", { ascending: false })
-      .limit(200);
+    void reload();
+  }, [user, reload]);
 
-    if (!data) return;
+  // The list has to move when a message arrives while it is on screen — that
+  // is most of what makes an inbox feel live rather than cached.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`inbox:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `receiver_id=eq.${user.id}` },
+        () => void reload(),
+      )
+      .subscribe();
 
-    const convMap: Record<string, { msgs: Message[] }> = {};
-    data.forEach((m: any) => {
-      const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
-      if (!convMap[otherId]) convMap[otherId] = { msgs: [] };
-      convMap[otherId].msgs.push(m);
-    });
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user, reload]);
 
-    const userIds = Object.keys(convMap);
-    if (userIds.length === 0) { setConversations([]); return; }
+  // Whoever the open thread is with. Taken from the list when it is already
+  // there, and fetched when the thread was opened from a link or a fresh pick.
+  useEffect(() => {
+    if (!recipientId) {
+      setOther(null);
+      return;
+    }
 
-    const { data: profiles } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", userIds);
+    const known = conversations.find((c) => c.other_user_id === recipientId);
+    if (known) {
+      setOther({
+        id: known.other_user_id,
+        full_name: known.full_name,
+        avatar_url: known.avatar_url,
+      });
+      return;
+    }
 
-    const convs: Conversation[] = userIds.map((uid) => {
-      const msgs = convMap[uid].msgs;
-      const p = profiles?.find((pr) => pr.id === uid);
-      const unread = msgs.filter((m) => m.receiver_id === user.id && !m.is_read).length;
-      return {
-        user_id: uid,
-        full_name: p?.full_name || "User",
-        avatar_url: p?.avatar_url || null,
-        last_message: msgs[0]?.message || "",
-        last_time: msgs[0]?.created_at || "",
-        unread,
-      };
-    }).sort((a, b) => new Date(b.last_time).getTime() - new Date(a.last_time).getTime());
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .eq("id", recipientId)
+        .maybeSingle();
+      if (!cancelled) {
+        setOther(
+          data
+            ? { id: data.id, full_name: data.full_name, avatar_url: data.avatar_url }
+            : { id: recipientId, full_name: null, avatar_url: null },
+        );
+      }
+    })();
 
-    setConversations(convs);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [recipientId, conversations]);
 
-  const loadChat = async () => {
-    if (!user || !recipientId) return;
-    const [msgsRes, profileRes] = await Promise.all([
-      supabase
-        .from("messages")
-        .select("*")
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${user.id})`)
-        .order("created_at", { ascending: true })
-        .limit(200),
-      supabase.from("profiles").select("full_name, avatar_url").eq("id", recipientId).single(),
-    ]);
+  const visible = conversations.filter((c) =>
+    (c.full_name || "").toLowerCase().includes(search.trim().toLowerCase()),
+  );
 
-    if (msgsRes.data) setMessages(msgsRes.data as Message[]);
-    if (profileRes.data) setRecipient(profileRes.data);
+  const list = (
+    <div className="flex h-full min-h-0 flex-col border-border lg:border-r">
+      <div className="shrink-0 border-b border-border px-4 py-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h1 className="text-lg font-bold">Messages</h1>
+          <Button
+            size="sm"
+            onClick={() => setComposing(true)}
+            className="h-9 gap-1.5 touch-manipulation"
+          >
+            <PenSquare className="h-4 w-4" /> New
+          </Button>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search conversations"
+            className="h-10 rounded-full pl-9"
+          />
+        </div>
+      </div>
 
-    // Mark as read
-    await supabase
-      .from("messages")
-      .update({ is_read: true })
-      .eq("sender_id", recipientId)
-      .eq("receiver_id", user.id)
-      .eq("is_read", false);
-  };
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="px-6 py-16 text-center">
+            <MessageSquare className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm font-medium">
+              {search ? "No conversations match" : "No conversations yet"}
+            </p>
+            {!search && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Start one with anyone who has enrolled or bought from you.
+              </p>
+            )}
+          </div>
+        ) : (
+          <ul>
+            {visible.map((c) => {
+              const active = c.other_user_id === recipientId;
+              const unread = Number(c.unread_count) > 0;
+              const youSpokeLast = c.last_sender_id === user?.id;
 
-  const sendMessage = async () => {
-    if (!newMsg.trim() || !user || !recipientId || sending) return;
-    setSending(true);
-    await supabase.from("messages").insert({
-      sender_id: user.id,
-      receiver_id: recipientId,
-      message: newMsg.trim(),
-    });
-    setNewMsg("");
-    setSending(false);
-  };
-
-  // Conversation list view
-  if (!recipientId) {
-    return (
-      <AppLayout>
-        <div className="max-w-2xl mx-auto py-6 px-4">
-          <h1 className="text-xl font-bold mb-4">Messages</h1>
-          {conversations.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">No conversations yet</div>
-          ) : (
-            <div className="space-y-2">
-              {conversations.map((c) => (
-                <Card
-                  key={c.user_id}
-                  className="cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => navigate(`/messages/${c.user_id}`)}
-                >
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-accent/20 text-accent text-sm font-bold">
-                        {c.full_name.charAt(0)}
+              return (
+                <li key={c.other_user_id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/messages/${c.other_user_id}`)}
+                    className={cn(
+                      "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors touch-manipulation",
+                      active ? "bg-muted" : "hover:bg-muted/50 active:bg-muted",
+                    )}
+                  >
+                    <Avatar className="h-11 w-11 shrink-0">
+                      {c.avatar_url && <AvatarImage src={c.avatar_url} />}
+                      <AvatarFallback className="bg-accent/15 text-sm font-semibold text-accent">
+                        {initials(c.full_name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold truncate">{c.full_name}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {c.last_time ? new Date(c.last_time).toLocaleDateString() : ""}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p
+                          className={cn(
+                            "truncate text-sm",
+                            unread ? "font-bold" : "font-medium",
+                          )}
+                        >
+                          {c.full_name || "Member"}
+                        </p>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          {shortAge(c.last_at)}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{c.last_message}</p>
+                      <p
+                        className={cn(
+                          "truncate text-xs",
+                          unread ? "font-semibold text-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {youSpokeLast && "You: "}
+                        {c.last_message}
+                      </p>
                     </div>
-                    {c.unread > 0 && (
-                      <span className="h-5 w-5 rounded-full bg-accent text-accent-foreground text-[10px] flex items-center justify-center font-bold">
-                        {c.unread}
+
+                    {unread && (
+                      <span className="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">
+                        {c.unread_count}
                       </span>
                     )}
-                  </CardContent>
-                </Card>
-              ))}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <AppLayout>
+      <div className="grid h-[calc(100vh-var(--nav-height))] min-h-0 lg:grid-cols-[340px_1fr]">
+        {/* Mobile shows one pane at a time; desktop shows both. */}
+        <div className={cn("min-h-0", recipientId ? "hidden lg:flex lg:flex-col" : "flex flex-col")}>
+          {list}
+        </div>
+
+        <div className={cn("min-h-0", recipientId ? "flex flex-col" : "hidden lg:flex lg:flex-col")}>
+          {recipientId && other && user ? (
+            <MessageThread
+              key={other.id}
+              meId={user.id}
+              other={other}
+              onActivity={reload}
+              className="h-full"
+            />
+          ) : (
+            <div className="hidden h-full flex-col items-center justify-center gap-2 text-center lg:flex">
+              <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm font-medium">Pick a conversation</p>
+              <p className="max-w-xs text-xs text-muted-foreground">
+                Or start a new one with anyone who has enrolled or bought from you.
+              </p>
             </div>
           )}
         </div>
-      </AppLayout>
-    );
-  }
-
-  // Chat view
-  return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-3.5rem)]">
-        {/* Chat header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border bg-card sticky top-14 z-10">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/messages")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-accent/20 text-accent text-xs font-bold">
-              {recipient?.full_name?.charAt(0) || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <p
-            className="font-semibold text-sm cursor-pointer hover:text-accent transition-colors"
-            onClick={() => navigate(`/profile/${recipientId}`)}
-          >
-            {recipient?.full_name || "User"}
-          </p>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {messages.map((msg) => {
-            const isMine = msg.sender_id === user?.id;
-            return (
-              <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
-                  isMine ? "bg-accent text-accent-foreground rounded-br-sm" : "bg-secondary text-foreground rounded-bl-sm"
-                }`}>
-                  {msg.message}
-                  <span className={`block text-[10px] mt-0.5 ${isMine ? "text-accent-foreground/60" : "text-muted-foreground"}`}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-3 border-t border-border bg-card flex gap-2">
-          <Input
-            placeholder="Type a message..."
-            value={newMsg}
-            onChange={(e) => setNewMsg(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-1"
-          />
-          <Button size="icon" onClick={sendMessage} disabled={sending || !newMsg.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
+
+      <NewChatDialog
+        open={composing}
+        onOpenChange={setComposing}
+        onPick={(person) => {
+          setComposing(false);
+          setOther({
+            id: person.user_id,
+            full_name: person.full_name,
+            avatar_url: person.avatar_url,
+          });
+          navigate(`/messages/${person.user_id}`);
+        }}
+      />
     </AppLayout>
   );
 }

@@ -1,45 +1,68 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Bell,
-  LogOut,
-  icons,
-  UserCircle,
-  MessageCircle,
-  LayoutGrid,
+  IoApps,
+  IoBook,
+  IoBriefcase,
+  IoCalendar,
+  IoCard,
+  IoChatbubbles,
+  IoCompass,
+  IoFlash,
+  IoFolder,
+  IoGift,
+  IoHeart,
+  IoHelpBuoy,
+  IoHome,
+  IoLayers,
+  IoMail,
+  IoMegaphone,
+  IoNotifications,
+  IoPeople,
+  IoPlayCircle,
+  IoRocket,
+  IoSearch,
+  IoSettings,
+  IoSparkles,
+  IoStar,
+  IoStatsChart,
+  IoTicket,
+  IoTrophy,
+  IoVideocam,
+} from "react-icons/io5";
+import type { IconType } from "react-icons";
+import {
   LifeBuoy,
-  Trophy,
+  LogOut,
   Megaphone,
-  type LucideIcon,
+  MessageCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Trophy,
+  UserCircle,
+  type LucideIcon as LucideIconType,
 } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LucideIcon } from "./LucideIcon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useSidebar } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useSearch } from "@/contexts/SearchContext";
+import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-const APPS_MENU_ITEMS: { label: string; link: string; icon: LucideIcon; description: string }[] = [
-  {
-    label: "Support",
-    link: "/support",
-    icon: LifeBuoy,
-    description: "Stuck areas & FAQ",
-  },
-  {
-    label: "Gamification",
-    link: "/gamification",
-    icon: Trophy,
-    description: "Badges, XP & rewards",
-  },
-  {
-    label: "Marketing",
-    link: "/marketing/broadcasts",
-    icon: Megaphone,
-    description: "Broadcasts & campaigns",
-  },
+/**
+ * Every tab is the same width, so the active indicator can be placed by index
+ * alone — one bar that slides, rather than a border per tab.
+ */
+const TAB_WIDTH = 116;
+
+const APPS_MENU_ITEMS: { label: string; link: string; icon: LucideIconType; description: string }[] = [
+  { label: "Support", link: "/support", icon: LifeBuoy, description: "Stuck areas & FAQ" },
+  { label: "Gamification", link: "/gamification", icon: Trophy, description: "Badges, XP & rewards" },
+  { label: "Marketing", link: "/marketing/broadcasts", icon: Megaphone, description: "Broadcasts & campaigns" },
 ];
 
 interface NavMenuItem {
@@ -67,24 +90,66 @@ const defaultNavItems = [...PINNED_NAV_ITEMS];
 // Items that require LevelUp access for students
 const LEVELUP_LINKS = ["/levelup"];
 
-function LucideIcon({ name, className }: { name: string; className?: string }) {
-  const pascalName = name
-    .split("-")
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const IconComp = (icons as any)[pascalName];
-  if (!IconComp) {
-    const Fallback = (icons as any)["Circle"];
-    return Fallback ? <Fallback className={className} /> : null;
-  }
-  return <IconComp className={className} />;
+/**
+ * Nav rows store a Lucide name (`icon_name`), but the bar draws filled
+ * Ionicons — this is the bridge. A name with no Ionicon counterpart falls
+ * back to the Lucide glyph it asked for rather than to a placeholder.
+ */
+const IONICON_BY_NAME: Record<string, IconType> = {
+  "bar-chart": IoStatsChart,
+  "book-open": IoBook,
+  "credit-card": IoCard,
+  "graduation-cap": IoBook,
+  "help-circle": IoHelpBuoy,
+  "life-buoy": IoHelpBuoy,
+  "message-circle": IoChatbubbles,
+  "message-square": IoChatbubbles,
+  "play-circle": IoPlayCircle,
+  apps: IoApps,
+  book: IoBook,
+  briefcase: IoBriefcase,
+  calendar: IoCalendar,
+  compass: IoCompass,
+  folder: IoFolder,
+  gift: IoGift,
+  grid: IoApps,
+  heart: IoHeart,
+  home: IoHome,
+  layers: IoLayers,
+  mail: IoMail,
+  megaphone: IoMegaphone,
+  play: IoPlayCircle,
+  rocket: IoRocket,
+  settings: IoSettings,
+  sparkles: IoSparkles,
+  star: IoStar,
+  sword: IoRocket,
+  ticket: IoTicket,
+  trophy: IoTrophy,
+  users: IoPeople,
+  video: IoVideocam,
+  videocam: IoVideocam,
+  zap: IoFlash,
+};
+
+function TabIcon({ name }: { name: string }) {
+  const Ionicon = IONICON_BY_NAME[name];
+  if (Ionicon) return <Ionicon size={20} aria-hidden />;
+  return <LucideIcon name={name} className="h-5 w-5" />;
+}
+
+/** A tab owns its sub-routes: /courses stays lit on /courses/anything. */
+function isTabActive(pathname: string, link: string) {
+  return pathname === link || pathname.startsWith(link + "/");
 }
 
 export function TopNav() {
   const { user, signOut, roles } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { openSearch } = useSearch();
+  const { state, isMobile, openMobile, toggleSidebar } = useSidebar();
   const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [hasLevelupAccess, setHasLevelupAccess] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [appsOpen, setAppsOpen] = useState(false);
@@ -122,19 +187,19 @@ export function TopNav() {
     if (data && data.length > 0) {
       setMenuItems(data as NavMenuItem[]);
     }
-    setLoaded(true);
   };
 
   const checkLevelupAccess = async () => {
     if (!user) return;
     // Coaches/admins always have access
-    const isCoachOrAdmin = roles.includes("coach") || roles.includes("admin") || roles.includes("super_admin" as any);
+    const isCoachOrAdmin =
+      roles.includes("coach") || roles.includes("admin") || roles.includes("super_admin" as any);
     if (isCoachOrAdmin) {
       setHasLevelupAccess(true);
       return;
     }
     // For students, check via RPC
-    const { data, error } = await supabase.rpc("user_has_levelup_access", { _user_id: user.id });
+    const { data } = await supabase.rpc("user_has_levelup_access", { _user_id: user.id });
     setHasLevelupAccess(!!data);
   };
 
@@ -143,23 +208,26 @@ export function TopNav() {
     navigate("/login");
   };
 
-  const initials = user?.user_metadata?.full_name
-    ? user.user_metadata.full_name.charAt(0).toUpperCase()
+  const fullName = user?.user_metadata?.full_name as string | undefined;
+  const avatarUrl = (user?.user_metadata?.avatar_url as string | undefined) || "";
+  const initials = fullName
+    ? fullName.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "U";
 
   // Start with pinned items, then add DB-configured items (excluding duplicates of pinned links)
   const pinnedLinks = new Set(PINNED_NAV_ITEMS.map((p) => p.link));
-  const roleFiltered = menuItems.length > 0
-    ? [
-        ...PINNED_NAV_ITEMS,
-        ...menuItems
-          .filter((item) => !pinnedLinks.has(item.link))
-          .filter((item) => {
-            if (!item.visible_roles || item.visible_roles.length === 0) return true;
-            return roles.some((r) => item.visible_roles.includes(r));
-          }),
-      ]
-    : defaultNavItems;
+  const roleFiltered =
+    menuItems.length > 0
+      ? [
+          ...PINNED_NAV_ITEMS,
+          ...menuItems
+            .filter((item) => !pinnedLinks.has(item.link))
+            .filter((item) => {
+              if (!item.visible_roles || item.visible_roles.length === 0) return true;
+              return roles.some((r) => item.visible_roles.includes(r));
+            }),
+        ]
+      : defaultNavItems;
 
   // Filter LevelUp items for students without access
   const visibleItems = roleFiltered.filter((item) => {
@@ -167,53 +235,124 @@ export function TopNav() {
     return true;
   });
 
+  // Below md the sidebar is a sheet, so "open" is a different piece of state
+  // than the desktop rail's.
+  const sidebarOpen = isMobile ? openMobile : state === "expanded";
+
+  const activeIndex = visibleItems.findIndex((item) => isTabActive(pathname, item.link));
+
+  // On a route outside the tabs the bar fades where it stands rather than
+  // snapping back to tab 0, so returning to a tab slides from the last one.
+  const lastActiveIndex = useRef(0);
+  useEffect(() => {
+    if (activeIndex >= 0) lastActiveIndex.current = activeIndex;
+  }, [activeIndex]);
+  const indicatorIndex = activeIndex >= 0 ? activeIndex : lastActiveIndex.current;
+
   return (
-    <header className="h-16 border-b border-border bg-white dark:bg-zinc-950 flex items-center px-5 sticky top-0 z-50">
-      {/* Left: Logo */}
-      <div className="flex items-center shrink-0 gap-4">
-        <SidebarTrigger className="text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors" />
-        <div
-          className="h-[45px] w-[45px] bg-primary rounded-lg flex items-center justify-center cursor-pointer"
-          onClick={() => navigate("/dashboard")}
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-[1000] h-[60px] px-5",
+        "grid grid-cols-[1fr_auto_1fr] items-center",
+        // bg-card, not bg-background: the header keeps the surface colour it
+        // has always had (white on the off-white page) — as a token, not a
+        // hard-coded white.
+        "border-b border-border bg-card",
+      )}
+    >
+      {/* Left: sidebar control, then logo. The control lives here rather than
+          floating off the sidebar's edge, where it landed on top of the first
+          nav row; one button covers both jobs — the sheet below md, the icon
+          rail above it. */}
+      <div className="flex items-center gap-3 justify-self-start">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          className={cn(
+            "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full",
+            "bg-secondary text-muted-foreground transition-colors hover:bg-accent-tint",
+          )}
         >
-          <span className="text-primary-foreground text-lg font-bold">L</span>
-        </div>
+          {sidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+        </button>
+        <Link to="/dashboard" aria-label={BRAND.name + " home"} className="flex items-center">
+          <img src={BRAND.assets.icon} alt={BRAND.name} className="h-[45px] w-[45px] object-contain" />
+        </Link>
       </div>
 
-      {/* Center: Nav */}
-      <nav className="hidden md:flex items-center justify-center flex-1">
-        {visibleItems.map((item, i) => (
-          <NavLink
-            key={item.label + i}
-            to={item.link}
-            end={item.link === "/dashboard"}
-            className="flex flex-col items-center px-5 py-2 text-muted-foreground hover:text-accent transition-colors gap-1.5 min-w-[72px]"
-            activeClassName="text-accent border-b-[3px] border-accent"
-          >
-            <LucideIcon name={item.icon_name} className="h-6 w-6" />
-            <span className="text-xs font-semibold uppercase tracking-wide">{item.label}</span>
-          </NavLink>
-        ))}
+      {/* Centre: the nav tabs. Hidden below md, where MobileBottomNav carries
+          navigation instead — 116px tabs do not fit a phone. */}
+      <nav
+        aria-label="Primary"
+        className="relative hidden h-full min-w-0 max-w-full overflow-x-auto scrollbar-none md:flex"
+      >
+        {visibleItems.map((item, i) => {
+          const active = i === activeIndex;
+          return (
+            <Link
+              key={item.label + i}
+              to={item.link}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex h-full w-[116px] shrink-0 flex-col items-center justify-center gap-1 px-3",
+                "[transition:color_0.2s]",
+                active ? "text-accent" : "text-foreground",
+              )}
+            >
+              <TabIcon name={item.icon_name} />
+              <span className="whitespace-nowrap font-sans text-xs font-semibold uppercase tracking-[1.11px]">
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+
+        {/* One bar for every tab: it translates into place instead of being
+            torn down and rebuilt under the newly active tab. */}
+        <span
+          aria-hidden
+          className="absolute bottom-0 left-0 h-1 w-[116px] bg-accent"
+          style={{
+            transform: "translateX(" + indicatorIndex * TAB_WIDTH + "px)",
+            transition: "transform 0.1s ease-in-out",
+            opacity: activeIndex >= 0 ? 1 : 0,
+          }}
+        />
       </nav>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* 9-dot apps menu */}
+      {/* Right: search, apps, notifications, account. */}
+      <div className="flex items-center gap-3 justify-self-end">
+        <button
+          type="button"
+          aria-label="Search"
+          title="Search (Ctrl+K)"
+          onClick={openSearch}
+          className={cn(
+            "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full",
+            "bg-secondary text-muted-foreground transition-colors hover:bg-accent-tint",
+          )}
+        >
+          <IoSearch size={20} />
+        </button>
+
         <Popover open={appsOpen} onOpenChange={setAppsOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
               aria-label="Apps menu"
               className={cn(
-                "p-2 rounded-lg hover:bg-secondary transition-colors",
-                appsOpen && "bg-secondary",
+                "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full",
+                "bg-secondary text-muted-foreground transition-colors hover:bg-accent-tint",
+                appsOpen && "bg-accent-tint",
               )}
             >
-              <LayoutGrid className="h-6 w-6 text-muted-foreground" />
+              <IoApps size={20} />
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-[280px] p-3" align="end" sideOffset={8}>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Apps
             </p>
             <div className="grid grid-cols-3 gap-1">
@@ -229,16 +368,16 @@ export function TopNav() {
                     }}
                     className={cn(
                       "flex flex-col items-center gap-2 rounded-xl p-3 text-center",
-                      "hover:bg-secondary transition-colors",
+                      "transition-colors hover:bg-secondary",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     )}
                   >
-                    <div className="h-11 w-11 rounded-xl bg-accent-tint flex items-center justify-center">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-tint">
                       <Icon className="h-5 w-5 text-accent" />
                     </div>
-                    <div className="min-w-0 w-full">
-                      <p className="text-xs font-semibold truncate">{item.label}</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">
+                    <div className="w-full min-w-0">
+                      <p className="truncate text-xs font-semibold">{item.label}</p>
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-muted-foreground">
                         {item.description}
                       </p>
                     </div>
@@ -249,10 +388,17 @@ export function TopNav() {
           </PopoverContent>
         </Popover>
 
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
-          <Bell className="h-6 w-6 text-muted-foreground" />
+        <button
+          type="button"
+          aria-label="Notifications"
+          className={cn(
+            "relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full",
+            "bg-secondary text-muted-foreground transition-colors hover:bg-accent-tint",
+          )}
+        >
+          <IoNotifications size={20} />
           {unreadCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center leading-none">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -260,34 +406,38 @@ export function TopNav() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <AvatarImage src="" />
-              <AvatarFallback className="bg-accent text-accent-foreground text-sm font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <button
+              type="button"
+              aria-label="Account menu"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full"
+            >
+              <Avatar className="h-[30px] w-[30px]">
+                <AvatarImage src={avatarUrl} alt={fullName || "Account"} />
+                <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
           </PopoverTrigger>
           <PopoverContent className="w-56 p-2" align="end">
-            <div className="px-3 py-2 border-b border-border mb-1">
-              <p className="text-sm font-medium truncate">
-                {user?.user_metadata?.full_name || user?.email}
-              </p>
-              <p className="text-xs text-muted-foreground capitalize">
+            <div className="mb-1 border-b border-border px-3 py-2">
+              <p className="truncate text-sm font-medium">{fullName || user?.email}</p>
+              <p className="text-xs capitalize text-muted-foreground">
                 {roles.join(", ") || "student"}
               </p>
             </div>
             <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => navigate("/my-account")}>
-              <UserCircle className="h-4 w-4 mr-2" /> My Account
+              <UserCircle className="mr-2 h-4 w-4" /> My Account
             </Button>
             <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => navigate("/messages")}>
-              <MessageCircle className="h-4 w-4 mr-2" /> Messages
+              <MessageCircle className="mr-2 h-4 w-4" /> Messages
             </Button>
             <Button
               variant="ghost"
               className="w-full justify-start text-sm text-destructive"
               onClick={handleSignOut}
             >
-              <LogOut className="h-4 w-4 mr-2" /> Sign out
+              <LogOut className="mr-2 h-4 w-4" /> Sign out
             </Button>
           </PopoverContent>
         </Popover>
@@ -295,5 +445,3 @@ export function TopNav() {
     </header>
   );
 }
-
-export { LucideIcon };

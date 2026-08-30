@@ -2,13 +2,22 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Share2 } from "lucide-react";
+import { useSeo } from "@/hooks/useSeo";
+import { workshopMeta } from "@/lib/seo";
+import { ShareDialog } from "@/components/share/ShareDialog";
 
 export default function WorkshopLandingPage() {
   const { slug } = useParams<{ slug: string }>();
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // A workshop page exists to be circulated, so its card is the whole point:
+  // date, host and artwork have to survive the trip into a WhatsApp group.
+  const seo = page ? workshopMeta(page, window.location.origin) : null;
+  useSeo(seo);
 
   useEffect(() => {
     if (slug) loadPage();
@@ -165,6 +174,29 @@ export default function WorkshopLandingPage() {
         </a>
       </div>
       <div className="h-16" /> {/* spacer for sticky footer */}
+
+      {/* Attendees forwarding the page is the main growth loop here, so the
+          control sits above the sticky footer rather than buried in the hero. */}
+      <button
+        type="button"
+        onClick={() => setShareOpen(true)}
+        aria-label="Share this workshop"
+        className="fixed bottom-20 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background shadow-lg transition-colors hover:bg-secondary"
+      >
+        <Share2 className="h-4 w-4" />
+      </button>
+
+      {seo && (
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          heading="Share this workshop"
+          url={seo.canonical}
+          title={g.title || page.skill}
+          description={seo.description}
+          imageUrl={page.thumbnail_url || page.mentor_image_url}
+        />
+      )}
     </div>
   );
 }

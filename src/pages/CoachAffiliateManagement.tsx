@@ -9,13 +9,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, DollarSign, TrendingUp, Wallet, Download } from "lucide-react";
+import { Plus, Users, TrendingUp, Wallet, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTabParam } from "@/hooks/useTabParam";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { CurrencyIcon } from "@/components/CurrencyIcon";
 
 export default function CoachAffiliateManagement() {
+  // Currency symbol follows the workspace setting rather than a hardcoded $.
+  const { symbol } = useCurrency();
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["programs", "sales", "payouts"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [programs, setPrograms] = useState<any[]>([]);
@@ -161,12 +169,12 @@ export default function CoachAffiliateManagement() {
         {/* Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-info/10"><Users className="h-5 w-5 text-info" /></div><div><p className="text-xs text-muted-foreground">Active Programs</p><p className="text-xl font-bold">{programs.filter(p => p.is_active).length}</p></div></CardContent></Card>
-          <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div><div><p className="text-xs text-muted-foreground">Affiliate Sales</p><p className="text-xl font-bold">${totalAffiliateSales.toFixed(2)}</p></div></CardContent></Card>
-          <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-accent/10"><TrendingUp className="h-5 w-5 text-accent" /></div><div><p className="text-xs text-muted-foreground">Total Commissions</p><p className="text-xl font-bold">${totalCommissions.toFixed(2)}</p></div></CardContent></Card>
-          <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-destructive/10"><Wallet className="h-5 w-5 text-destructive" /></div><div><p className="text-xs text-muted-foreground">Pending Payouts</p><p className="text-xl font-bold">${pendingAmount.toFixed(2)}</p></div></CardContent></Card>
+          <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-success/10"><CurrencyIcon className="h-5 w-5 text-success" /></div><div><p className="text-xs text-muted-foreground">Affiliate Sales</p><p className="text-xl font-bold">{symbol}{totalAffiliateSales.toFixed(2)}</p></div></CardContent></Card>
+          <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-accent/10"><TrendingUp className="h-5 w-5 text-accent" /></div><div><p className="text-xs text-muted-foreground">Total Commissions</p><p className="text-xl font-bold">{symbol}{totalCommissions.toFixed(2)}</p></div></CardContent></Card>
+          <Card className="card-shadow"><CardContent className="pt-4 pb-3 flex items-center gap-3"><div className="p-2 rounded-lg bg-destructive/10"><Wallet className="h-5 w-5 text-destructive" /></div><div><p className="text-xs text-muted-foreground">Pending Payouts</p><p className="text-xl font-bold">{symbol}{pendingAmount.toFixed(2)}</p></div></CardContent></Card>
         </div>
 
-        <Tabs defaultValue="programs">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="programs">Programs</TabsTrigger>
             <TabsTrigger value="sales">Sales</TabsTrigger>
@@ -237,8 +245,8 @@ export default function CoachAffiliateManagement() {
                         <TableRow key={i}>
                           <TableCell className="font-medium text-sm">{s.buyer_name || "—"}</TableCell>
                           <TableCell className="text-sm text-info">{s.buyer_email || "—"}</TableCell>
-                          <TableCell className="text-sm font-medium">${Number(s.amount_paid).toFixed(2)}</TableCell>
-                          <TableCell className="text-sm">${Number(s.commission_earned).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm font-medium">{symbol}{Number(s.amount_paid).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm">{symbol}{Number(s.commission_earned).toFixed(2)}</TableCell>
                           <TableCell className="text-sm">{new Date(s.purchased_at).toLocaleDateString()}</TableCell>
                         </TableRow>
                       ))
@@ -268,7 +276,7 @@ export default function CoachAffiliateManagement() {
                       pendingPayouts.map((p, i) => (
                         <TableRow key={i}>
                           <TableCell className="text-sm">{p.user_id.slice(0, 8)}...</TableCell>
-                          <TableCell className="text-sm font-medium">${Number(p.amount).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm font-medium">{symbol}{Number(p.amount).toFixed(2)}</TableCell>
                           <TableCell><Badge className="bg-accent text-accent-foreground">{p.status}</Badge></TableCell>
                           <TableCell><Button size="sm" variant="outline">Approve</Button></TableCell>
                         </TableRow>

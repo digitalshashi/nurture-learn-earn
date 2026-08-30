@@ -12,10 +12,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { CheckSquare, Plus, Trash2, Trophy } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
 
 const CATEGORIES = ["general", "sales", "ads", "content", "ops"];
 
 export default function GrowthActions() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["today", "week", "all", "templates", "leaderboard"] as const);
   const { user } = useAuth();
   const [actions, setActions] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -159,7 +163,7 @@ export default function GrowthActions() {
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         ) : (
-          <Tabs defaultValue="today">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="today">Today</TabsTrigger>
               <TabsTrigger value="week">This Week</TabsTrigger>

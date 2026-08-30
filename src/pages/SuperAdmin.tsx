@@ -11,16 +11,23 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentGatewaysCard } from "@/components/payments/PaymentGatewaysCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Shield, Users, CreditCard, Plus, Pencil, Trash2,
-  Crown, Package, DollarSign, BarChart3, Eye, EyeOff, Loader2
+  Crown, Package, BarChart3, Eye, EyeOff, Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { useTabParam } from "@/hooks/useTabParam";
+import { PlatformSettingsPanel } from "@/components/admin/PlatformSettingsPanel";
+import { RolePermissionsPanel } from "@/components/admin/RolePermissionsPanel";
+import { EmailTemplatesTab } from "@/components/settings/EmailTemplatesTab";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { CurrencyIcon } from "@/components/CurrencyIcon";
 
 interface SaasPlan {
   id: string;
@@ -85,6 +92,15 @@ const emptyPlan = {
 };
 
 export default function SuperAdmin() {
+  // Currency symbol follows the workspace setting rather than a hardcoded $.
+  const { symbol } = useCurrency();
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(
+    // Platform-owner concerns: what the product costs, who runs it, and the
+    // system-level settings no coach should touch.
+    ["plans", "coaches", "subscriptions", "users", "platform", "roles", "emails"] as const,
+  );
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
   const [plans, setPlans] = useState<SaasPlan[]>([]);
@@ -101,13 +117,6 @@ export default function SuperAdmin() {
   // Razorpay config (admin managing a coach's gateway)
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [paymentCoach, setPaymentCoach] = useState<UserProfile | null>(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentSaving, setPaymentSaving] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
-  const [razorpayKeyId, setRazorpayKeyId] = useState("");
-  const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
-  const [coachCurrency, setCoachCurrency] = useState("INR");
-  const [coachConnected, setCoachConnected] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -204,60 +213,9 @@ export default function SuperAdmin() {
     setPlanDialog(true);
   };
 
-  const openPaymentDialog = async (coach: UserProfile) => {
+  const openPaymentDialog = (coach: UserProfile) => {
     setPaymentCoach(coach);
     setPaymentDialog(true);
-    setPaymentLoading(true);
-    setRazorpayKeyId("");
-    setRazorpayKeySecret("");
-    setCoachCurrency("INR");
-    setCoachConnected(false);
-    const { data } = await supabase
-      .from("coach_payment_settings" as any)
-      .select("razorpay_key_id, razorpay_key_secret, default_currency")
-      .eq("coach_id", coach.id)
-      .maybeSingle();
-    if (data) {
-      setRazorpayKeyId((data as any).razorpay_key_id || "");
-      setRazorpayKeySecret((data as any).razorpay_key_secret || "");
-      setCoachCurrency((data as any).default_currency || "INR");
-      setCoachConnected(!!(data as any).razorpay_key_id && !!(data as any).razorpay_key_secret);
-    }
-    setPaymentLoading(false);
-  };
-
-  const saveCoachPayment = async () => {
-    if (!paymentCoach) return;
-    if (!razorpayKeyId.trim() || !razorpayKeySecret.trim()) {
-      toast({ title: "Enter both Key ID and Key Secret", variant: "destructive" });
-      return;
-    }
-    setPaymentSaving(true);
-    const { error } = await supabase.from("coach_payment_settings" as any).upsert(
-      {
-        coach_id: paymentCoach.id,
-        razorpay_key_id: razorpayKeyId.trim(),
-        razorpay_key_secret: razorpayKeySecret.trim(),
-        default_currency: coachCurrency,
-        updated_at: new Date().toISOString(),
-      } as any,
-      { onConflict: "coach_id" },
-    );
-    setPaymentSaving(false);
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Razorpay configured", description: `${paymentCoach.full_name || paymentCoach.email} can now accept payments` });
-    setCoachConnected(true);
-  };
-
-  const disconnectCoachPayment = async () => {
-    if (!paymentCoach) return;
-    setPaymentSaving(true);
-    await supabase.from("coach_payment_settings" as any).upsert(
-      { coach_id: paymentCoach.id, razorpay_key_id: null, razorpay_key_secret: null, updated_at: new Date().toISOString() } as any,
-      { onConflict: "coach_id" },
-    );
-    setRazorpayKeyId(""); setRazorpayKeySecret(""); setCoachConnected(false); setPaymentSaving(false);
-    toast({ title: "Razorpay disconnected" });
   };
 
   const assignPlan = async () => {
@@ -298,7 +256,10 @@ export default function SuperAdmin() {
     });
   };
 
-  if (!hasRole("admin") && !hasRole("super_admin")) {
+  // Super admin only. An admin has the Admin panel; this tier is above it, and
+  // the sidebar hides the entry to match — a guard that admitted admins would
+  // make that entry a formality rather than a boundary.
+  if (!hasRole("super_admin")) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[calc(100vh-var(--nav-height))]">
@@ -345,12 +306,15 @@ export default function SuperAdmin() {
           </Card>
         </div>
 
-        <Tabs defaultValue="plans" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="plans">SaaS Plans</TabsTrigger>
             <TabsTrigger value="coaches">Coach Management</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
             <TabsTrigger value="users">All Users</TabsTrigger>
+            <TabsTrigger value="platform">Platform</TabsTrigger>
+            <TabsTrigger value="roles">Permissions</TabsTrigger>
+            <TabsTrigger value="emails">System emails</TabsTrigger>
           </TabsList>
 
           {/* ======== PLANS TAB ======== */}
@@ -437,7 +401,7 @@ export default function SuperAdmin() {
                   <CardContent className="space-y-2">
                     {plan.description && <p className="text-xs text-muted-foreground">{plan.description}</p>}
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-bold">${plan.monthly_price}</span>
+                      <span className="text-xl font-bold">{symbol}{plan.monthly_price}</span>
                       <span className="text-xs text-muted-foreground">/mo</span>
                       {plan.yearly_price > 0 && <span className="text-xs text-muted-foreground ml-2">or ${plan.yearly_price}/yr</span>}
                     </div>
@@ -506,67 +470,16 @@ export default function SuperAdmin() {
             </div>
 
             <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Razorpay — {paymentCoach?.full_name || paymentCoach?.email}</DialogTitle>
+                  <DialogTitle>
+                    Payment gateways — {paymentCoach?.full_name || paymentCoach?.email}
+                  </DialogTitle>
                 </DialogHeader>
-                {paymentLoading ? (
-                  <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-                ) : (
-                  <div className="space-y-3 mt-2">
-                    <p className="text-xs text-muted-foreground">
-                      Configure this coach's Razorpay gateway on their behalf. Get keys from{" "}
-                      <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noreferrer" className="text-accent underline">
-                        Razorpay Dashboard
-                      </a>.
-                    </p>
-                    {coachConnected && (
-                      <Badge className="bg-success/10 text-success border-0 text-xs">Connected</Badge>
-                    )}
-                    <div>
-                      <Label className="text-xs">Razorpay Key ID</Label>
-                      <Input placeholder="rzp_live_xxxxxxxxxxxx" value={razorpayKeyId} onChange={(e) => setRazorpayKeyId(e.target.value)} className="font-mono text-xs" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Razorpay Key Secret</Label>
-                      <div className="relative">
-                        <Input
-                          type={showSecret ? "text" : "password"}
-                          placeholder="Enter key secret"
-                          value={razorpayKeySecret}
-                          onChange={(e) => setRazorpayKeySecret(e.target.value)}
-                          className="font-mono text-xs pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSecret(!showSecret)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        >
-                          {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Default Currency</Label>
-                      <Select value={coachCurrency} onValueChange={setCoachCurrency}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="INR">₹ INR</SelectItem>
-                          <SelectItem value="USD">$ USD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveCoachPayment} disabled={paymentSaving}>
-                        {paymentSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {coachConnected ? "Update Keys" : "Connect Razorpay"}
-                      </Button>
-                      {coachConnected && (
-                        <Button variant="outline" onClick={disconnectCoachPayment} disabled={paymentSaving}>Disconnect</Button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {/* Same component the coach sees on their own settings page,
+                    pointed at the selected coach. Admin writes are allowed by
+                    the "Admins manage all gateways" policy. */}
+                {paymentCoach && <PaymentGatewaysCard coachId={paymentCoach.id} />}
               </DialogContent>
             </Dialog>
 
@@ -689,6 +602,12 @@ export default function SuperAdmin() {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="platform"><PlatformSettingsPanel /></TabsContent>
+          <TabsContent value="roles"><RolePermissionsPanel /></TabsContent>
+
+          {/* isAdmin unlocks the system template (the login OTP email), which
+              belongs to the platform rather than to any coach. */}
+          <TabsContent value="emails"><EmailTemplatesTab isAdmin /></TabsContent>
         </Tabs>
       </div>
     </AppLayout>

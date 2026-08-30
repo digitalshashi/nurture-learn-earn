@@ -1,8 +1,12 @@
 project_id = "cxaieaasrwnscshfdcbp"
 
 [auth]
-site_url = "https://nurture-learn-earn.sasivanga.workers.dev"
-additional_redirect_urls = ["https://nurture-learn-earn.sasivanga.workers.dev/**"]
+# Renamed with the platform. The Worker now deploys as "1corehub", so its
+# workers.dev hostname changed with it and the old one no longer resolves.
+# Update these in the Supabase dashboard too (Authentication -> URL
+# Configuration) — magic links and OTP redirects are built from them.
+site_url = "https://1corehub.sasivanga.workers.dev"
+additional_redirect_urls = ["https://1corehub.sasivanga.workers.dev/**"]
 
 [auth.mfa.totp]
 enroll_enabled = true
@@ -13,13 +17,10 @@ enable_confirmations = true
 max_frequency = "1m0s"
 otp_length = 8
 
-[functions.create-razorpay-order]
-verify_jwt = false
-
-[functions.verify-razorpay-payment]
-verify_jwt = false
-
 [functions.generate-ai-course]
+verify_jwt = false
+
+[functions.course-engine]
 verify_jwt = false
 
 [functions.generate-landing-page]
@@ -51,3 +52,35 @@ verify_jwt = false
 
 [functions.create-customer-user]
 verify_jwt = true
+
+[functions.create-payment-order]
+verify_jwt = false
+
+[functions.verify-payment]
+verify_jwt = false
+
+# Razorpay and Instamojo post here directly and cannot present a Supabase
+# JWT. The function verifies the gateway's own signature instead.
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.send-test-email]
+verify_jwt = false
+
+[functions.ai-generate]
+verify_jwt = false
+
+[functions.send-templated-email]
+verify_jwt = false
+
+# Gmail and Yahoo POST here straight from the inbox UI, with no Supabase
+# session and no opportunity to obtain one. The signed token in the URL is the
+# authorisation.
+[functions.unsubscribe]
+verify_jwt = false
+
+[functions.generate-page]
+verify_jwt = false
+
+[functions.verify-domain]
+verify_jwt = false

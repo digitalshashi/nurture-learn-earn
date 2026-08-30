@@ -29,6 +29,11 @@
     --accent: 7 95% 60%;
     --accent-foreground: 0 0% 100%;
     --accent-tint: 7 95% 95%;
+    /* Darker steps on the accent hue, for the support hero gradient. They
+       replace two hex values pasted in from another product, so the ramp now
+       moves with the brand instead of drifting away from it. */
+    --accent-strong: 7 72% 30%;
+    --accent-deep: 7 62% 17%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
@@ -57,7 +62,8 @@
     --sidebar-border: 0 0% 93%;
     --sidebar-ring: 7 95% 60%;
 
-    --nav-height: 3.5rem;
+    /* Matches the fixed TopNav height (60px). */
+    --nav-height: 60px;
   }
 
   .dark {
@@ -76,6 +82,11 @@
     --accent: 7 95% 60%;
     --accent-foreground: 0 0% 100%;
     --accent-tint: 7 60% 18%;
+    /* Darker steps on the accent hue, for the support hero gradient. They
+       replace two hex values pasted in from another product, so the ramp now
+       moves with the brand instead of drifting away from it. */
+    --accent-strong: 7 72% 30%;
+    --accent-deep: 7 62% 17%;
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     --info: 239 84% 67%;
@@ -139,5 +150,15 @@
   }
   .card-shadow-hover {
     box-shadow: none;
+  }
+
+  /* Horizontal tab strips stay swipeable without a scrollbar cutting through
+     the underline indicator. */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { type EmbedData } from "@/lib/link-embed";
+import { safeUrl } from "@/lib/safeUrl";
 import { ExternalLink } from "lucide-react";
 
 interface LinkEmbedProps {
@@ -137,7 +138,7 @@ export function LinkEmbed({ embed, lazy = true }: LinkEmbedProps) {
   // Generic link card
   return (
     <a
-      href={embed.url}
+      href={safeUrl(embed.url)}
       target="_blank"
       rel="noopener noreferrer"
       className="block rounded-lg border border-border bg-secondary hover:bg-secondary/80 transition-colors overflow-hidden"

@@ -53,14 +53,34 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    /**
+     * The open/closed state is shared across the whole app through one cookie.
+     * Set false for a page that wants its own starting state without that
+     * choice following the user to every other page.
+     */
+    persistState?: boolean;
   }
->(({ defaultOpen, open: openProp, onOpenChange: setOpenProp, className, style, children, ...props }, ref) => {
+>((
+  {
+    defaultOpen,
+    open: openProp,
+    onOpenChange: setOpenProp,
+    persistState = true,
+    className,
+    style,
+    children,
+    ...props
+  },
+  ref,
+) => {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen ?? getSidebarStateFromCookie());
+  const [_open, _setOpen] = React.useState(
+    defaultOpen ?? (persistState ? getSidebarStateFromCookie() : true),
+  );
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -72,9 +92,11 @@ const SidebarProvider = React.forwardRef<
       }
 
       // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      if (persistState) {
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      }
     },
-    [setOpenProp, open],
+    [setOpenProp, open, persistState],
   );
 
   // Helper to toggle the sidebar.

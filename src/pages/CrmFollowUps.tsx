@@ -13,8 +13,12 @@ import { Plus, Check, Clock, AlertTriangle, Sparkles, Copy, Loader2 } from "luci
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/useTabParam";
 
 export default function CrmFollowUps() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["pending", "completed"] as const);
   const { user } = useAuth();
   const [followUps, setFollowUps] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
@@ -203,7 +207,7 @@ export default function CrmFollowUps() {
           <Card className="card-shadow"><CardContent className="pt-5 flex items-center gap-3"><Check className="h-5 w-5 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-xs text-muted-foreground">Completed</p></div></CardContent></Card>
         </div>
 
-        <Tabs defaultValue="pending">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList><TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger><TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger></TabsList>
           <TabsContent value="pending"><Card className="card-shadow"><CardContent className="p-0">{renderTable(pending)}</CardContent></Card></TabsContent>
           <TabsContent value="completed"><Card className="card-shadow"><CardContent className="p-0">{renderTable(completed)}</CardContent></Card></TabsContent>

@@ -73,10 +73,10 @@ done
 echo "=============================================="
 echo " 5/6  Set edge function secrets on the new project"
 echo "=============================================="
-if [ -n "${LOVABLE_API_KEY:-}" ]; then
-  npx supabase secrets set --project-ref "$NEW_PROJECT_REF" LOVABLE_API_KEY="$LOVABLE_API_KEY"
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  npx supabase secrets set --project-ref "$NEW_PROJECT_REF" OPENAI_API_KEY="$OPENAI_API_KEY"
 else
-  echo "LOVABLE_API_KEY not set in $ENV_FILE — skipping (AI features will fail until you set it manually)."
+  echo "OPENAI_API_KEY not set in $ENV_FILE — skipping (AI features will fail until you set it manually)."
 fi
 # Note: SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are
 # auto-injected by Supabase for every project's edge functions — no need

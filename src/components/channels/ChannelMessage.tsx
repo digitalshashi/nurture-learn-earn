@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Pin, Smile, MoreHorizontal, Trash2, FileText, Download, Edit2 } from "lucide-react";
 import { format } from "date-fns";
+import { safeUrl } from "@/lib/safeUrl";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +57,7 @@ export function ChannelMessage({
 }: ChannelMessageProps) {
   const [hovered, setHovered] = useState(false);
   const isMine = message.user_id === currentUserId;
-  const name = message.profile?.full_name || "User";
+  const name = message.profile?.full_name || "Member";
 
   // Parse @mentions in content
   const renderContent = (text: string) => {
@@ -107,7 +108,7 @@ export function ChannelMessage({
         {/* File attachment */}
         {message.file_url && (
           <a
-            href={message.file_url}
+            href={safeUrl(message.file_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 inline-flex items-center gap-2 border border-border rounded-lg p-2.5 hover:bg-secondary/40 transition-colors max-w-xs"

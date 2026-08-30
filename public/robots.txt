@@ -1,14 +1,17 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# Fallback only. In production the Cloudflare Worker (worker/index.ts) serves
+# /robots.txt itself, so that the Sitemap line can carry the live absolute URL,
+# which a static file cannot know. This copy is what `vite preview` and local
+# builds see.
 
 User-agent: *
 Allow: /
+
+Disallow: /crm/
+Disallow: /settings/
+Disallow: /super-admin
+Disallow: /admin
+Disallow: /messages
+Disallow: /my-account
+Disallow: /profile/
+
+Sitemap: /sitemap.xml

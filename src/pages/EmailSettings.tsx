@@ -15,6 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { EmailTemplatesTab } from "@/components/settings/EmailTemplatesTab";
+import { useTabParam } from "@/hooks/useTabParam";
+import { EmailRoutingCard } from "@/components/email/EmailRoutingCard";
+import { Pencil } from "lucide-react";
 
 interface EmailAccount {
   id: string;
@@ -81,6 +84,9 @@ async function extractFunctionErrorMessage(error: any, fallback: string): Promis
 }
 
 export default function EmailSettings() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["accounts", "templates"] as const);
   const { user, roles } = useAuth();
   const { toast } = useToast();
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
@@ -89,6 +95,8 @@ export default function EmailSettings() {
   const [loading, setLoading] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...defaultForm });
+  // null = the dialog is adding an account; an id = it is editing that one.
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadAccounts = async () => {
     if (!user) return;
@@ -100,13 +108,82 @@ export default function EmailSettings() {
 
   useEffect(() => { loadAccounts(); }, [user, isAdmin]);
 
-  const handleCreate = async () => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm({ ...defaultForm });
+    setOpen(true);
+  };
+
+  const openEdit = (a: EmailAccount) => {
+    setEditingId(a.id);
+    setForm({
+      ...defaultForm,
+      sender_name: a.sender_name,
+      sender_email: a.sender_email,
+      provider: a.provider,
+      smtp_host: a.smtp_host || "",
+      smtp_port: a.smtp_port ?? defaultForm.smtp_port,
+      smtp_encryption: a.smtp_encryption || defaultForm.smtp_encryption,
+      smtp_username: a.smtp_username || "",
+      // Credentials are not returned to the browser for editing; leaving these
+      // blank keeps whatever is stored.
+      smtp_password: "",
+      api_key: "",
+      api_domain: a.api_domain || "",
+      api_region: a.api_region || "",
+      reply_to_name: a.reply_to_name || "",
+      reply_to_email: a.reply_to_email || "",
+      is_default: a.is_default,
+    });
+    setOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!user || !form.sender_name || !form.sender_email) {
       toast({ title: "Please fill sender name and email", variant: "destructive" });
       return;
     }
     setLoading(true);
     const isSmtpStyle = SMTP_STYLE_PROVIDERS.includes(form.provider);
+
+    if (editingId) {
+      // Only send a secret when one was typed, so an untouched field keeps the
+      // stored credential instead of blanking it.
+      const patch: Record<string, unknown> = {
+        sender_name: form.sender_name,
+        sender_email: form.sender_email,
+        provider: form.provider,
+        smtp_host: isSmtpStyle ? form.smtp_host : null,
+        smtp_port: isSmtpStyle ? form.smtp_port : null,
+        smtp_encryption: isSmtpStyle ? form.smtp_encryption : null,
+        smtp_username: isSmtpStyle ? form.smtp_username : null,
+        api_domain: !isSmtpStyle ? form.api_domain : null,
+        api_region: form.provider === "ses" ? form.api_region : null,
+        reply_to_name: form.reply_to_name || null,
+        reply_to_email: form.reply_to_email || null,
+        is_default: form.is_default,
+        updated_at: new Date().toISOString(),
+      };
+      if (isSmtpStyle && form.smtp_password) patch.smtp_password = form.smtp_password;
+      if (!isSmtpStyle && form.api_key) patch.api_key = form.api_key;
+
+      const { error } = await supabase
+        .from("email_accounts" as any)
+        .update(patch as any)
+        .eq("id", editingId);
+
+      setLoading(false);
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Sender account updated" });
+      setOpen(false);
+      setEditingId(null);
+      setForm({ ...defaultForm });
+      loadAccounts();
+      return;
+    }
 
     const { error } = await supabase.from("email_accounts" as any).insert({
       coach_id: user.id,
@@ -131,6 +208,7 @@ export default function EmailSettings() {
     } else {
       toast({ title: "Email account added!" });
       setOpen(false);
+      setEditingId(null);
       setForm({ ...defaultForm });
       loadAccounts();
     }
@@ -186,7 +264,7 @@ export default function EmailSettings() {
           <p className="text-sm text-muted-foreground">Configure sender accounts, email providers, and templates</p>
         </div>
 
-        <Tabs defaultValue="accounts">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="accounts">Sender Accounts</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
@@ -196,12 +274,14 @@ export default function EmailSettings() {
             <div className="flex items-center justify-end mb-4">
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={openCreate}>
                     <Plus className="h-4 w-4 mr-1" /> Add Sender Account
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle>Add Sender Account</DialogTitle></DialogHeader>
+                  <DialogHeader>
+                    <DialogTitle>{editingId ? "Edit Sender Account" : "Add Sender Account"}</DialogTitle>
+                  </DialogHeader>
                   <div className="space-y-4 mt-2">
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>Sender (From) Name</Label><Input placeholder="John Doe" value={form.sender_name} onChange={(e) => setForm({ ...form, sender_name: e.target.value })} /></div>
@@ -269,9 +349,14 @@ export default function EmailSettings() {
                       <Switch checked={form.is_default} onCheckedChange={(v) => setForm({ ...form, is_default: v })} />
                     </div>
 
-                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleCreate} disabled={loading}>
-                      {loading ? "Adding..." : "Add Account"}
+                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleSave} disabled={loading}>
+                      {loading ? "Saving..." : editingId ? "Save changes" : "Add Account"}
                     </Button>
+                    {editingId && (
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        Leave password / API key blank to keep the stored credential.
+                      </p>
+                    )}
                   </div>
                 </DialogContent>
               </Dialog>
@@ -358,7 +443,10 @@ export default function EmailSettings() {
                                 )}
                                 Test
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(a.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Edit ${a.sender_email}`} onClick={() => openEdit(a)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" aria-label={`Delete ${a.sender_email}`} onClick={() => handleDelete(a.id)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -370,6 +458,11 @@ export default function EmailSettings() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Which sender each kind of email goes out from. */}
+            <div className="mt-4">
+              <EmailRoutingCard coachId={user!.id} />
+            </div>
           </TabsContent>
 
           <TabsContent value="templates">

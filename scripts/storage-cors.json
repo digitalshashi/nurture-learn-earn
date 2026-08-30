@@ -1,0 +1,23 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["*"],
+        "methods": ["GET", "PUT", "HEAD"],
+        "headers": [
+          "Content-Type",
+          "Content-Length",
+          "x-amz-checksum-crc32",
+          "x-amz-checksum-crc32c",
+          "x-amz-checksum-sha1",
+          "x-amz-checksum-sha256",
+          "x-amz-sdk-checksum-algorithm",
+          "x-amz-content-sha256",
+          "x-amz-date"
+        ]
+      },
+      "exposeHeaders": ["ETag", "Content-Length"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}

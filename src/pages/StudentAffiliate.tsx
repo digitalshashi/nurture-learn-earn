@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTabParam } from "@/hooks/useTabParam";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface AffiliateProgram {
   id: string;
@@ -29,6 +31,11 @@ interface AffiliateLink {
 }
 
 export default function StudentAffiliate() {
+  // Currency symbol follows the workspace setting rather than a hardcoded $.
+  const { symbol } = useCurrency();
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["memberships", "sales", "payments"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [programs, setPrograms] = useState<AffiliateProgram[]>([]);
@@ -155,7 +162,7 @@ export default function StudentAffiliate() {
 
         <h1 className="text-xl font-bold font-display mb-6">Affiliates dashboard</h1>
 
-        <Tabs defaultValue="memberships">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 bg-transparent border-b border-border rounded-none p-0 h-auto">
             <TabsTrigger value="memberships" className="rounded-none border-b-2 border-transparent data-[state=active]:border-accent data-[state=active]:text-accent data-[state=active]:shadow-none px-4 pb-2">Memberships</TabsTrigger>
             <TabsTrigger value="sales" className="rounded-none border-b-2 border-transparent data-[state=active]:border-accent data-[state=active]:text-accent data-[state=active]:shadow-none px-4 pb-2">Sales</TabsTrigger>
@@ -213,11 +220,11 @@ export default function StudentAffiliate() {
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Total Amount of Sales</p>
-                            <p className="text-lg font-bold">${progRevenue.toFixed(2)}</p>
+                            <p className="text-lg font-bold">{symbol}{progRevenue.toFixed(2)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Commission Amount</p>
-                            <p className="text-lg font-bold">${progCommission.toFixed(2)}</p>
+                            <p className="text-lg font-bold">{symbol}{progCommission.toFixed(2)}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -245,8 +252,8 @@ export default function StudentAffiliate() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Total no of Sales</p><p className="text-2xl font-bold">{totalSales}</p></CardContent></Card>
-              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Total Amount of Sales</p><p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p></CardContent></Card>
-              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Total Commission Earned</p><p className="text-2xl font-bold">${totalCommission.toFixed(2)}</p></CardContent></Card>
+              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Total Amount of Sales</p><p className="text-2xl font-bold">{symbol}{totalRevenue.toFixed(2)}</p></CardContent></Card>
+              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Total Commission Earned</p><p className="text-2xl font-bold">{symbol}{totalCommission.toFixed(2)}</p></CardContent></Card>
             </div>
 
             <Card className="card-shadow">
@@ -280,8 +287,8 @@ export default function StudentAffiliate() {
                           <TableCell>
                             {sale.coupon_code ? <Badge className="bg-info text-info-foreground text-[10px]">{sale.coupon_code}</Badge> : <span className="text-sm text-muted-foreground">N/A</span>}
                           </TableCell>
-                          <TableCell className="text-sm font-medium">${Number(sale.amount_paid).toFixed(2)}</TableCell>
-                          <TableCell className="text-sm font-medium">${Number(sale.commission_earned).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm font-medium">{symbol}{Number(sale.amount_paid).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm font-medium">{symbol}{Number(sale.commission_earned).toFixed(2)}</TableCell>
                           <TableCell className="text-sm">{new Date(sale.purchased_at).toLocaleDateString()}</TableCell>
                         </TableRow>
                       ))
@@ -295,8 +302,8 @@ export default function StudentAffiliate() {
           {/* PAYMENTS TAB */}
           <TabsContent value="payments">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Commission Paid</p><p className="text-2xl font-bold">${commissionPaid.toFixed(2)}</p></CardContent></Card>
-              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Commission Due</p><p className="text-2xl font-bold">${commissionDue.toFixed(2)}</p></CardContent></Card>
+              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Commission Paid</p><p className="text-2xl font-bold">{symbol}{commissionPaid.toFixed(2)}</p></CardContent></Card>
+              <Card className="card-shadow"><CardContent className="pt-4 pb-3"><p className="text-xs text-muted-foreground">Commission Due</p><p className="text-2xl font-bold">{symbol}{commissionDue.toFixed(2)}</p></CardContent></Card>
             </div>
 
             <Card className="card-shadow">
@@ -319,7 +326,7 @@ export default function StudentAffiliate() {
                         <TableRow key={i}>
                           <TableCell className="text-sm">{new Date(p.created_at).toLocaleString()}</TableCell>
                           <TableCell className="text-sm font-medium">—</TableCell>
-                          <TableCell className="text-sm">${Number(p.amount).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm">{symbol}{Number(p.amount).toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge className={
                               p.status === "paid" ? "bg-success text-success-foreground" :

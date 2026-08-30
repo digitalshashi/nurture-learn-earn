@@ -43,7 +43,14 @@ export default function UnsubscribedUsers() {
 
   const handleAdd = async () => {
     if (!user || !emails.trim()) return;
-    const list = emails.split(/[\n,;]+/).map(e => e.trim()).filter(e => e.includes("@"));
+    // Lowercased on the way in: the send path normalises before comparing, so
+    // an address pasted as "Person@Example.com" would be stored, listed here,
+    // and never actually matched against — leaving someone on the list who
+    // still receives everything.
+    const list = emails
+      .split(/[\n,;]+/)
+      .map(e => e.trim().toLowerCase())
+      .filter(e => e.includes("@"));
     const inserts = list.map(email => ({ coach_id: user.id, email }));
     const { error } = await supabase.from("email_unsubscribed").insert(inserts as any);
     if (error) {

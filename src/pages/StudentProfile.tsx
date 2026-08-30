@@ -10,6 +10,7 @@ import { MessageCircle, Calendar, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { UserBadges } from "@/components/badges/UserBadges";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface Profile {
   id: string;
@@ -42,6 +43,9 @@ function formatXP(xp: number): string {
 }
 
 export default function StudentProfile() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["posts", "achievements", "activity"] as const);
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -138,7 +142,7 @@ export default function StudentProfile() {
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="posts">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full justify-start">
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="achievements">Achievements</TabsTrigger>

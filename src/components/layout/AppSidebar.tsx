@@ -1,56 +1,16 @@
 import {
-  Home,
-  Contact,
-  Kanban,
-  ClipboardCheck,
-  UsersRound,
-  Facebook,
-  BarChart3,
-  Route,
-  BookOpen,
-  Video,
-  Calendar,
-  Users,
-  UserPlus,
-  DollarSign,
-  CreditCard,
-  ArrowLeftRight,
-  Wallet,
-  Layout,
-  Mail,
-  Phone,
-  Activity,
-  FileText,
-  ToggleRight,
-  MessageSquare,
-  Send,
-  Award,
-  Puzzle,
-  Handshake,
-  Trophy,
   Settings,
-  Receipt,
-  Gift,
-  Search,
-  Rocket,
   ChevronDown,
-  Hash,
   Shield,
-  Megaphone,
-  LayoutDashboard,
-  Image,
-  Tag,
-  UserMinus,
   Crown,
-  Bell,
-  HardDrive,
-  Navigation,
-  LifeBuoy,
-  Target,
-  CheckSquare,
-  Wand2,
+  Users,
+  KeyRound,
+  ShieldCheck,
+  Palette,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { APP_NAV_SECTIONS } from "@/lib/appNav";
 import {
   Sidebar,
   SidebarContent,
@@ -62,198 +22,114 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { usePermissions, FeatureKey } from "@/hooks/usePermissions";
+import { usePermissions, type FeatureKey } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Each item/section has a permissionKey that maps to the role_permissions table
-const sidebarSections = [
+
+/**
+ * A coach's own administration screens.
+ *
+ * A coach runs an academy, so these are their admin settings — but scoped to
+ * their workspace, not the platform. They already existed under Settings,
+ * which meant the person who uses them most had to go looking for them.
+ *
+ * Each carries the same permissionKey its route is guarded by, so a link can
+ * only appear when the page behind it will actually open. Offering one that
+ * refuses on arrival reads as the page being broken rather than as it not
+ * being yours — the exact mistake that put the platform Admin panel in front
+ * of coaches before.
+ */
+const WORKSPACE_ADMIN: {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  permissionKey: FeatureKey;
+}[] = [
+  { title: "Team", url: "/settings/team", icon: Users, permissionKey: "team_management" },
   {
-    label: "Community",
-    permissionKey: "community_feed" as FeatureKey,
-    items: [
-      { title: "Feed", url: "/feed", icon: Home, permissionKey: "community_feed" as FeatureKey },
-      { title: "Messages", url: "/messages", icon: MessageSquare, permissionKey: "messages" as FeatureKey },
-      { title: "Channels", url: "/channels", icon: Hash, permissionKey: "channels" as FeatureKey },
-      { title: "Leaderboard", url: "/leaderboard", icon: Trophy, permissionKey: "leaderboard" as FeatureKey },
-      { title: "Events", url: "/student-events", icon: Calendar, permissionKey: "events" as FeatureKey },
-      { title: "Support", url: "/support", icon: LifeBuoy, permissionKey: "support" as FeatureKey },
-    ],
+    title: "Roles & permissions",
+    url: "/settings/roles",
+    icon: KeyRound,
+    permissionKey: "platform_settings",
   },
   {
-    label: null,
-    permissionKey: "dashboard" as FeatureKey,
-    items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, permissionKey: "dashboard" as FeatureKey },
-    ],
+    title: "Security",
+    url: "/settings/security",
+    icon: ShieldCheck,
+    permissionKey: "security_settings",
   },
   {
-    label: null,
-    permissionKey: "analytics" as FeatureKey,
-    items: [
-      { title: "Analytics", url: "/analytics", icon: BarChart3, permissionKey: "analytics" as FeatureKey },
-    ],
-  },
-  {
-    label: null,
-    permissionKey: "services" as FeatureKey,
-    items: [
-      { title: "Services", url: "/services", icon: Megaphone, permissionKey: "services" as FeatureKey },
-    ],
-  },
-  {
-    label: "Products",
-    permissionKey: "courses" as FeatureKey,
-    items: [
-      { title: "Courses", url: "/courses", icon: BookOpen, permissionKey: "courses" as FeatureKey },
-      { title: "Workshops", url: "/workshops", icon: Video, permissionKey: "workshops" as FeatureKey },
-      { title: "Events", url: "/events", icon: Calendar, permissionKey: "events" as FeatureKey },
-      { title: "Video Library", url: "/video-library", icon: Video, permissionKey: "video_library" as FeatureKey },
-    ],
-  },
-  {
-    label: "Sales",
-    permissionKey: "sales" as FeatureKey,
-    items: [
-      { title: "Earnings", url: "/sales/earnings", icon: DollarSign, permissionKey: "sales" as FeatureKey },
-      { title: "Transactions", url: "/sales/transactions", icon: CreditCard, permissionKey: "sales" as FeatureKey },
-      { title: "Subscriptions", url: "/sales/subscriptions", icon: ArrowLeftRight, permissionKey: "sales" as FeatureKey },
-      { title: "Withdrawals", url: "/sales/withdrawals", icon: Wallet, permissionKey: "sales" as FeatureKey },
-    ],
-  },
-  {
-    label: "Goal Tracker",
-    permissionKey: "growth" as FeatureKey,
-    items: [
-      { title: "Goal", url: "/growth/goal", icon: Target, permissionKey: "growth" as FeatureKey },
-      { title: "Actions", url: "/growth/actions", icon: CheckSquare, permissionKey: "growth" as FeatureKey },
-      { title: "Business", url: "/growth/business", icon: Wallet, permissionKey: "growth" as FeatureKey },
-      { title: "Boosters", url: "/growth/boosters", icon: Wand2, permissionKey: "growth" as FeatureKey },
-    ],
-  },
-  {
-    label: null,
-    permissionKey: "page_builder" as FeatureKey,
-    items: [
-      { title: "Page Builder", url: "/page-builder", icon: Layout, permissionKey: "page_builder" as FeatureKey },
-    ],
-  },
-  {
-    label: "CRM",
-    permissionKey: "crm" as FeatureKey,
-    items: [
-      { title: "CRM", url: "/crm", icon: Contact, permissionKey: "crm" as FeatureKey },
-      { title: "Follow-ups", url: "/crm/follow-ups", icon: ClipboardCheck, permissionKey: "crm" as FeatureKey },
-      { title: "Contacts", url: "/crm/contacts", icon: UsersRound, permissionKey: "crm" as FeatureKey },
-      { title: "Contact Groups", url: "/crm/contact-groups", icon: Users, permissionKey: "crm" as FeatureKey },
-      { title: "Meta Leads", url: "/crm/meta-leads", icon: Facebook, permissionKey: "crm" as FeatureKey },
-      { title: "Pipelines", url: "/crm/pipelines", icon: Kanban, permissionKey: "crm" as FeatureKey },
-    ],
-  },
-  {
-    label: "Customers",
-    permissionKey: "customers" as FeatureKey,
-    items: [
-      { title: "Customers", url: "/customers", icon: Users, permissionKey: "customers" as FeatureKey },
-      { title: "Leads", url: "/leads", icon: UserPlus, permissionKey: "customers" as FeatureKey },
-    ],
-  },
-  {
-    label: "Marketing",
-    permissionKey: "marketing" as FeatureKey,
-    items: [
-      { title: "Broadcasts", url: "/marketing/broadcasts", icon: Send, permissionKey: "marketing" as FeatureKey },
-      { title: "Email Settings", url: "/settings/email", icon: Mail, permissionKey: "marketing" as FeatureKey },
-      { title: "Banners", url: "/marketing/banners", icon: Image, permissionKey: "marketing" as FeatureKey },
-      { title: "Coupons", url: "/marketing/coupons", icon: Tag, permissionKey: "marketing" as FeatureKey },
-      { title: "Unsubscribed Users", url: "/marketing/unsubscribed", icon: UserMinus, permissionKey: "marketing" as FeatureKey },
-    ],
-  },
-  {
-    label: "Automation",
-    permissionKey: "automation" as FeatureKey,
-    items: [
-      { title: "Path", url: "/automation/path", icon: Route, permissionKey: "automation" as FeatureKey },
-      { title: "Email Automation", url: "/automation/email", icon: Mail, permissionKey: "automation" as FeatureKey },
-      { title: "WhatsApp Automation", url: "/automation/whatsapp", icon: Phone, permissionKey: "automation" as FeatureKey },
-      { title: "Notifications", url: "/automation/notifications", icon: Bell, permissionKey: "automation" as FeatureKey },
-      { title: "Templates", url: "/automation/templates", icon: FileText, permissionKey: "automation" as FeatureKey },
-      { title: "Events Personalisation", url: "/automation/events-personalisation", icon: ToggleRight, permissionKey: "automation" as FeatureKey },
-      { title: "Account Management", url: "/automation/account-management", icon: Phone, permissionKey: "automation" as FeatureKey },
-      { title: "Logs", url: "/automation/logs", icon: Activity, permissionKey: "automation" as FeatureKey },
-      { title: "Certificates", url: "/automation/certificates", icon: Award, permissionKey: "certificates" as FeatureKey },
-      { title: "Integrations", url: "/automation/integrations", icon: Puzzle, permissionKey: "automation" as FeatureKey },
-    ],
-  },
-  {
-    label: null,
-    permissionKey: null,
-    items: [
-      { title: "Partnerships", url: "/partnerships", icon: Handshake, permissionKey: "partnerships" as FeatureKey },
-      { title: "Affiliate", url: "/affiliate", icon: Gift, permissionKey: "affiliate" as FeatureKey },
-      { title: "Gamification", url: "/gamification", icon: Trophy, permissionKey: "gamification" as FeatureKey },
-      { title: "LevelUp", url: "/levelup", icon: Trophy, permissionKey: "levelup" as FeatureKey },
-    ],
-  },
-  {
-    label: "AI Suite",
-    permissionKey: "ai_suite" as FeatureKey,
-    items: [
-      { title: "AI Lead Intelligence", url: "/crm/contacts", icon: Contact, permissionKey: "ai_suite" as FeatureKey },
-      { title: "AI Content Generator", url: "/ai/content-generator", icon: Rocket, permissionKey: "ai_suite" as FeatureKey },
-    ],
-  },
-  {
-    label: "Settings",
-    permissionKey: "my_settings" as FeatureKey,
-    items: [
-      { title: "Platform Settings", url: "/settings/platform", icon: Settings, permissionKey: "platform_settings" as FeatureKey },
-      { title: "Security", url: "/settings/security", icon: Shield, permissionKey: "security_settings" as FeatureKey },
-      { title: "Team Management", url: "/settings/team", icon: Users, permissionKey: "team_management" as FeatureKey },
-      { title: "Roles & Permissions", url: "/settings/roles", icon: Shield, permissionKey: "platform_settings" as FeatureKey },
-      { title: "Cloud Storage", url: "/settings/cloud", icon: HardDrive, permissionKey: "cloud_storage" as FeatureKey },
-      { title: "My Settings", url: "/settings", icon: Settings, permissionKey: "my_settings" as FeatureKey },
-      { title: "Billing & Plans", url: "/billing", icon: Receipt, permissionKey: "billing" as FeatureKey },
-      { title: "Refer & Earn", url: "/referral", icon: Gift, permissionKey: "referral" as FeatureKey },
-      { title: "Navigation Settings", url: "/navigation-settings", icon: Navigation, permissionKey: "navigation_settings" as FeatureKey },
-    ],
+    title: "Branding & domain",
+    url: "/settings/platform",
+    icon: Palette,
+    permissionKey: "platform_settings",
   },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const { hasRole } = useAuth();
   const { hasPermission } = usePermissions();
+  const { hasRole } = useAuth();
+  // These have to match the guards on the pages themselves. Offering a coach
+  // the admin panel only sent them to "Admin access required", which reads as
+  // the page being broken rather than as not being theirs.
+  const canSeeAdmin = hasRole("admin") || hasRole("super_admin");
+  // Super admin is the higher tier, so an admin does not get it. This has to
+  // stay in step with the guard on the page itself: hiding the entry while the
+  // route still admits an admin only means the tier holds until somebody types
+  // the URL.
+  const canSeeSuperAdmin = hasRole("super_admin");
+  // Gated on the permission rather than the role, so this tracks whatever the
+  // role_permissions table says instead of a second copy of the rules.
+  const workspaceAdmin = WORKSPACE_ADMIN.filter((item) =>
+    hasPermission(item.permissionKey),
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = state === "collapsed";
-  const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
 
-  const filteredSections = sidebarSections
+  const filteredSections = APP_NAV_SECTIONS
     .filter((section) => {
       if (!section.permissionKey) return true;
       return hasPermission(section.permissionKey);
     })
     .map((section) => ({
       ...section,
-      items: section.items.filter((item: any) => hasPermission(item.permissionKey)),
+      items: section.items.filter(
+        (item) =>
+          hasPermission(item.permissionKey) &&
+          // An item may also name a role, for authoring screens that the
+          // feature flag alone would hand to every student who can read them.
+          (!item.role || hasRole(item.role) || canSeeAdmin),
+      ),
     }))
     .filter((section) => section.items.length > 0);
 
+  // The top bar is fixed and full width, so the sidebar starts below it rather
+  // than at the viewport top, and stays under the header's z-[1000].
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar
+      collapsible="icon"
+      className="top-[60px] z-[60] h-[calc(100svh-60px)] border-r border-border"
+    >
+      {/* Nothing floats at the top of this column any more: the brand mark, the
+          collapse control and search all live in the header, where they cannot
+          land on top of the first nav row. */}
       <SidebarContent className="pt-2 gap-0">
         {filteredSections.map((section, si) => {
-          if (section.label) {
+          // Collapsed, every group flattens into its items so the rail carries
+          // the same destinations as the open sidebar — one icon each, named by
+          // its tooltip — rather than standing in for them with a group icon.
+          if (section.label && !collapsed) {
             return (
               <CollapsibleGroup
                 key={si}
                 label={section.label}
                 items={section.items}
-                collapsed={collapsed}
                 currentPath={location.pathname}
               />
             );
@@ -283,44 +159,94 @@ export function AppSidebar() {
           );
         })}
 
-        {isCoachOrAdmin && (
-          <SidebarGroup className="py-0.5">
+        {/* Administration sits in the sidebar rather than behind Settings:
+            for whoever runs the place these are everyday destinations, and
+            reaching them via Settings meant three clicks for a screen they open
+            constantly.
+
+            One group, not two: a coach sees their workspace screens, a platform
+            admin sees the panels, and somebody who is both sees one section
+            containing both rather than two headings with the same name. */}
+        {(canSeeAdmin || canSeeSuperAdmin || workspaceAdmin.length > 0) && (
+          <SidebarGroup className="py-0.5 mt-1 border-t border-sidebar-border pt-2">
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
+              Administration
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Admin">
-                    <NavLink to="/admin" className="hover:bg-secondary/80 text-sm rounded-[6px]" activeClassName="bg-accent-tint text-accent font-medium">
-                      <Shield className="h-5 w-5 shrink-0" />
-                      <span className="truncate">Admin</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {workspaceAdmin.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className="hover:bg-secondary/80 text-sm rounded-[6px]"
+                        activeClassName="bg-accent-tint text-accent font-medium"
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+                {canSeeAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Admin panel">
+                      <NavLink
+                        to="/admin"
+                        className="hover:bg-secondary/80 text-sm rounded-[6px]"
+                        activeClassName="bg-accent-tint text-accent font-medium"
+                      >
+                        <Shield className="h-5 w-5 shrink-0" />
+                        <span className="truncate">Admin panel</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canSeeSuperAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Super admin">
+                      <NavLink
+                        to="/super-admin"
+                        className="hover:bg-secondary/80 text-sm rounded-[6px]"
+                        activeClassName="bg-accent-tint text-accent font-medium"
+                      >
+                        <Crown className="h-5 w-5 shrink-0" />
+                        <span className="truncate">Super admin</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
 
-        {(hasRole("admin") || hasRole("super_admin")) && (
-          <SidebarGroup className="py-0.5">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Super Admin">
-                    <NavLink to="/super-admin" className="hover:bg-secondary/80 text-sm rounded-[6px]" activeClassName="bg-accent-tint text-accent font-medium">
-                      <Crown className="h-5 w-5 shrink-0" />
-                      <span className="truncate">Super Admin</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {/* One entry for everything configuration-shaped. */}
+        <SidebarGroup className="py-0.5">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Settings">
+                  <NavLink
+                    to="/settings"
+                    className="hover:bg-secondary/80 text-sm rounded-[6px]"
+                    activeClassName="bg-accent-tint text-accent font-medium"
+                  >
+                    <Settings className="h-5 w-5 shrink-0" />
+                    <span className="truncate">Settings</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {!collapsed && (
           <div className="mt-auto p-3">
+            {/* This card's own words are the Refer & Earn page; it pointed at
+                /affiliate, which is the separate per-course commission screen. */}
             <button
-              onClick={() => navigate("/affiliate")}
+              onClick={() => navigate("/referral")}
               className="w-full text-left rounded-lg bg-[#3D1B16] p-4 hover:bg-[#4A211B] transition-colors"
             >
               <p className="text-white font-semibold text-base">Refer & Earn</p>
@@ -338,19 +264,17 @@ export function AppSidebar() {
 function CollapsibleGroup({
   label,
   items,
-  collapsed,
   currentPath,
 }: {
   label: string;
-  items: { title: string; url: string; icon: any }[];
-  collapsed: boolean;
+  items: { title: string; url: string; icon: LucideIcon }[];
   currentPath: string;
 }) {
   const isActive = items.some((i) => currentPath.startsWith(i.url));
   const [open, setOpen] = useState(isActive);
 
   return (
-    <Collapsible open={collapsed ? true : open} onOpenChange={setOpen}>
+    <Collapsible open={open} onOpenChange={setOpen}>
       <SidebarGroup className="py-0.5">
         <CollapsibleTrigger className="w-full group/trigger">
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center justify-between pr-2 hover:text-foreground transition-colors group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:pointer-events-none">

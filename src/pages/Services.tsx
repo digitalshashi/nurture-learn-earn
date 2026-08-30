@@ -12,13 +12,18 @@ import { Plus, Search, RefreshCw, Pencil, Trash2, Share2, MoreHorizontal, Eye, C
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { ServiceShareDialog } from "@/components/services/ServiceShareDialog";
+import { ShareDialog } from "@/components/share/ShareDialog";
+import { serviceMeta } from "@/lib/seo";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Service {
   id: string;
   title: string;
   slug: string | null;
+  description: string | null;
+  cover_image_url: string | null;
   price: number;
+  discounted_price: number | null;
   currency: string;
   status: string;
   is_free: boolean;
@@ -28,6 +33,8 @@ interface Service {
 }
 
 export default function Services() {
+  // Currency symbol follows the workspace setting rather than a hardcoded $.
+  const { symbol } = useCurrency();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -204,12 +211,16 @@ export default function Services() {
       </div>
 
       {shareService && (
-        <ServiceShareDialog
+        // Built from the same `serviceMeta` the edge Worker serves to crawlers,
+        // so the preview in the dialog is the preview the buyer will see.
+        <ShareDialog
           open={!!shareService}
           onOpenChange={(open) => !open && setShareService(null)}
-          serviceTitle={shareService.title}
-          serviceId={shareService.id}
-          slug={shareService.slug}
+          heading="Share service"
+          url={serviceMeta(shareService, window.location.origin).canonical}
+          title={shareService.title}
+          description={serviceMeta(shareService, window.location.origin).description}
+          imageUrl={shareService.cover_image_url}
         />
       )}
     </AppLayout>

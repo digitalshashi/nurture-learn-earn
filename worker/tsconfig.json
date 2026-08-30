@@ -1,0 +1,19 @@
+{
+  // The Worker runs on workerd, not in a browser: no `document`, no `window`,
+  // but `HTMLRewriter`, `caches.default` and the `ASSETS` binding all exist.
+  // Loading the DOM lib here would let browser-only code compile and then fail
+  // at the edge, so it is deliberately absent.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["./**/*.ts", "../src/lib/seo.ts", "../src/lib/brand.ts"]
+}

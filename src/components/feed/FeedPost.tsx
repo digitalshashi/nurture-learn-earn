@@ -8,9 +8,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { extractEmbeds, removeEmbedUrls, parseEmbed } from "@/lib/link-embed";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
 import { supabase } from "@/integrations/supabase/client";
+import { appLink, excerpt, notify } from "@/lib/notify";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { UserBadges } from "@/components/badges/UserBadges";
+import { ShareDialog } from "@/components/share/ShareDialog";
 
 interface Comment {
   id: string;
@@ -58,6 +60,7 @@ export function FeedPost({
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const viewedRef = useRef(false);
 
@@ -118,6 +121,19 @@ export function FeedPost({
         if (error) throw error;
         setIsLiked(true);
         setLikeCount((c) => c + 1);
+
+        if (authorId && authorId !== user.id) {
+          void notify({
+            event: "community.comment_liked",
+            learnerId: authorId,
+            variables: {
+              liker_name: user.user_metadata?.full_name || "Someone",
+              comment_excerpt: excerpt(content, 100) || "your post",
+              post_title: excerpt(content, 60) || "your post",
+              post_link: appLink(`/feed?post=${id}`),
+            },
+          });
+        }
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -180,9 +196,25 @@ export function FeedPost({
         content: newComment.trim(),
       });
       if (error) throw error;
+      const said = newComment.trim();
       setNewComment("");
       setCommentCount((c) => c + 1);
       await loadComments();
+
+      // Only the author, and never for their own comment — telling someone
+      // they commented on their own post is the fastest way to lose them.
+      if (authorId && authorId !== user.id) {
+        void notify({
+          event: "community.post_commented",
+          learnerId: authorId,
+          variables: {
+            commenter_name: user.user_metadata?.full_name || "Someone",
+            post_title: excerpt(content, 60) || "your post",
+            comment_excerpt: excerpt(said),
+            post_link: appLink(`/feed?post=${id}`),
+          },
+        });
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -282,10 +314,8 @@ export function FeedPost({
           {commentsEnabled && (showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
         </button>
         <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.origin + `/feed#post-${id}`);
-            toast({ title: "Link copied!" });
-          }}
+          onClick={() => setShareOpen(true)}
+          aria-label="Share this post"
           className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm"
         >
           <Share2 className="h-4 w-4" />
@@ -352,7 +382,7 @@ export function FeedPost({
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-xs font-semibold flex items-center gap-1">
                                 {comment.is_pinned && <Pin className="h-3 w-3 text-accent" />}
-                                {comment.profile?.full_name || "User"}
+                                {comment.profile?.full_name || "Member"}
                               </p>
                               {canModerate && (
                                 <DropdownMenu>
@@ -390,6 +420,18 @@ export function FeedPost({
           )}
         </div>
       )}
+
+      {/* The feed is members-only, so a shared post link previews as the
+          community's own card rather than leaking the post's text. */}
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        heading="Share post"
+        url={`${window.location.origin}/feed#post-${id}`}
+        title={`${author} on the community feed`}
+        description={content.slice(0, 160)}
+        imageUrl={image}
+      />
     </div>
   );
 }

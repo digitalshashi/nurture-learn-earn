@@ -1,0 +1,13 @@
+-- PLACEHOLDER — this migration was applied directly to the remote database
+-- (Supabase dashboard SQL editor or similar) and its SQL was never committed.
+--
+-- Recorded here only so the CLI's migration history reconciles; the statements
+-- below are intentionally empty because the real ones ran out-of-band and are
+-- already present in production.
+--
+-- ACTION REQUIRED: this repo no longer reproduces production. Copy the real SQL
+-- for version 20260811184403 from the Supabase dashboard
+-- (Database -> Migrations -> 20260811184403) into this file, so a
+-- `supabase db reset` or a fresh environment rebuilds the same schema.
+
+-- (no statements — see note above)

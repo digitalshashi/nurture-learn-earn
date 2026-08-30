@@ -59,15 +59,13 @@ export function LevelUpCheckup() {
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-lg font-bold">Checkup</h2>
-
       {/* Upcoming checkups banner */}
       {checkups.length > 0 && (
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader className="pb-2"><CardTitle className="text-sm text-primary">Upcoming Checkups</CardTitle></CardHeader>
-          <CardContent className="flex gap-3 overflow-auto pb-3">
+          <CardContent className="flex gap-3 overflow-x-auto pb-3">
             {checkups.map((c) => (
-              <Card key={c.id} className="min-w-[200px] bg-card">
+              <Card key={c.id} className="min-w-[200px] shrink-0 bg-card">
                 <CardContent className="pt-3 pb-2">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold">{c.name}</p>
@@ -111,7 +109,7 @@ export function LevelUpCheckup() {
       </div>
 
       {/* Checkup table */}
-      <Card className="card-shadow overflow-auto">
+      <Card className="card-shadow">
         <Table>
           <TableHeader>
             <TableRow>

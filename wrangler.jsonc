@@ -1,9 +1,33 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "nurture-learn-earn",
+  "name": "1corehub",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-07-31",
+  // Only this one hostname is bound to the Worker. The rest of 1corehub.com —
+  // the apex, www, mail and the cPanel records — stays DNS-only on Cloudflare
+  // and resolves to HostGator exactly as it did before the nameserver move.
+  // Declaring the domain here (rather than clicking it into the dashboard)
+  // means a fresh `wrangler deploy` re-attaches it instead of silently
+  // dropping the site back to the workers.dev URL.
+  "routes": [
+    {
+      "pattern": "levelup.1corehub.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    // Every app route is client-side, so an unknown path is not a 404 — it is
+    // the shell, and React Router decides from there.
+    "not_found_handling": "single-page-application",
+    // Static assets are normally served without ever waking the Worker, but
+    // every HTML response needs its `<head>` rewritten before it leaves the
+    // edge — a crawler reads nothing else. The negation keeps the hashed
+    // bundle, which is the bulk of the traffic, on the pure asset path.
+    "run_worker_first": ["/*", "!/assets/*"]
+  },
+  "observability": {
+    "enabled": true
   }
 }

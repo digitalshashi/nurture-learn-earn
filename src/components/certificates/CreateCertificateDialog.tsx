@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AiWriteButton } from "@/components/ai/AiWriteButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -215,7 +216,30 @@ export function CreateCertificateDialog({ open, onOpenChange, onSaved, editId }:
             )}
 
             <div>
-              <Label>Certificate Text</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label>Certificate Text</Label>
+                <AiWriteButton
+                  task="the wording on a course completion certificate"
+                  label="Write it"
+                  context={{
+                    "Certificate name": name,
+                    "Design style": templateStyle,
+                    "Awarded when": triggerType,
+                    Course: courses.find((c) => c.id === linkedCourseId)?.title,
+                    Service: services.find((sv) => sv.id === linkedServiceId)?.title,
+                  }}
+                  fields={[
+                    {
+                      key: "certificate_text",
+                      hint:
+                        "Two or three formal sentences for the body of the certificate. " +
+                        "Use the literal placeholders {student_name}, {course_name} and {date} " +
+                        "where those values belong.",
+                    },
+                  ]}
+                  onResult={(r) => r.certificate_text && setCertificateText(r.certificate_text)}
+                />
+              </div>
               <Textarea
                 rows={3}
                 value={certificateText}

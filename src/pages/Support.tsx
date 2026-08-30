@@ -140,6 +140,26 @@ const RESOURCE_TYPE_LABEL: Record<string, string> = {
   course: "Course",
 };
 
+/**
+ * A colour at low opacity, whatever notation it arrived in.
+ *
+ * The stuck areas store colours as `hsl(25 95% 53%)`. The old code appended
+ * "22" for alpha, which is a hex trick — on an hsl() string it produces
+ * invalid CSS, so every tinted chip silently rendered with no background.
+ * color-mix works for hex, hsl, oklch and named colours alike.
+ */
+const tint = (color: string, percent = 14) =>
+  `color-mix(in srgb, ${color} ${percent}%, transparent)`;
+
+/**
+ * The same colour, guaranteed to be readable as text.
+ *
+ * Several seeded areas are yellows and light greens that fall below contrast
+ * on a card. Mixing toward the foreground darkens them just enough without
+ * losing which area you are looking at.
+ */
+const readable = (color: string) => `color-mix(in srgb, ${color} 72%, hsl(var(--foreground)))`;
+
 export default function Support() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -459,25 +479,30 @@ export default function Support() {
     <AppLayout>
       <div className="max-w-6xl mx-auto py-6 px-4 pb-16">
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3D1B16] via-[#5A241C] to-accent p-6 sm:p-8 mb-8 text-white">
+        {/* The gradient was two pasted-in hex values from another product.
+            These are the accent's own dark shades, so the hero moves with the
+            theme instead of drifting away from it. */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-accent-deep via-accent-strong to-accent p-6 sm:p-8 mb-8 text-accent-foreground">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_55%)]" />
           <div className="relative">
-            <Badge className="bg-white/15 text-white border-0 mb-3 hover:bg-white/20">Support Hub</Badge>
+            <Badge className="bg-accent-foreground/15 text-accent-foreground border-0 mb-3">
+              Support Hub
+            </Badge>
             <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
               Where are you stuck right now?
             </h1>
-            <p className="mt-2 text-white/85 text-sm sm:text-base max-w-2xl">
+            <p className="mt-2 text-accent-foreground/85 text-sm sm:text-base max-w-2xl">
               Pick the area that matches what you&apos;re feeling. Each one has a clear checklist and the exact
               resources to move you forward.
             </p>
-            <p className="mt-4 text-sm text-white/70 italic">
+            <p className="mt-4 text-sm text-accent-foreground/70 italic">
               You don&apos;t need to feel fully confident to take action. Confidence comes after action.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 variant="secondary"
                 size="sm"
-                className="bg-white text-[#3D1B16] hover:bg-white/90"
+                className="bg-accent-foreground text-accent-deep hover:bg-accent-foreground/90 focus-visible:ring-accent-foreground"
                 onClick={() => document.getElementById("faq-section")?.scrollIntoView({ behavior: "smooth" })}
               >
                 <BookOpen className="h-4 w-4 mr-1.5" />
@@ -486,7 +511,7 @@ export default function Support() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+                className="border-accent-foreground/40 bg-transparent text-accent-foreground hover:bg-accent-foreground/15 hover:text-accent-foreground hover:border-accent-foreground/70 focus-visible:ring-accent-foreground"
                 onClick={() => setContactOpen(true)}
               >
                 <Mail className="h-4 w-4 mr-1.5" />
@@ -517,15 +542,20 @@ export default function Support() {
                     onClick={() => selectArea(area)}
                     className={cn(
                       "text-left rounded-xl border bg-card p-4 card-shadow transition-all",
-                      "hover:border-accent/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "hover:border-accent/50 hover:bg-accent-tint/30 hover:shadow-md",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div
                         className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${area.color}22` }}
+                        style={{ backgroundColor: tint(area.color) }}
                       >
-                        <AreaIcon name={area.icon_name} className="h-5 w-5" style={{ color: area.color }} />
+                        <AreaIcon
+                          name={area.icon_name}
+                          className="h-5 w-5"
+                          style={{ color: readable(area.color) }}
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -573,12 +603,12 @@ export default function Support() {
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                   <div
                     className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${selectedArea.color}22` }}
+                    style={{ backgroundColor: tint(selectedArea.color) }}
                   >
                     <AreaIcon
                       name={selectedArea.icon_name}
                       className="h-7 w-7"
-                      style={{ color: selectedArea.color }}
+                      style={{ color: readable(selectedArea.color) }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">

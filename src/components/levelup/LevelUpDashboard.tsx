@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Flame, CheckCircle, Target, TrendingUp, ArrowRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Area, AreaChart } from "recharts";
 import { Button } from "@/components/ui/button";
 
@@ -36,7 +37,13 @@ export function LevelUpDashboard() {
   const [level, setLevel] = useState({ level_number: 1, badge_name: "Beginner", xp_required: 0 });
   const [nextLevel, setNextLevel] = useState<{ xp_required: number } | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [stats, setStats] = useState({ habits: 0, tasks: 0, challenges: 0, totalChallenges: 0 });
+  const [stats, setStats] = useState({
+    habits: 0,
+    tasks: 0,
+    totalTasks: 0,
+    challenges: 0,
+    totalChallenges: 0,
+  });
   const [xpHistory, setXpHistory] = useState<any[]>([]);
   const [userName, setUserName] = useState("Student");
   const [todayHabits, setTodayHabits] = useState<HabitToday[]>([]);
@@ -70,9 +77,18 @@ export function LevelUpDashboard() {
     // Stats
     const { count: habitCount } = await supabase.from("habit_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
     const { count: taskCount } = await supabase.from("student_tasks").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_completed", true);
+    // Completed tasks alone can't produce a completion rate — the card was
+    // dividing that count by itself, so it could only ever read 0% or 100%.
+    const { count: totalTaskCount } = await supabase.from("student_tasks").select("*", { count: "exact", head: true }).eq("user_id", user.id);
     const { count: challengeCount } = await supabase.from("challenge_participants").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_completed", true);
     const { count: totalChallenges } = await supabase.from("gamification_challenges").select("*", { count: "exact", head: true }).eq("is_active", true);
-    setStats({ habits: habitCount || 0, tasks: taskCount || 0, challenges: challengeCount || 0, totalChallenges: totalChallenges || 0 });
+    setStats({
+      habits: habitCount || 0,
+      tasks: taskCount || 0,
+      totalTasks: totalTaskCount || 0,
+      challenges: challengeCount || 0,
+      totalChallenges: totalChallenges || 0,
+    });
 
     // Leaderboard
     const { data: allXp } = await supabase.from("xp_transactions").select("user_id, xp_amount");
@@ -88,7 +104,7 @@ export function LevelUpDashboard() {
       setLeaderboard(top10.map(([uid, xpVal]) => ({
         user_id: uid,
         total_xp: xpVal,
-        full_name: profiles?.find((p) => p.id === uid)?.full_name || "User",
+        full_name: profiles?.find((p) => p.id === uid)?.full_name || "Member",
       })));
     }
 
@@ -105,10 +121,26 @@ export function LevelUpDashboard() {
       return d.toISOString().split("T")[0];
     });
     const { data: recentXp } = await supabase.from("xp_transactions").select("xp_amount, created_at").eq("user_id", user.id).gte("created_at", days[0]);
+
+    // The community series used to be Math.random(), so members were being
+    // compared against a number invented on each page load. It is now the real
+    // mean XP per active member per day.
+    const { data: communityXp } = await supabase
+      .from("xp_transactions")
+      .select("user_id, xp_amount, created_at")
+      .gte("created_at", days[0]);
+
     setXpHistory(days.map((day) => {
       const dayLabel = new Date(day).toLocaleDateString("en", { weekday: "short" });
       const yourXp = recentXp?.filter((t) => t.created_at.startsWith(day)).reduce((s, t) => s + t.xp_amount, 0) || 0;
-      return { day: dayLabel, you: yourXp, community: Math.floor(Math.random() * 50 + 10) };
+
+      const dayRows = (communityXp || []).filter((t: any) => t.created_at.startsWith(day));
+      const activeMembers = new Set(dayRows.map((t: any) => t.user_id)).size;
+      const communityAvg = activeMembers
+        ? Math.round(dayRows.reduce((s: number, t: any) => s + t.xp_amount, 0) / activeMembers)
+        : 0;
+
+      return { day: dayLabel, you: yourXp, community: communityAvg };
     }));
   };
 
@@ -128,13 +160,23 @@ export function LevelUpDashboard() {
 
   const habitXpToday = todayHabits.filter(h => h.completed).reduce((s, h) => s + h.xp_value, 0);
 
+  // Week totals for the chart legend, derived from the same series the chart
+  // draws so the numbers and the lines can never disagree.
+  const weekXp = xpHistory.reduce(
+    (acc, d: any) => ({
+      you: acc.you + (d.you || 0),
+      community: acc.community + (d.community || 0),
+    }),
+    { you: 0, community: 0 },
+  );
+
   return (
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Habit Chart + Stats */}
         <div className="lg:col-span-5 space-y-5">
-          {/* Habit Performance Card */}
-          <Card className="overflow-hidden border-0 shadow-lg">
+          {/* Habit Performance Card — also the target of "View XP History" */}
+          <Card id="xp-history-chart" className="overflow-hidden border-0 shadow-lg">
             <CardHeader className="pb-2 flex flex-row items-center justify-between bg-card">
               <CardTitle className="text-base font-bold">Habit</CardTitle>
               <div className="text-right">
@@ -143,14 +185,17 @@ export function LevelUpDashboard() {
               </div>
             </CardHeader>
             <CardContent className="pb-4">
-              <div className="flex gap-6 text-xs mb-3">
+              {/* The legend now describes what the chart actually plots — XP
+                  per day. It previously read "completion rate" for both series
+                  and the community figure was the literal string 1.55%. */}
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs mb-3">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                  Your avg completion rate <strong>{stats.habits > 0 ? Math.round((todayHabits.filter(h => h.completed).length / Math.max(todayHabits.length, 1)) * 100) : 0}%</strong>
+                  Your XP this week <strong>{weekXp.you}</strong>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                  Community avg completion rate <strong>1.55%</strong>
+                  Community avg <strong>{weekXp.community}</strong>
                 </span>
               </div>
               <div className="h-44">
@@ -176,43 +221,29 @@ export function LevelUpDashboard() {
             </CardContent>
           </Card>
 
-          {/* Task + Challenge Stats */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="border-0 shadow-lg">
-              <CardContent className="pt-5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
-                    <CheckCircle className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">Task</p>
-                      <span className="text-lg font-bold text-muted-foreground">{stats.tasks > 0 ? Math.round((stats.tasks / Math.max(stats.tasks, 1)) * 100) : 0}%</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Completion <strong>{stats.tasks}</strong>/{stats.tasks}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-lg">
-              <CardContent className="pt-5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center shadow-md">
-                    <Target className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">Challenge</p>
-                      <div className="text-right">
-                        <p className="text-[10px] text-muted-foreground">Points gained</p>
-                        <p className="text-sm font-bold text-amber-500">🪙 0 XP</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Active / All Challenges <strong>{stats.challenges}</strong>/{stats.totalChallenges}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Task + Challenge Stats — both cards share one shape (icon, title,
+              percentage, caption) so their rows line up side by side. They
+              previously differed: Task showed a bare percentage while Challenge
+              stacked a two-line "Points gained / 0 XP", which pushed the two
+              cards out of alignment. That XP figure was a hardcoded 0 — nothing
+              writes challenge XP — so it is replaced with a real ratio. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <StatCard
+              icon={CheckCircle}
+              iconClass="from-blue-400 to-blue-600"
+              title="Task"
+              done={stats.tasks}
+              total={stats.totalTasks}
+              caption="Completion"
+            />
+            <StatCard
+              icon={Target}
+              iconClass="from-rose-400 to-rose-600"
+              title="Challenge"
+              done={stats.challenges}
+              total={stats.totalChallenges}
+              caption="Active / All Challenges"
+            />
           </div>
 
           {/* Motivational Banner */}
@@ -284,15 +315,30 @@ export function LevelUpDashboard() {
                 </AvatarFallback>
               </Avatar>
               <Badge className="bg-amber-400 text-amber-900 hover:bg-amber-400 text-sm px-3 py-1 shadow-md mb-2">
-                🪙 {formatXp(totalXp)} XP
+                {level.badge_name}
               </Badge>
               <p className="font-bold text-xl mt-2">{userName}</p>
-              <div className="mt-4 flex items-center justify-center gap-3">
-                <span className="text-2xl font-bold">🪙 {formatXp(totalXp)} XP</span>
-                <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 text-xs">
-                  View XP History <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </div>
+
+              {/* The total was printed twice in this card — once in the badge
+                  above and again here — and the value/button sat on one flex
+                  row narrow enough to break "495 XP" across two lines. The
+                  badge now carries the level name, and the total gets its own
+                  full-width row that cannot wrap. */}
+              <p className="mt-4 text-2xl font-bold whitespace-nowrap">
+                🪙 {formatXp(totalXp)} XP
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  document
+                    .getElementById("xp-history-chart")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
+                className="mt-1 text-white/80 hover:text-white hover:bg-white/10 text-xs"
+              >
+                View XP History <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
             </CardContent>
           </Card>
 
@@ -339,5 +385,50 @@ export function LevelUpDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One row of the Task/Challenge pair. Both use it so the title, percentage and
+ * caption sit on the same baselines regardless of the numbers involved.
+ */
+function StatCard({
+  icon: Icon,
+  iconClass,
+  title,
+  done,
+  total,
+  caption,
+}: {
+  icon: LucideIcon;
+  iconClass: string;
+  title: string;
+  done: number;
+  total: number;
+  caption: string;
+}) {
+  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  return (
+    <Card className="border-0 shadow-lg">
+      <CardContent className="pt-5 pb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br ${iconClass} flex items-center justify-center shadow-md`}>
+            <Icon className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold truncate">{title}</p>
+              <span className="text-lg font-bold text-muted-foreground tabular-nums whitespace-nowrap">
+                {percent}%
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {caption} <strong>{done}</strong>/{total}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

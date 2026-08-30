@@ -1,0 +1,21 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": ["*"],
+      "AllowedMethods": ["GET", "PUT", "HEAD"],
+      "AllowedHeaders": [
+        "Content-Type",
+        "Content-Length",
+        "x-amz-checksum-crc32",
+        "x-amz-checksum-crc32c",
+        "x-amz-checksum-sha1",
+        "x-amz-checksum-sha256",
+        "x-amz-sdk-checksum-algorithm",
+        "x-amz-content-sha256",
+        "x-amz-date"
+      ],
+      "ExposeHeaders": ["ETag", "Content-Length"],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+}

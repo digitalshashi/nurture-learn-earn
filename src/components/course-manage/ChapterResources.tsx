@@ -127,7 +127,7 @@ export default function ChapterResources({
           <input
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.svg,.zip,.rar,.pptx,.ppt,.txt,.mp3,.mp4"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.svg,.heic,.heif,.avif,.zip,.rar,.pptx,.ppt,.txt,.mp3,.mp4"
             className="absolute inset-0 opacity-0 cursor-pointer"
             onChange={handleFileUpload}
             disabled={uploading}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Video, Search, Filter, Play, Clock, HardDrive,
-  Loader2, Trash2, ExternalLink, Copy,
+  Loader2, Trash2, ExternalLink, Copy, Upload,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { deleteFromCloud, listCloudFiles } from "@/lib/cloud-storage";
+import { useVideoUpload } from "@/hooks/useVideoUpload";
+import { UploadProgress } from "@/components/video-library/UploadProgress";
+import { PLAYABLE_VIDEO_ACCEPT } from "@/lib/videoFormats";
+
+const VIDEO_ACCEPT = PLAYABLE_VIDEO_ACCEPT;
 
 interface VideoFile {
   name: string;
@@ -35,6 +40,8 @@ export default function VideoLibrary() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const { job, upload, reset, isBusy } = useVideoUpload();
 
   useEffect(() => {
     if (user) loadVideos();
@@ -85,6 +92,24 @@ export default function VideoLibrary() {
     setLoading(false);
   };
 
+  /**
+   * Uploads run one at a time so the progress bar means something and a 2GB
+   * file does not have to share bandwidth with four others.
+   */
+  const uploadVideos = async (files: File[]) => {
+    if (!user) return;
+    const results = await upload(user.id, "videos", files);
+    if (results.length > 0) {
+      toast({ title: `${results.length} video${results.length === 1 ? "" : "s"} uploaded` });
+      loadVideos();
+    }
+    if (results.length === files.length) {
+      // Clear only a clean run: a failure has to stay on screen, since the
+      // panel is where the reason is written.
+      setTimeout(reset, 2500);
+    }
+  };
+
   const getPublicUrl = (video: VideoFile) => video.publicUrl;
 
   const copyLink = (video: VideoFile) => {
@@ -131,7 +156,45 @@ export default function VideoLibrary() {
               <p className="text-xs text-muted-foreground">{videos.length} videos</p>
             </div>
           </div>
+
+          {/* Upload lives here, not only inside a chapter: a video uploaded
+              once can then be attached to any number of courses.
+
+              A real button opening the input through a ref, not a <label>
+              wrapping a Slot-rendered <span> — the span carried the `disabled`
+              attribute and swallowed the click, so the file dialog never
+              opened. Every other picker in this app uses this pattern. */}
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept={VIDEO_ACCEPT}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              e.target.value = "";
+              if (files.length > 0) uploadVideos(files);
+            }}
+          />
+          <Button
+            type="button"
+            className="rounded-xl"
+            disabled={isBusy}
+            onClick={() => uploadInputRef.current?.click()}
+          >
+            {isBusy ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading…
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" /> Upload videos
+              </>
+            )}
+          </Button>
         </div>
+
+        <UploadProgress job={job} className="mb-4" />
 
         {/* Filters */}
         <div className="flex items-center gap-3 mb-4">

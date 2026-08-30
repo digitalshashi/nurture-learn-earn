@@ -3,10 +3,23 @@ name: Deploy to Cloudflare Workers
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
+# A second push to main while a deploy is in flight used to race it. Queue
+# instead, and never cancel a half-finished production rollout.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  # Gate: main used to deploy straight from a green `npm ci` — the test suite,
+  # typecheck and linter never ran, so a broken build could reach production.
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,6 +27,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Two projects: the React app, and the Cloudflare Worker that renders the
+      # social share previews (workerd globals, deliberately no DOM lib).
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true # pre-existing violations; not a merge blocker yet
+
+      - name: Test
+        run: npm test
+
+      - name: Audit (high and critical only)
+        run: npm audit --audit-level=high
+        continue-on-error: true # reports without blocking the pipeline
+
+  deploy:
+    needs: verify
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
       - run: npm ci
 
@@ -23,8 +68,47 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
 
+      - name: Fail if the build produced no bundle
+        run: test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
+
+      # The Worker reads its Supabase credentials from this file at runtime. An
+      # empty one deploys fine and then silently serves the default share card
+      # for every product link, which is exactly the failure this job exists to
+      # catch — so check it here rather than discovering it in a WhatsApp chat.
+      - name: Fail if the share config is empty
+        run: |
+          node -e "
+            const c = require('./dist/share-config.json');
+            if (!c.supabaseUrl || !c.supabaseAnonKey) {
+              console.error('share-config.json is missing Supabase values — check the VITE_SUPABASE_* secrets');
+              process.exit(1);
+            }
+          "
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+
+      - name: Smoke check the deployment
+        env:
+          SITE: https://1corehub.sasivanga.workers.dev
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$SITE/" || true)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            [ "$i" = "5" ] && { echo "Site did not return 200 after deploy"; exit 1; }
+            sleep 10
+          done
+
+          # The Worker is what makes shared links preview correctly. If it is
+          # not in the request path, the site is still up but every link pasted
+          # into WhatsApp reverts to a bare, imageless card.
+          home=$(curl -s "$SITE/")
+          echo "$home" | grep -q 'property="og:image"' || { echo "og:image missing from /"; exit 1; }
+          echo "$home" | grep -q "$SITE/og-default.png" || { echo "og:image is not absolute — the Worker did not run"; exit 1; }
+
+          curl -sf "$SITE/sitemap.xml" | grep -q "<urlset" || { echo "sitemap.xml not served"; exit 1; }
+          curl -sf "$SITE/robots.txt" | grep -q "Sitemap:" || { echo "robots.txt not served"; exit 1; }

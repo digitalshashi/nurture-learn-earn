@@ -23,6 +23,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { AiWriteButton } from "@/components/ai/AiWriteButton";
+import { TemplatePicker } from "@/components/automation/TemplatePicker";
+import { channelForBroadcast } from "@/lib/automationTemplates";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface BroadcastRow {
   id: string;
@@ -70,6 +74,9 @@ const defaultForm = {
 };
 
 export default function Broadcasts() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["all", "sent", "scheduled", "draft"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
@@ -290,7 +297,7 @@ export default function Broadcasts() {
             <CardTitle className="text-base font-bold">Broadcasts</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="all">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="all">All ({broadcasts.length})</TabsTrigger>
                 <TabsTrigger value="sent">Sent ({broadcasts.filter(b => b.status === "sent").length})</TabsTrigger>
@@ -411,6 +418,51 @@ export default function Broadcasts() {
             {/* Step 1: Compose */}
             {step === 1 && (
               <div className="space-y-4">
+                {user && (
+                  <TemplatePicker
+                    coachId={user.id}
+                    channel={channelForBroadcast(form.broadcast_type)}
+                    subject={form.subject}
+                    content={form.content}
+                    onApply={(t) =>
+                      setForm((f) => ({
+                        ...f,
+                        subject: t.subject ?? f.subject,
+                        content: t.content ?? f.content,
+                      }))
+                    }
+                  />
+                )}
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Fill in the title, then let AI draft the rest.
+                  </p>
+                  <AiWriteButton
+                    task={`a ${form.broadcast_type} broadcast`}
+                    context={{
+                      "Broadcast title": form.title,
+                      Channel: form.broadcast_type,
+                      "Existing subject": form.subject,
+                    }}
+                    fields={
+                      form.broadcast_type === "email"
+                        ? [
+                            { key: "subject", hint: "Subject line, under 60 characters, no emoji spam" },
+                            { key: "content", hint: "Email body as simple HTML paragraphs, ending in one clear call to action" },
+                          ]
+                        : [
+                            { key: "content", hint: "Short message, under 120 words, plain text, ending in one clear call to action" },
+                          ]
+                    }
+                    onResult={(r) =>
+                      setForm((f) => ({
+                        ...f,
+                        subject: r.subject ?? f.subject,
+                        content: r.content ?? f.content,
+                      }))
+                    }
+                  />
+                </div>
                 <div>
                   <Label>Broadcast Title</Label>
                   <Input placeholder="e.g. AI Workshop Announcement" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -70,10 +70,16 @@ export function usePermissions() {
     };
   }, [user, roles]);
 
-  const hasPermission = (featureKey: FeatureKey): boolean => {
-    if (roles.includes("super_admin" as any) || roles.includes("admin" as any)) return true;
-    return permissions[featureKey] ?? false;
-  };
+  // Memoised on purpose: callers put this in effect and memo dependency lists,
+  // and a fresh closure every render re-runs those effects on every render —
+  // which, for an effect that sets state, never settles.
+  const hasPermission = useCallback(
+    (featureKey: FeatureKey): boolean => {
+      if (roles.includes("super_admin" as any) || roles.includes("admin" as any)) return true;
+      return permissions[featureKey] ?? false;
+    },
+    [permissions, roles],
+  );
 
   return { permissions, hasPermission, loading };
 }

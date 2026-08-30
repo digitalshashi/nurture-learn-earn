@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
 
 const formResponses = [
   { name: "Emma Wilson", contact: "emma@mail.com", service: "Growth Masterclass", page: "Landing Page A", date: "Mar 8, 2026" },
@@ -19,6 +20,9 @@ const dropOffs = [
 ];
 
 export default function Leads() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["responses", "dropoffs"] as const);
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto py-6 px-4">
@@ -27,7 +31,7 @@ export default function Leads() {
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" />Export CSV</Button>
         </div>
 
-        <Tabs defaultValue="responses">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="responses">Form Responses</TabsTrigger>
             <TabsTrigger value="dropoffs">Drop-Offs</TabsTrigger>

@@ -9,6 +9,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
+      // Stated rather than inherited from Sonner's default: checkout leans on
+      // these landing bottom-right, clear of the pay button and the form.
+      position="bottom-right"
       className="toaster group"
       toastOptions={{
         classNames: {

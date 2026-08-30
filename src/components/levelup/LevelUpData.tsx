@@ -78,14 +78,13 @@ export function LevelUpData() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Data</h2>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setShowForm(true)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
           <Plus className="h-4 w-4 mr-1" /> Add Data
         </Button>
       </div>
 
-      <Card className="card-shadow overflow-auto">
+      <Card className="card-shadow">
         <Table>
           <TableHeader>
             <TableRow>

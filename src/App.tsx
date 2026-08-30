@@ -4,18 +4,24 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { HomeRedirect } from "@/components/HomeRedirect";
+import { TenantHome } from "@/components/TenantHome";
+import { SeoDefaults } from "@/components/SeoDefaults";
+import { useReferralCapture } from "@/hooks/useReferralCapture";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import CourseBuilder from "./pages/CourseBuilder";
 import CoursePlayer from "./pages/CoursePlayer";
 import CourseDetail from "./pages/CourseDetail";
 import CourseManage from "./pages/CourseManage";
+import CourseManageIndex from "./pages/CourseManageIndex";
 import Channels from "./pages/Channels";
 import Dashboard from "./pages/Dashboard";
 import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import Workshops from "./pages/Workshops";
@@ -25,6 +31,8 @@ import Customers from "./pages/Customers";
 import Leads from "./pages/Leads";
 import SalesEarnings from "./pages/SalesEarnings";
 import SalesTransactions from "./pages/SalesTransactions";
+import SalesSubscriptions from "./pages/SalesSubscriptions";
+import SalesWithdrawals from "./pages/SalesWithdrawals";
 import EmailAutomation from "./pages/EmailAutomation";
 import WhatsAppAutomation from "./pages/WhatsAppAutomation";
 import NotificationAutomation from "./pages/NotificationAutomation";
@@ -42,7 +50,10 @@ import SettingsPage from "./pages/SettingsPage";
 import PlatformSettings from "./pages/PlatformSettings";
 import Billing from "./pages/Billing";
 import Referral from "./pages/Referral";
+import ReferralLanding from "./pages/ReferralLanding";
 import PageBuilder from "./pages/PageBuilder";
+import PageEditor from "./pages/PageEditor";
+import PublicPage from "./pages/PublicPage";
 import MarketingEmail from "./pages/MarketingEmail";
 import Broadcasts from "./pages/Broadcasts";
 import Banners from "./pages/Banners";
@@ -62,6 +73,8 @@ import StudentProfile from "./pages/StudentProfile";
 import MyAccount from "./pages/MyAccount";
 import Messages from "./pages/Messages";
 import AICourseGenerator from "./pages/AICourseGenerator";
+import CourseEngine from "./pages/CourseEngine";
+import CourseBlueprintEditor from "./pages/CourseBlueprintEditor";
 import AIContentGenerator from "./pages/AIContentGenerator";
 import AILandingPageBuilder from "./pages/AILandingPageBuilder";
 import WorkshopLandingPage from "./pages/WorkshopLandingPage";
@@ -86,19 +99,39 @@ import GrowthBusiness from "./pages/GrowthBusiness";
 import GrowthBoosters from "./pages/GrowthBoosters";
 const queryClient = new QueryClient();
 
+/** Hooks need a component; this one exists only to run useReferralCapture inside the router. */
+function ReferralCapture() {
+  useReferralCapture();
+  return null;
+}
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CurrencyProvider>
+          {/* Resets the head to the 1corehub defaults on every navigation;
+              pages with their own metadata override it from their own effect. */}
+          <SeoDefaults />
+          {/* A referral code in the URL is banked here, at the root, so it
+              counts whichever page the shared link happens to land on. */}
+          <ReferralCapture />
           <Routes>
-            <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
+            <Route path="/" element={<TenantHome />} />
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
             <Route path="/checkout/:idOrSlug/success" element={<ProtectedRoute><ServiceCheckoutSuccess /></ProtectedRoute>} />
             <Route path="/workshop/:slug" element={<WorkshopLandingPage />} />
             <Route path="/login" element={<Login />} />
+            {/* Public: this is the link members hand to their friends. */}
+            <Route path="/r/:code" element={<ReferralLanding />} />
+            <Route path="/p/:slug" element={<PublicPage />} />
+            {/* The page existed but was never routed, so the reset link in the
+                recovery email had nowhere to land. */}
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute featureKey="dashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute featureKey="community_feed"><Feed /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute featureKey="courses"><Courses /></ProtectedRoute>} />
@@ -106,11 +139,14 @@ const App = () => (
             <Route path="/service-builder" element={<ProtectedRoute featureKey="services"><ServiceBuilder /></ProtectedRoute>} />
             <Route path="/service-builder/:id" element={<ProtectedRoute featureKey="services"><ServiceBuilder /></ProtectedRoute>} />
             <Route path="/ai-course-generator" element={<ProtectedRoute featureKey="ai_suite"><AICourseGenerator /></ProtectedRoute>} />
+            <Route path="/course-engine" element={<ProtectedRoute featureKey="courses"><CourseEngine /></ProtectedRoute>} />
+            <Route path="/course-engine/:id" element={<ProtectedRoute featureKey="courses"><CourseBlueprintEditor /></ProtectedRoute>} />
             <Route path="/course-builder" element={<ProtectedRoute featureKey="courses"><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-builder/:id" element={<ProtectedRoute featureKey="courses"><CourseBuilder /></ProtectedRoute>} />
             <Route path="/course-player/:id" element={<ProtectedRoute featureKey="courses"><CourseDetail /></ProtectedRoute>} />
             <Route path="/course-player/:id/watch" element={<ProtectedRoute featureKey="courses"><CoursePlayer /></ProtectedRoute>} />
             <Route path="/course-player/:id/watch/:chapterId" element={<ProtectedRoute featureKey="courses"><CoursePlayer /></ProtectedRoute>} />
+            <Route path="/course-manage" element={<ProtectedRoute featureKey="courses"><CourseManageIndex /></ProtectedRoute>} />
             <Route path="/course-manage/:id" element={<ProtectedRoute featureKey="courses"><CourseManage /></ProtectedRoute>} />
             <Route path="/channels" element={<ProtectedRoute featureKey="channels"><Channels /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute featureKey="analytics"><Analytics /></ProtectedRoute>} />
@@ -128,13 +164,14 @@ const App = () => (
             <Route path="/crm/leads/:id" element={<ProtectedRoute featureKey="crm"><CrmLeadProfile /></ProtectedRoute>} />
             <Route path="/sales/earnings" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
             <Route path="/sales/transactions" element={<ProtectedRoute featureKey="sales"><SalesTransactions /></ProtectedRoute>} />
-            <Route path="/sales/subscriptions" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
-            <Route path="/sales/withdrawals" element={<ProtectedRoute featureKey="sales"><SalesEarnings /></ProtectedRoute>} />
+            <Route path="/sales/subscriptions" element={<ProtectedRoute featureKey="sales"><SalesSubscriptions /></ProtectedRoute>} />
+            <Route path="/sales/withdrawals" element={<ProtectedRoute featureKey="sales"><SalesWithdrawals /></ProtectedRoute>} />
             <Route path="/growth/goal" element={<ProtectedRoute featureKey="growth"><GrowthGoal /></ProtectedRoute>} />
             <Route path="/growth/actions" element={<ProtectedRoute featureKey="growth"><GrowthActions /></ProtectedRoute>} />
             <Route path="/growth/business" element={<ProtectedRoute featureKey="growth"><GrowthBusiness /></ProtectedRoute>} />
             <Route path="/growth/boosters" element={<ProtectedRoute featureKey="growth"><GrowthBoosters /></ProtectedRoute>} />
             <Route path="/page-builder" element={<ProtectedRoute featureKey="page_builder"><PageBuilder /></ProtectedRoute>} />
+            <Route path="/page-builder/:id" element={<ProtectedRoute featureKey="page_builder"><PageEditor /></ProtectedRoute>} />
             <Route path="/page-builder/ai-landing" element={<ProtectedRoute featureKey="page_builder"><AILandingPageBuilder /></ProtectedRoute>} />
             <Route path="/marketing/email" element={<ProtectedRoute featureKey="marketing"><MarketingEmail /></ProtectedRoute>} />
             <Route path="/marketing/broadcasts" element={<ProtectedRoute featureKey="marketing"><Broadcasts /></ProtectedRoute>} />
@@ -180,10 +217,12 @@ const App = () => (
             <Route path="/support" element={<ProtectedRoute featureKey="support"><Support /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </CurrencyProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, GripVertical, Save, Eye, EyeOff } from "lucide-react";
-import { LucideIcon } from "@/components/layout/TopNav";
+import { LucideIcon } from "@/components/layout/LucideIcon";
+import { BrandMark } from "@/components/BrandMark";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface NavItem {
@@ -151,9 +152,7 @@ export default function NavigationSettings() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4 border border-border rounded-lg p-3 bg-card overflow-x-auto">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground text-sm font-bold">L</span>
-              </div>
+              <BrandMark size={32} className="shrink-0" />
               {items.filter((i) => i.is_enabled).map((item, i) => (
                 <div key={i} className="flex flex-col items-center gap-0.5 text-muted-foreground text-xs shrink-0 px-2">
                   <LucideIcon name={item.icon_name} className="h-5 w-5" />

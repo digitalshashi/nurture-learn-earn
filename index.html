@@ -3,15 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Nurture Learn Earn</title>
-    <meta name="description" content="Learn, connect, and grow with your community." />
-    <meta name="author" content="Nurture Learn Earn" />
 
-    <meta property="og:title" content="Nurture Learn Earn" />
-    <meta property="og:description" content="Learn, connect, and grow with your community." />
+    <!--
+      These are the defaults every route falls back to. For /checkout/*,
+      /workshop/* and /course-player/*, the Cloudflare Worker in worker/ swaps
+      the block below for the real entity's title, description, price and image
+      before the response leaves the edge — social crawlers never run the app's
+      JavaScript, so this markup is the only thing they read.
+    -->
+    <title>1corehub — One hub for your whole business</title>
+    <meta
+      name="description"
+      content="Courses, community, events, CRM and payments — everything you sell, in one place."
+    />
+    <meta name="author" content="1corehub" />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:site_name" content="1corehub" />
     <meta property="og:type" content="website" />
+    <meta property="og:title" content="1corehub — One hub for your whole business" />
+    <meta
+      property="og:description"
+      content="Courses, community, events, CRM and payments — everything you sell, in one place."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="/og-default.png" />
+    <meta property="og:image:secure_url" content="/og-default.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="1corehub — One hub for your whole business" />
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="1corehub — One hub for your whole business" />
+    <meta
+      name="twitter:description"
+      content="Courses, community, events, CRM and payments — everything you sell, in one place."
+    />
+    <meta name="twitter:image" content="/og-default.png" />
+    <meta name="twitter:image:alt" content="1corehub — One hub for your whole business" />
 
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -19,7 +49,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Nurture Learn Earn" />
+    <meta name="apple-mobile-web-app-title" content="1corehub" />
   </head>
 
   <body>

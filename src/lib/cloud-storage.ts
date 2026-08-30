@@ -3,6 +3,7 @@
  * All media (videos, thumbnails, recordings, resources) goes to the configured bucket (1corehub).
  */
 import { supabase } from "@/integrations/supabase/client";
+import { convertImageToWebp, webpPath, WEBP_TYPE } from "@/lib/imageEncoding";
 
 export type CloudFolder =
   | "videos"
@@ -68,6 +69,12 @@ export function buildStoragePath(
 /**
  * Upload a File/Blob to R2/S3 using a presigned PUT URL.
  * Progress is reported 0–100 when onProgress is provided.
+ *
+ * Images are re-encoded to WebP on the way through, and the object key's
+ * extension is rewritten to match. This is the single door into the bucket, so
+ * doing it here means no call site can forget to — and none of them has to
+ * know about it. SVGs, animated GIFs and non-images pass through untouched;
+ * see src/lib/imageEncoding.ts for why.
  */
 export async function uploadToCloud(
   file: File | Blob,
@@ -75,12 +82,22 @@ export async function uploadToCloud(
   options?: {
     contentType?: string;
     onProgress?: (percent: number) => void;
+    /** Escape hatch for a caller that must store the exact bytes it was given. */
+    keepOriginalFormat?: boolean;
   },
 ): Promise<UploadResult> {
-  const contentType =
-    options?.contentType ||
-    (file as File).type ||
-    "application/octet-stream";
+  const encoded = options?.keepOriginalFormat
+    ? { file, converted: false }
+    : await convertImageToWebp(file);
+
+  const body = encoded.file;
+  const uploadPath = encoded.converted ? webpPath(path) : path;
+
+  // A caller's declared contentType describes what it handed us, so it stops
+  // being true the moment we re-encode.
+  const contentType = encoded.converted
+    ? WEBP_TYPE
+    : options?.contentType || (file as File).type || "application/octet-stream";
 
   options?.onProgress?.(5);
 
@@ -93,13 +110,13 @@ export async function uploadToCloud(
     headers?: Record<string, string>;
   }>({
     action: "presign",
-    path,
+    path: uploadPath,
     contentType,
   });
 
   options?.onProgress?.(15);
 
-  await putWithProgress(presign.uploadUrl, file, contentType, (p) => {
+  await putWithProgress(presign.uploadUrl, body, contentType, (p) => {
     // Map PUT progress into 15–95
     options?.onProgress?.(15 + Math.round(p * 0.8));
   });
@@ -193,12 +210,20 @@ function putWithProgress(
       }
     };
 
+    // A PUT the browser refuses, or one that never completes, reaches onerror
+    // with no status and no body — there is nothing to report but the fact of
+    // it. The bucket policy allows any origin (see
+    // scripts/apply-storage-cors.md), so this is far more often a connection
+    // that dropped than a policy that rejected.
     xhr.onerror = () =>
       reject(
         new Error(
-          "Network error during upload. Ensure R2/S3 CORS allows PUT from this origin.",
+          "The upload could not reach storage. Check your connection and try again — " +
+            "if it keeps happening, the storage bucket may need its CORS rules applied " +
+            '("npm run storage:cors").',
         ),
       );
+    xhr.ontimeout = () => reject(new Error("The upload timed out before it finished."));
     xhr.onabort = () => reject(new Error("Upload aborted"));
 
     xhr.send(body);

@@ -8,6 +8,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Users, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/useTabParam";
+import { RolePermissionsPanel } from "@/components/admin/RolePermissionsPanel";
+import { PlatformSettingsPanel } from "@/components/admin/PlatformSettingsPanel";
+import { SecuritySettingsPanel } from "@/components/admin/SecuritySettingsPanel";
 
 interface UserWithRole {
   id: string;
@@ -21,6 +26,10 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [stats, setStats] = useState({ users: 0, courses: 0, posts: 0 });
+  // Everything an admin owns, in one place. Each section is the same panel the
+  // standalone Settings route renders, so nothing moved out of Settings — it
+  // is reachable from both.
+  const [tab, setTab] = useTabParam(["users", "roles", "platform", "security"] as const);
 
   useEffect(() => {
     loadUsers();
@@ -95,6 +104,15 @@ export default function AdminPanel() {
           </Card>
         </div>
 
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="mb-4 flex-wrap">
+            <TabsTrigger value="users">Users & roles</TabsTrigger>
+            <TabsTrigger value="roles">Permissions</TabsTrigger>
+            <TabsTrigger value="platform">Platform</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users">
         <Card className="card-shadow">
           <CardHeader><CardTitle className="text-base">Manage Users</CardTitle></CardHeader>
           <CardContent>
@@ -123,6 +141,12 @@ export default function AdminPanel() {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="roles"><RolePermissionsPanel /></TabsContent>
+          <TabsContent value="platform"><PlatformSettingsPanel /></TabsContent>
+          <TabsContent value="security"><SecuritySettingsPanel /></TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );

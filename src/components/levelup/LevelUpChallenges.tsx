@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface Challenge {
   id: string;
@@ -25,6 +26,9 @@ interface Participation {
 }
 
 export function LevelUpChallenges() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["active", "all"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
@@ -58,9 +62,7 @@ export function LevelUpChallenges() {
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-lg font-bold">Challenges</h2>
-
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="bg-accent/5 border-accent/20">
           <CardContent className="pt-4 pb-3">
             <p className="text-xs text-muted-foreground">Active Challenges</p>
@@ -75,7 +77,7 @@ export function LevelUpChallenges() {
         </Card>
       </div>
 
-      <Tabs defaultValue="active">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="active">My Challenges</TabsTrigger>
           <TabsTrigger value="all">All Challenges</TabsTrigger>

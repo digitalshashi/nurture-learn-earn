@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Sparkles, GripVertical } from "lucide-react";
+import { Search, Plus, Sparkles, GripVertical, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CourseReorderPanel } from "@/components/courses/CourseReorderPanel";
@@ -57,21 +57,75 @@ export default function Courses() {
     if (user && courses.length > 0) fetchProgressAndTotals();
   }, [user, courses]);
 
+  /**
+   * The courses this person actually holds, and no others.
+   *
+   * Row-level security already stops a learner reading another academy's
+   * courses. It deliberately still lets platform staff read every course,
+   * because they have to administer them — but this is the learning catalogue,
+   * not an admin screen, so staff see what they own or hold here like everyone
+   * else. Administration lives in the admin panel.
+   */
   const fetchCourses = async () => {
+    if (!user) {
+      setCourses([]);
+      setLoading(false);
+      return;
+    }
+
+    // What the viewer holds: enrolled directly, or carried by a live service.
+    const [{ data: enrolled }, { data: held }] = await Promise.all([
+      supabase.from("enrollments").select("course_id").eq("user_id", user.id),
+      supabase
+        .from("service_users")
+        .select("service_id")
+        .eq("user_id", user.id)
+        .eq("status", "active"),
+    ]);
+
+    const serviceIds = ((held ?? []) as { service_id: string }[]).map((row) => row.service_id);
+
+    const { data: bundled } = serviceIds.length
+      ? await supabase.from("service_courses").select("course_id").in("service_id", serviceIds)
+      : { data: [] as { course_id: string }[] };
+
+    const entitled = new Set<string>([
+      ...((enrolled ?? []) as { course_id: string }[]).map((row) => row.course_id),
+      ...((bundled ?? []) as { course_id: string }[]).map((row) => row.course_id),
+    ]);
+
     const { data } = await supabase
       .from("courses")
-      .select("id, title, description, thumbnail_url, price, category, access_level, display_order, coach_id")
+      .select(
+        "id, title, description, thumbnail_url, price, category, access_level, display_order, coach_id, service_id",
+      )
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false });
+
     if (data) {
-      setCourses(data as Course[]);
-      const coachIds = [...new Set(data.map((c) => c.coach_id).filter(Boolean))];
+      const rows = data as (Course & { service_id: string | null })[];
+
+      // A course attached straight to a held service counts too, without
+      // needing a service_courses row of its own.
+      const visible = rows.filter(
+        (course) =>
+          course.coach_id === user.id ||
+          entitled.has(course.id) ||
+          (course.service_id !== null && serviceIds.includes(course.service_id)),
+      );
+
+      setCourses(visible as Course[]);
+
+      const coachIds = [...new Set(visible.map((c) => c.coach_id).filter(Boolean))];
       if (coachIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", coachIds);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", coachIds);
         if (profiles) {
           const names: Record<string, string> = {};
-          profiles.forEach((p) => {
-            names[p.id] = p.full_name || "Instructor";
+          profiles.forEach((profile) => {
+            names[profile.id] = profile.full_name || "Instructor";
           });
           setCoachNames(names);
         }
@@ -182,7 +236,10 @@ export default function Courses() {
               Courses
             </h1>
             {isCoachOrAdmin && (
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" className="rounded-xl" onClick={() => navigate("/course-manage")}>
+                  <SlidersHorizontal className="h-4 w-4 mr-2" /> Manage Courses
+                </Button>
                 <Button variant="outline" className="rounded-xl" onClick={() => setReorderOpen(true)}>
                   <GripVertical className="h-4 w-4 mr-2" /> Reorder
                 </Button>
@@ -332,7 +389,12 @@ export default function Courses() {
                       if (locked) return;
                       navigate(`/course-player/${course.id}`);
                     }}
-                    onManage={isCoachOrAdmin ? () => navigate(`/course-manage/${course.id}`) : undefined}
+                    onManage={
+                      isCoachOrAdmin
+                        ? (tab?: string) =>
+                            navigate(`/course-manage/${course.id}${tab ? `?tab=${tab}` : ""}`)
+                        : undefined
+                    }
                   />
                 );
               })}

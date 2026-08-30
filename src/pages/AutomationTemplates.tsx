@@ -13,6 +13,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTabParam } from "@/hooks/useTabParam";
+import { EmailTemplateEditor } from "@/components/email/EmailTemplateEditor";
 
 interface Template {
   id: string;
@@ -36,12 +38,17 @@ const CATEGORIES = [
 ];
 
 export default function AutomationTemplates() {
+  // Section lives in the URL so links, refreshes and analytics all point
+  // at the section actually being viewed.
+  const [activeTab, setActiveTab] = useTabParam(["all", "email", "whatsapp", "notification"] as const);
   const { user } = useAuth();
   const { toast } = useToast();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", channel: "email", category: "general", subject: "", content: "" });
+  // null = the dialog is creating; an id = it is editing that template.
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadTemplates = async () => {
     if (!user) return;
@@ -55,24 +62,58 @@ export default function AutomationTemplates() {
 
   useEffect(() => { loadTemplates(); }, [user]);
 
-  const handleCreate = async () => {
+  const blankForm = { name: "", channel: "email", category: "general", subject: "", content: "" };
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(blankForm);
+    setOpen(true);
+  };
+
+  const openEdit = (t: Template) => {
+    setEditingId(t.id);
+    setForm({
+      name: t.name,
+      channel: t.channel,
+      category: t.category || "general",
+      subject: t.subject || "",
+      content: t.content || "",
+    });
+    setOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!user || !form.name) return;
     setLoading(true);
-    const { error } = await supabase.from("automation_templates").insert({
-      coach_id: user.id,
+
+    const payload = {
       name: form.name,
       channel: form.channel,
       category: form.category,
       subject: form.subject || null,
       content: form.content || null,
-    } as any);
+      updated_at: new Date().toISOString(),
+    };
+
+    // Editing was impossible before: the page could only insert and delete, so
+    // fixing a typo meant recreating the template from scratch.
+    const { error } = editingId
+      ? await supabase
+          .from("automation_templates")
+          .update(payload as any)
+          .eq("id", editingId)
+          .eq("coach_id", user.id)
+      : await supabase
+          .from("automation_templates")
+          .insert({ ...payload, coach_id: user.id } as any);
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Template created!" });
+      toast({ title: editingId ? "Template updated" : "Template created!" });
       setOpen(false);
-      setForm({ name: "", channel: "email", category: "general", subject: "", content: "" });
+      setEditingId(null);
+      setForm(blankForm);
       loadTemplates();
     }
     setLoading(false);
@@ -102,10 +143,12 @@ export default function AutomationTemplates() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4 mr-1" /> Create Template</Button>
+              <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Create Template</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Create Template</DialogTitle></DialogHeader>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Edit Template" : "Create Template"}</DialogTitle>
+              </DialogHeader>
               <div className="space-y-4 mt-2">
                 <div><Label>Template Name</Label><Input placeholder="Welcome Email" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">
@@ -128,17 +171,38 @@ export default function AutomationTemplates() {
                     </Select>
                   </div>
                 </div>
-                {form.channel === "email" && <div><Label>Subject</Label><Input placeholder="Welcome to {{course_name}}" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>}
-                <div><Label>Content</Label><Textarea placeholder="Hi {{student_name}},&#10;&#10;Your message here..." value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={5} /></div>
-                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleCreate} disabled={loading}>
-                  {loading ? "Creating..." : "Create Template"}
+                {form.channel === "email" ? (
+                  <EmailTemplateEditor
+                    subject={form.subject}
+                    html={form.content}
+                    onSubjectChange={(v) => setForm({ ...form, subject: v })}
+                    onHtmlChange={(v) => setForm({ ...form, content: v })}
+                    variables={["student_name", "coach_name", "course_name", "event_name", "link"]}
+                    purpose="automation"
+                  />
+                ) : (
+                  <div>
+                    <Label>Content</Label>
+                    <Textarea
+                      placeholder="Hi {{student_name}},&#10;&#10;Your message here..."
+                      value={form.content}
+                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+                      rows={6}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      WhatsApp and notifications are plain text — no HTML.
+                    </p>
+                  </div>
+                )}
+                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleSave} disabled={loading}>
+                  {loading ? "Saving..." : editingId ? "Save changes" : "Create Template"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
 
-        <Tabs defaultValue="all">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="all">All ({templates.length})</TabsTrigger>
             <TabsTrigger value="email">Email ({templates.filter(t => t.channel === "email").length})</TabsTrigger>
@@ -163,7 +227,10 @@ export default function AutomationTemplates() {
                             {channelIcon(t.channel)}
                             <Badge variant="outline" className="text-[10px] capitalize">{t.category}</Badge>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteTemplate(t.id)}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={`Edit ${t.name}`} onClick={() => openEdit(t)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" aria-label={`Delete ${t.name}`} onClick={() => deleteTemplate(t.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
