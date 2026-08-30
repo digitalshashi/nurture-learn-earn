@@ -173,6 +173,15 @@ export async function recordOrder(
     buyerEmail: string | null;
     buyerPhone: string | null;
     checkoutOrigin: string | null;
+    /**
+     * The affiliate whose link brought this buyer, when there was one.
+     *
+     * Carried on the order because a paid purchase can be made with no account
+     * at all — one is created afterwards, out of the details above — so there
+     * is no session for the browser to record an attribution against. Without
+     * this, every guest purchase through an affiliate link would pay nobody.
+     */
+    affiliateCode: string | null;
   },
 ): Promise<void> {
   const { error } = await admin.from("payment_orders").upsert(
@@ -189,6 +198,7 @@ export async function recordOrder(
       buyer_email: order.buyerEmail?.trim().toLowerCase() ?? null,
       buyer_phone: order.buyerPhone,
       checkout_origin: order.checkoutOrigin,
+      affiliate_code: order.affiliateCode,
       status: "created",
     },
     { onConflict: "provider,gateway_order_id" },

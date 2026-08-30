@@ -30,12 +30,19 @@ import { uploadUserFile } from "@/lib/cloud-storage";
 import { formatFileSize } from "@/lib/mediaLibrary";
 import {
   captureErrorMessage,
+  describeSizePerMinute,
+  DEFAULT_QUALITY,
   formatDuration,
+  needsDownscale,
   pickRecordingFormat,
+  QUALITY_PROFILES,
   readRecorderEnvironment,
   recorderUnavailableReason,
   recordingFileName,
+  fitWithin,
+  videoBitrateFor,
   type CaptureTarget,
+  type QualityPreset,
 } from "@/lib/screenRecording";
 import {
   AlertCircle, Camera, Check, Circle, Loader2, Mic, MicOff, Monitor,
@@ -71,9 +78,6 @@ const MODES: { key: RecordingMode; label: string; desc: string; icon: typeof Mon
   { key: "tab", label: "This tab", desc: "Just this browser tab", icon: MonitorSmartphone },
 ];
 
-/** 1080p is plenty for a lesson and keeps a 40-minute recording a sane size. */
-const MAX_WIDTH = 1920;
-const MAX_HEIGHT = 1080;
 
 export default function LessonRecorder({
   onRecordingComplete,
@@ -88,7 +92,10 @@ export default function LessonRecorder({
   const [mode, setMode] = useState<RecordingMode>("screen");
   const [micEnabled, setMicEnabled] = useState(true);
   const [systemAudio, setSystemAudio] = useState(false);
+  const [quality, setQuality] = useState<QualityPreset>(DEFAULT_QUALITY);
   const [elapsed, setElapsed] = useState(0);
+  /** Live byte count, so a recording growing too fast is visible while it runs. */
+  const [bytesRecorded, setBytesRecorded] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [preview, setPreview] = useState<{ url: string; blob: Blob } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +115,22 @@ export default function LessonRecorder({
   const format = useMemo(() => pickRecordingFormat(), []);
 
   const wantsScreen = mode !== "camera";
+  const profile = QUALITY_PROFILES[quality];
+
+  /**
+   * What this setting will cost, before recording rather than after. The
+   * estimate uses the preset's own cap, since the real frame size is not known
+   * until the share has been picked.
+   */
+  const sizeEstimate = useMemo(() => {
+    const content = wantsScreen ? "screen" : "camera";
+    const limits = profile[content];
+    return describeSizePerMinute(
+      videoBitrateFor(profile, content, limits.maxWidth, limits.maxHeight, limits.frameRate),
+      micEnabled || systemAudio ? profile.audioBitsPerSecond : 0,
+    );
+  }, [micEnabled, profile, systemAudio, wantsScreen]);
+
   const environment = useMemo(() => readRecorderEnvironment(), []);
   const unavailable = useMemo(
     () => recorderUnavailableReason(environment, wantsScreen) ??
@@ -171,17 +194,32 @@ export default function LessonRecorder({
       let cameraStream: MediaStream | null = null;
       const audioTracks: MediaStreamTrack[] = [];
 
+      const content: "screen" | "camera" = mode === "camera" ? "camera" : "screen";
+      const limits = profile[content];
+
       if (mode === "camera") {
         cameraStream = await capture(streamsRef, "camera", () =>
           navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+            video: {
+              width: { ideal: limits.maxWidth, max: limits.maxWidth },
+              height: { ideal: limits.maxHeight, max: limits.maxHeight },
+              frameRate: { ideal: limits.frameRate, max: limits.frameRate },
+              facingMode: "user",
+            },
             audio: false,
           }),
         );
         videoStream = cameraStream;
       } else {
         const displayOptions: DisplayMediaStreamOptions & { preferCurrentTab?: boolean } = {
-          video: { frameRate: { ideal: 30 } },
+          // `max` is what makes this work: browsers downscale the capture
+          // themselves, in the capture pipeline, which is both cheaper and
+          // sharper than redrawing a 4K frame through a canvas afterwards.
+          video: {
+            width: { max: limits.maxWidth },
+            height: { max: limits.maxHeight },
+            frameRate: { ideal: limits.frameRate, max: limits.frameRate },
+          },
           audio: systemAudio,
         };
         // Skips the picker's screen and window tabs and offers this tab first,
@@ -211,11 +249,22 @@ export default function LessonRecorder({
           }
         }
 
-        // Only a camera bubble needs compositing. A plain screen share is
-        // recorded from its own track, at its own resolution and frame rate —
-        // redrawing it through a canvas would soften every line of code on it
-        // for no gain.
-        videoStream = cameraStream ? composite(frameRef, screen, cameraStream) : screen;
+        const settings = screen.getVideoTracks()[0]?.getSettings() ?? {};
+        // Firefox and Safari ignore `max` on a display capture, so the frame
+        // can still arrive at 4K. Compositing is the fallback that guarantees
+        // the cap; a capture already inside it is recorded from its own track,
+        // untouched, because redrawing it would only soften the text.
+        const oversized = needsDownscale(
+          settings.width || 0,
+          settings.height || 0,
+          limits.maxWidth,
+          limits.maxHeight,
+        );
+
+        videoStream =
+          cameraStream || oversized
+            ? composite(frameRef, screen, cameraStream, limits)
+            : screen;
 
         // Stopping the share from the browser's own bar ends the recording,
         // rather than leaving it running against a frozen frame.
@@ -228,7 +277,9 @@ export default function LessonRecorder({
         try {
           const mic = await capture(streamsRef, "microphone", () =>
             navigator.mediaDevices.getUserMedia({
-              audio: { echoCancellation: true, noiseSuppression: true },
+              // A voice track is mono. Recording narration in stereo doubles
+              // the audio for two copies of the same signal.
+              audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
             }),
           );
           audioTracks.push(...mic.getAudioTracks());
@@ -242,14 +293,32 @@ export default function LessonRecorder({
       const tracks = [...videoStream.getVideoTracks(), ...mixAudio(audioTracks, audioContextRef)];
       const combined = new MediaStream(tracks);
 
-      const recorder = new MediaRecorder(
-        combined,
-        format.mimeType ? { mimeType: format.mimeType } : undefined,
+      // Bitrate is read back off the track that will actually be encoded, not
+      // off the preset — a shared 800x600 window and a 4K monitor end up in
+      // very different places.
+      const encoded = tracks[0]?.getSettings() ?? {};
+      const videoBitsPerSecond = videoBitrateFor(
+        profile,
+        content,
+        encoded.width || limits.maxWidth,
+        encoded.height || limits.maxHeight,
+        encoded.frameRate || limits.frameRate,
       );
+
+      const recorder = new MediaRecorder(combined, {
+        ...(format.mimeType ? { mimeType: format.mimeType } : {}),
+        videoBitsPerSecond,
+        audioBitsPerSecond: audioTracks.length > 0 ? profile.audioBitsPerSecond : undefined,
+      });
       recorderRef.current = recorder;
 
+      setBytesRecorded(0);
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data);
+        if (event.data.size === 0) return;
+        chunksRef.current.push(event.data);
+        // Shown live, so a recording that is running away in size is obvious
+        // while it is still cheap to stop and change the setting.
+        setBytesRecorded((total) => total + event.data.size);
       };
       recorder.onerror = () => {
         setError("The recording stopped unexpectedly. What was captured up to that point is kept.");
@@ -277,7 +346,7 @@ export default function LessonRecorder({
       setState("idle");
       setError(err instanceof Error ? err.message : "Recording could not be started.");
     }
-  }, [format, micEnabled, mode, stopEverything, stopRecording, systemAudio]);
+  }, [format, micEnabled, mode, profile, stopEverything, stopRecording, systemAudio]);
 
   const pause = () => {
     if (recorderRef.current?.state !== "recording") return;
@@ -456,6 +525,35 @@ export default function LessonRecorder({
                 )}
               </div>
 
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">Quality</p>
+                  <p className="text-[10px] tabular-nums text-muted-foreground">{sizeEstimate}</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.keys(QUALITY_PROFILES) as QualityPreset[]).map((key) => {
+                    const option = QUALITY_PROFILES[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setQuality(key)}
+                        className={`rounded-lg border p-2 text-left transition-all ${
+                          quality === key
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                            : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className="block text-[11px] font-medium">{option.label}</span>
+                        <span className="block text-[10px] leading-tight text-muted-foreground">
+                          {option.description}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <Button
                 className="w-full bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700"
                 onClick={startRecording}
@@ -478,6 +576,11 @@ export default function LessonRecorder({
               <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-xs text-white">
                 {formatDuration(elapsed)}
               </span>
+              {bytesRecorded > 0 && (
+                <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-xs text-white/80">
+                  {formatFileSize(bytesRecorded)}
+                </span>
+              )}
             </div>
             <div className="absolute right-3 top-3 flex gap-1.5">
               {micEnabled && (
@@ -583,23 +686,30 @@ async function capture(
 function composite(
   frameRef: React.MutableRefObject<number | null>,
   screen: MediaStream,
-  camera: MediaStream,
+  camera: MediaStream | null,
+  limits: { maxWidth: number; maxHeight: number; frameRate: number },
 ): MediaStream {
   const [track] = screen.getVideoTracks();
   const settings = track.getSettings();
-  const sourceWidth = settings.width || MAX_WIDTH;
-  const sourceHeight = settings.height || MAX_HEIGHT;
-  // A 4K monitor recorded frame-for-frame produces a file nobody can upload.
-  const scale = Math.min(1, MAX_WIDTH / sourceWidth, MAX_HEIGHT / sourceHeight);
+  const size = fitWithin(
+    settings.width || limits.maxWidth,
+    settings.height || limits.maxHeight,
+    limits.maxWidth,
+    limits.maxHeight,
+  );
 
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(sourceWidth * scale);
-  canvas.height = Math.round(sourceHeight * scale);
+  canvas.width = size.width;
+  canvas.height = size.height;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("This browser could not open a canvas to combine the two videos.");
+  // Screen content is mostly text, and text survives a downscale far better
+  // with a proper resampling filter than with the default nearest-ish one.
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
 
   const screenVideo = playIntoElement(screen);
-  const cameraVideo = playIntoElement(camera);
+  const cameraVideo = camera ? playIntoElement(camera) : null;
 
   const bubble = Math.round(Math.min(canvas.width, canvas.height) * 0.22);
   const margin = Math.round(bubble * 0.18);
@@ -607,7 +717,7 @@ function composite(
   const draw = () => {
     context.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
 
-    if (cameraVideo.videoWidth > 0) {
+    if (cameraVideo && cameraVideo.videoWidth > 0) {
       const x = canvas.width - bubble - margin;
       const y = canvas.height - bubble - margin;
       const centreX = x + bubble / 2;
@@ -631,7 +741,10 @@ function composite(
   };
   draw();
 
-  return canvas.captureStream(30);
+  // The canvas is driven at the profile frame rate rather than the display
+  // refresh: a 15fps screen recording that captures 60 identical frames a
+  // second is four times the data for the same picture.
+  return canvas.captureStream(limits.frameRate);
 }
 
 /** A hidden, playing <video> for a stream the canvas needs to read frames from. */

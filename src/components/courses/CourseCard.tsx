@@ -4,9 +4,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Download, Lock, Pencil } from "lucide-react";
+import { ChevronDown, Download, Lock, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CourseCardProps {
@@ -27,6 +28,8 @@ interface CourseCardProps {
   onContinue?: () => void;
   /** Present only for someone who may edit the course. `tab` deep-links a section of the editor. */
   onManage?: (tab?: string) => void;
+  /** Present only for someone who may delete the course. */
+  onDelete?: () => void;
 }
 
 export function CourseCard({
@@ -43,6 +46,7 @@ export function CourseCard({
   onClick,
   onContinue,
   onManage,
+  onDelete,
 }: CourseCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const paid = isPaid ?? price > 0;
@@ -105,6 +109,17 @@ export function CourseCard({
                     Change cover photo
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onManage("reports")}>View reports</DropdownMenuItem>
+                </>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete course
+                  </DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>

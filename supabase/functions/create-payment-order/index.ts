@@ -66,6 +66,14 @@ Deno.serve(async (req) => {
     const redirectUrl = body.redirect_url as string | undefined;
     const customFields = body.custom_fields_data ?? null;
     const checkoutOrigin = typeof body.origin === "string" ? body.origin : null;
+    // Normalised the same way the database does, and length-capped: this is a
+    // caller-supplied string that ends up on a row. An unknown code resolves
+    // to no affiliate rather than being rejected — a bad code must never stop
+    // somebody paying.
+    const affiliateCode =
+      typeof body.affiliate_code === "string"
+        ? body.affiliate_code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16) || null
+        : null;
 
     if (!serviceId) return json({ error: "service_id is required" }, 400);
 
@@ -158,6 +166,7 @@ Deno.serve(async (req) => {
         buyerEmail: buyer.email,
         buyerPhone: buyer.phone,
         checkoutOrigin,
+        affiliateCode,
       });
 
       return json({
@@ -217,6 +226,7 @@ Deno.serve(async (req) => {
       buyerEmail: buyer.email,
       buyerPhone: buyer.phone,
       checkoutOrigin,
+      affiliateCode,
     });
 
     return json({

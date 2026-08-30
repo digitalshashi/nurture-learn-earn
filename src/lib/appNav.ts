@@ -219,7 +219,9 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     label: null,
     permissionKey: "referral" as FeatureKey,
     items: [
-      { title: "Refer & Earn", url: "/referral", icon: Gift, permissionKey: "referral" as FeatureKey },
+      // /referral itself is the affiliates dashboard now; the invite bonus,
+      // which is a different offer, sits one level down.
+      { title: "Refer & Earn", url: "/referral/invite", icon: Gift, permissionKey: "referral" as FeatureKey },
     ],
   },
   {

@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   captureErrorMessage,
+  describeSizePerMinute,
+  fitWithin,
+  needsDownscale,
+  QUALITY_PROFILES,
+  videoBitrateFor,
   formatDuration,
   pickRecordingFormat,
   recorderUnavailableReason,
@@ -97,6 +102,90 @@ describe("captureErrorMessage", () => {
 
   it("falls back to the browser's own words rather than an empty string", () => {
     expect(captureErrorMessage(new Error("Something odd"), "screen")).toBe("Something odd");
+  });
+});
+
+describe("videoBitrateFor", () => {
+  const balanced = QUALITY_PROFILES.balanced;
+
+  it("scales with the pixels actually being encoded", () => {
+    // The old recorder set no bitrate at all, so Chrome used a flat 2.5 Mbps
+    // whether the capture was a 4K monitor or an 800x600 window.
+    const at1080p = videoBitrateFor(balanced, "screen", 1920, 1080, 15);
+    const at720p = videoBitrateFor(balanced, "screen", 1280, 720, 15);
+    expect(at1080p).toBeGreaterThan(at720p);
+    expect(at1080p / at720p).toBeCloseTo(2.25, 1);
+  });
+
+  it("keeps a 1080p screen recording well under the old flat default", () => {
+    // 2.5 Mbps was the old effective rate; balanced has to beat it on size
+    // while spending those bits on a quarter as many pixels.
+    expect(videoBitrateFor(balanced, "screen", 1920, 1080, 15)).toBeLessThan(2_500_000);
+  });
+
+  it("gives camera footage more per pixel than screen content", () => {
+    // Slides hold still and compress; a face does not.
+    const screen = videoBitrateFor(balanced, "screen", 1280, 720, 30);
+    const camera = videoBitrateFor(balanced, "camera", 1280, 720, 30);
+    expect(camera).toBeGreaterThan(screen);
+  });
+
+  it("orders the presets by size", () => {
+    const size = (preset: keyof typeof QUALITY_PROFILES) => {
+      const profile = QUALITY_PROFILES[preset];
+      return videoBitrateFor(
+        profile,
+        "screen",
+        profile.screen.maxWidth,
+        profile.screen.maxHeight,
+        profile.screen.frameRate,
+      );
+    };
+    expect(size("small")).toBeLessThan(size("balanced"));
+    expect(size("balanced")).toBeLessThan(size("high"));
+  });
+
+  it("never drops below a readable floor on a tiny capture", () => {
+    // A shared 320x240 window would otherwise be encoded at ~36 kbps.
+    expect(videoBitrateFor(balanced, "screen", 320, 240, 15)).toBeGreaterThanOrEqual(400_000);
+  });
+
+  it("caps a huge capture rather than trusting the formula", () => {
+    expect(videoBitrateFor(QUALITY_PROFILES.high, "screen", 7680, 4320, 60)).toBeLessThanOrEqual(
+      8_000_000,
+    );
+  });
+});
+
+describe("fitWithin and needsDownscale", () => {
+  it("scales a 4K capture to 1080p keeping its shape", () => {
+    expect(fitWithin(3840, 2160, 1920, 1080)).toEqual({ width: 1920, height: 1080 });
+  });
+
+  it("leaves a capture that already fits alone", () => {
+    expect(fitWithin(1280, 720, 1920, 1080)).toEqual({ width: 1280, height: 720 });
+    expect(needsDownscale(1280, 720, 1920, 1080)).toBe(false);
+  });
+
+  it("returns even dimensions, which is what encoders want", () => {
+    const { width, height } = fitWithin(1023, 767, 800, 800);
+    expect(width % 2).toBe(0);
+    expect(height % 2).toBe(0);
+  });
+
+  it("flags an ultrawide that is only too wide", () => {
+    expect(needsDownscale(3440, 1440, 1920, 1080)).toBe(true);
+  });
+});
+
+describe("describeSizePerMinute", () => {
+  it("reports the number a creator actually compares presets on", () => {
+    // 1.5 Mbps video + 64 kbps audio is ~11 MB a minute.
+    expect(describeSizePerMinute(1_500_000, 64_000)).toBe("about 11 MB per minute");
+  });
+
+  it("keeps one decimal while the number is small", () => {
+    expect(describeSizePerMinute(400_000, 48_000)).toMatch(/about 3\.2 MB/);
   });
 });
 

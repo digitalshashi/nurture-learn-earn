@@ -11,6 +11,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { DeleteCourseDialog } from "@/components/courses/DeleteCourseDialog";
 import { useTabParam } from "@/hooks/useTabParam";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,7 @@ import {
   Clock,
   Copy,
   Eye,
+  Trash2,
   HelpCircle,
   Image as ImageIcon,
   Info,
@@ -139,12 +142,14 @@ export default function CourseManage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useTabParam(TAB_KEYS);
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [stats, setStats] = useState<CourseStats>(EMPTY_STATS);
   const [counts, setCounts] = useState<TabCounts>(EMPTY_COUNTS);
+  const [deleting, setDeleting] = useState(false);
 
   const loadCourse = useCallback(async () => {
     if (!id) return;
@@ -396,10 +401,23 @@ export default function CourseManage() {
           ))}
         </nav>
 
-        <div className="border-t border-border p-3">
+        <div className="space-y-2 border-t border-border p-3">
           <Button variant="outline" size="sm" className="w-full" onClick={() => navigate(`/course-player/${id}`)}>
             <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview as learner
           </Button>
+          {/* Deleting is the editor's job as much as the list's — this is
+              where a coach is standing when they decide a course is finished
+              with. Only the owner sees it; RLS would refuse anyone else. */}
+          {course.coach_id === user?.id && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setDeleting(true)}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete course
+            </Button>
+          )}
         </div>
       </aside>
 
@@ -554,6 +572,14 @@ export default function CourseManage() {
           </div>
         </main>
       </div>
+
+      <DeleteCourseDialog
+        course={deleting ? course : null}
+        onOpenChange={setDeleting}
+        // Nothing left to edit once it is gone, so the editor hands back to
+        // the list rather than sitting on a 404.
+        onDeleted={() => navigate("/course-manage")}
+      />
     </div>
   );
 }

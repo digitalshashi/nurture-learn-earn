@@ -145,7 +145,9 @@ describe("sidebar no longer carries settings", () => {
   it("gives admin, super admin and referrals direct sidebar access", () => {
     expect(sidebarTsx).toContain(`to="/admin"`);
     expect(sidebarTsx).toContain(`to="/super-admin"`);
-    expect(sidebarTsx).toContain(`url: "/referral"`);
+    // /referral is the affiliates dashboard; Refer & Earn moved to
+    // /referral/invite when it took that route over.
+    expect(sidebarTsx).toContain(`url: "/referral/invite"`);
   });
 
   it("keeps the admin entries role-gated in the sidebar", () => {

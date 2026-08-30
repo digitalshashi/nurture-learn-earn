@@ -3819,11 +3819,52 @@ export type Database = {
         }
         Relationships: []
       }
+      quest_award_applications: {
+        Row: {
+          award_key: string
+          created_at: string
+          evidence: string | null
+          id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          award_key: string
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          award_key?: string
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       quest_daily_rituals: {
         Row: {
+          action_label: string | null
+          action_url: string | null
+          audio_url: string | null
+          category: string
           created_at: string
           created_by: string | null
           description: string | null
+          icon: string | null
           id: string
           is_active: boolean
           sort_order: number
@@ -3831,9 +3872,14 @@ export type Database = {
           xp_reward: number
         }
         Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          audio_url?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
           sort_order?: number
@@ -3841,14 +3887,118 @@ export type Database = {
           xp_reward?: number
         }
         Update: {
+          action_label?: string | null
+          action_url?: string | null
+          audio_url?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
           sort_order?: number
           title?: string
           xp_reward?: number
+        }
+        Relationships: []
+      }
+      quest_handbook_progress: {
+        Row: {
+          completed_at: string
+          section_key: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          section_key: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          section_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quest_power_tool_runs: {
+        Row: {
+          answers: Json
+          completed_at: string | null
+          output: string | null
+          score: number | null
+          status: string
+          summary: string | null
+          tool_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string | null
+          output?: string | null
+          score?: number | null
+          status?: string
+          summary?: string | null
+          tool_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string | null
+          output?: string | null
+          score?: number | null
+          status?: string
+          summary?: string | null
+          tool_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quest_profiles: {
+        Row: {
+          achievement_level: string
+          city: string | null
+          community_name: string | null
+          created_at: string
+          designation: string | null
+          join_date: string | null
+          membership_level: string
+          membership_synced_at: string | null
+          phone: string | null
+          socials: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_level?: string
+          city?: string | null
+          community_name?: string | null
+          created_at?: string
+          designation?: string | null
+          join_date?: string | null
+          membership_level?: string
+          membership_synced_at?: string | null
+          phone?: string | null
+          socials?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_level?: string
+          city?: string | null
+          community_name?: string | null
+          created_at?: string
+          designation?: string | null
+          join_date?: string | null
+          membership_level?: string
+          membership_synced_at?: string | null
+          phone?: string | null
+          socials?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3880,6 +4030,80 @@ export type Database = {
             columns: ["ritual_id"]
             isOneToOne: false
             referencedRelation: "quest_daily_rituals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_stories: {
+        Row: {
+          body: string
+          cover_url: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          published_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          body?: string
+          cover_url?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          published_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          body?: string
+          cover_url?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          published_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
+      quest_story_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_story_comments_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "quest_stories"
             referencedColumns: ["id"]
           },
         ]
@@ -5585,6 +5809,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      affiliate_attribution_days: { Args: never; Returns: number }
+      affiliate_payments_for_me: { Args: never; Returns: Json }
+      affiliate_products_for_me: { Args: never; Returns: Json }
+      affiliate_sales_for_me: {
+        Args: {
+          _end?: string | null
+          _limit?: number
+          _offset?: number
+          _product_id?: string | null
+          _search?: string | null
+          _start?: string | null
+        }
+        Returns: Json
+      }
+      claim_affiliate_attribution: {
+        Args: { _checkout_path: string; _code: string }
+        Returns: boolean
+      }
       belongs_to_tenant: {
         Args: { _owner_id: string; _user_id: string }
         Returns: boolean
@@ -5644,6 +5886,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      my_affiliate_bank_details: { Args: never; Returns: Json }
       my_referral_code: { Args: never; Returns: string }
       my_referral_stats: {
         Args: never
@@ -5674,13 +5917,30 @@ export type Database = {
         Args: { "": string }
         Returns: Record<string, unknown>[]
       }
+      quest_record_story_view: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
       profile_display_name: {
         Args: { email: string; full_name: string }
         Returns: string
       }
+      record_affiliate_click: {
+        Args: { _checkout_path: string; _code: string; _visitor_key?: string }
+        Returns: boolean
+      }
       record_referral_visit: {
         Args: { _code: string; _visitor_key?: string }
         Returns: boolean
+      }
+      save_affiliate_bank_details: {
+        Args: {
+          _account_holder: string
+          _account_number: string
+          _bank_name: string
+          _ifsc_code: string
+        }
+        Returns: Json
       }
       unread_message_count: { Args: never; Returns: number }
       user_has_levelup_access: { Args: { _user_id: string }; Returns: boolean }

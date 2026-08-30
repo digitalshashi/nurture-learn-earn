@@ -159,6 +159,139 @@ export function captureErrorMessage(error: unknown, target: CaptureTarget): stri
   return detail || `Could not start the ${label}.`;
 }
 
+/**
+ * How large a recording comes out, and how good it looks.
+ *
+ * MediaRecorder was previously given no encoding options at all, which is the
+ * worst of both worlds: Chrome falls back to a flat 2.5 Mbps *whatever the
+ * resolution*, and a screen share is captured at the monitor's native size. On
+ * a 4K display that spends 2.5 Mbps on 8.3 million pixels — roughly 19 MB a
+ * minute for a picture in which small text is visibly mushy, because there are
+ * nowhere near enough bits to go round.
+ *
+ * Three knobs fix that, in order of how much they matter:
+ *
+ *   Resolution — 1080p is the most any lesson needs. Capping it means the same
+ *                bits cover a quarter as many pixels, so each one is sharper.
+ *   Frame rate — slides and code do not move. 15fps halves the data for
+ *                content that looks identical either way; the camera, which
+ *                does move, keeps 30.
+ *   Bitrate    — set from the pixels actually being encoded rather than left
+ *                at a constant that fits no resolution in particular.
+ */
+export type QualityPreset = "small" | "balanced" | "high";
+
+export interface QualityProfile {
+  key: QualityPreset;
+  label: string;
+  description: string;
+  screen: { maxWidth: number; maxHeight: number; frameRate: number; bitsPerPixel: number };
+  camera: { maxWidth: number; maxHeight: number; frameRate: number; bitsPerPixel: number };
+  audioBitsPerSecond: number;
+}
+
+/**
+ * `bitsPerPixel` is bits per pixel per frame — the one number that decides
+ * quality per byte. Screen content compresses far better than camera footage
+ * (large flat areas, unchanged between frames), so it is given less and still
+ * looks better.
+ */
+export const QUALITY_PROFILES: Record<QualityPreset, QualityProfile> = {
+  small: {
+    key: "small",
+    label: "Smallest file",
+    description: "720p · for slides and long recordings",
+    screen: { maxWidth: 1280, maxHeight: 720, frameRate: 10, bitsPerPixel: 0.075 },
+    camera: { maxWidth: 854, maxHeight: 480, frameRate: 24, bitsPerPixel: 0.08 },
+    audioBitsPerSecond: 48_000,
+  },
+  balanced: {
+    key: "balanced",
+    label: "Balanced",
+    description: "1080p · sharp text, modest size",
+    screen: { maxWidth: 1920, maxHeight: 1080, frameRate: 15, bitsPerPixel: 0.05 },
+    camera: { maxWidth: 1280, maxHeight: 720, frameRate: 30, bitsPerPixel: 0.06 },
+    audioBitsPerSecond: 64_000,
+  },
+  high: {
+    key: "high",
+    label: "Highest quality",
+    description: "1080p 30fps · for demos and motion",
+    screen: { maxWidth: 1920, maxHeight: 1080, frameRate: 30, bitsPerPixel: 0.055 },
+    camera: { maxWidth: 1920, maxHeight: 1080, frameRate: 30, bitsPerPixel: 0.05 },
+    audioBitsPerSecond: 96_000,
+  },
+};
+
+export const DEFAULT_QUALITY: QualityPreset = "balanced";
+
+/** Below this a lesson stops being readable; above it nothing looks better. */
+const MIN_VIDEO_BITRATE = 400_000;
+const MAX_VIDEO_BITRATE = 8_000_000;
+
+/**
+ * The bitrate to encode at, from the frame size actually being captured.
+ *
+ * Taking the real `getSettings()` size matters: a creator who shares a single
+ * 800×600 window should not be handed a bitrate chosen for a 4K monitor, and
+ * one who shares a 4K monitor should not be handed 2.5 Mbps.
+ */
+export function videoBitrateFor(
+  profile: QualityProfile,
+  content: "screen" | "camera",
+  width: number,
+  height: number,
+  frameRate?: number,
+): number {
+  const settings = profile[content];
+  const pixels = Math.max(1, width * height);
+  const fps = frameRate && frameRate > 0 ? frameRate : settings.frameRate;
+  const raw = pixels * fps * settings.bitsPerPixel;
+  return Math.round(Math.min(MAX_VIDEO_BITRATE, Math.max(MIN_VIDEO_BITRATE, raw)));
+}
+
+/** Scale a capture down to fit inside a profile's cap, keeping its shape. */
+export function fitWithin(
+  width: number,
+  height: number,
+  maxWidth: number,
+  maxHeight: number,
+): { width: number; height: number } {
+  const scale = Math.min(1, maxWidth / width, maxHeight / height);
+  // Encoders want even dimensions; an odd width costs a re-crop at best.
+  const even = (value: number) => Math.max(2, Math.round((value * scale) / 2) * 2);
+  return { width: even(width), height: even(height) };
+}
+
+/** Whether a capture is already small enough to record without rescaling it. */
+export function needsDownscale(
+  width: number,
+  height: number,
+  maxWidth: number,
+  maxHeight: number,
+): boolean {
+  return width > maxWidth || height > maxHeight;
+}
+
+/**
+ * Roughly how big a minute of this will be, so the choice is made on the
+ * number the creator actually cares about rather than on the word "balanced".
+ */
+export function megabytesPerMinute(videoBitsPerSecond: number, audioBitsPerSecond: number): number {
+  const bytesPerMinute = ((videoBitsPerSecond + audioBitsPerSecond) / 8) * 60;
+  return bytesPerMinute / (1024 * 1024);
+}
+
+/** "about 12 MB per minute" — deliberately vague; the true size depends on motion. */
+export function describeSizePerMinute(
+  videoBitsPerSecond: number,
+  audioBitsPerSecond: number,
+): string {
+  const mb = megabytesPerMinute(videoBitsPerSecond, audioBitsPerSecond);
+  const rounded = mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb);
+  return `about ${rounded} MB per minute`;
+}
+
 /** "01:23:45" — always hours, so a long recording never re-flows the layout. */
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
