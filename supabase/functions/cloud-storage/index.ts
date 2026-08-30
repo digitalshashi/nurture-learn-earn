@@ -14,11 +14,19 @@
  * Actions (POST JSON):
  *   { action: "presign", path, contentType, contentLength? }
  *   { action: "delete",  path | url }
- *   { action: "list",    prefix, maxKeys? }
+ *   { action: "list",    prefix, maxKeys?, delimiter?, cursor? }
+ *   { action: "folder",  path }            → creates an empty folder marker
+ *   { action: "move",    from, to }        → server-side copy, then delete
  *   { action: "config" }  → public config (bucket, publicUrl, provider) for the client
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "npm:@aws-sdk/client-s3@3.758.0";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  CopyObjectCommand,
+} from "npm:@aws-sdk/client-s3@3.758.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.758.0";
 
 const corsHeaders = {
@@ -27,6 +35,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+/** Zero-byte object that keeps an empty folder alive. Mirrored in src/lib/mediaLibrary.ts. */
+const FOLDER_MARKER = ".keep";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -229,11 +240,19 @@ Deno.serve(async (req) => {
       }
 
       const maxKeys = Math.min(Number(body.maxKeys) || 100, 1000);
+      // With a delimiter the store returns one entry per sub-folder instead of
+      // every object beneath it, which is what the library's folder view wants.
+      // Without one it still walks the whole subtree, which is what search and
+      // the video picker want.
+      const delimiter = body.delimiter ? String(body.delimiter) : undefined;
+
       const result = await client.send(
         new ListObjectsV2Command({
           Bucket: cfg.bucket,
           Prefix: prefix,
           MaxKeys: maxKeys,
+          Delimiter: delimiter,
+          ContinuationToken: body.cursor ? String(body.cursor) : undefined,
         }),
       );
 
@@ -244,7 +263,65 @@ Deno.serve(async (req) => {
         publicUrl: obj.Key ? publicObjectUrl(cfg.publicUrl, obj.Key) : null,
       }));
 
-      return json({ items, prefix, bucket: cfg.bucket });
+      // A bucket holding more than `maxKeys` objects used to silently return
+      // the first page and nothing else, so a creator's older uploads simply
+      // vanished from the library. The cursor lets the client finish the walk.
+      return json({
+        items,
+        folders: (result.CommonPrefixes || []).map((p) => p.Prefix).filter(Boolean),
+        prefix,
+        bucket: cfg.bucket,
+        cursor: result.IsTruncated ? result.NextContinuationToken || null : null,
+      });
+    }
+
+    // Object stores have no folders — a "folder" is the shared prefix of the
+    // keys inside it, so an empty one cannot exist on its own. This writes a
+    // zero-byte marker object so a folder the creator just made is still there
+    // after a reload, before anything has been put in it. The library hides
+    // markers from the file list.
+    if (action === "folder") {
+      const raw = String(body.path || "").replace(/\/+$/, "");
+      if (!raw) return json({ error: "path is required" }, 400);
+      const path = `${sanitizePath(raw, user.id)}/${FOLDER_MARKER}`;
+
+      await client.send(
+        new PutObjectCommand({
+          Bucket: cfg.bucket,
+          Key: path,
+          Body: new Uint8Array(0),
+          ContentType: "application/x-directory",
+        }),
+      );
+
+      return json({ ok: true, path, prefix: path.slice(0, -FOLDER_MARKER.length) });
+    }
+
+    if (action === "move") {
+      const from = sanitizePath(String(body.from || ""), user.id);
+      const to = sanitizePath(String(body.to || ""), user.id);
+      if (from === to) return json({ ok: true, path: to });
+
+      // sanitizePath namespaces a bare path, but a caller can also send one
+      // that is already absolute and points at somebody else's prefix.
+      for (const key of [from, to]) {
+        if (!key.startsWith(`${user.id}/`)) {
+          return json({ error: "Forbidden: can only move your own files" }, 403);
+        }
+      }
+
+      await client.send(
+        new CopyObjectCommand({
+          Bucket: cfg.bucket,
+          // CopySource is a *bucket-qualified* key and has to be URL-encoded,
+          // or any object whose name contains a space fails to copy.
+          CopySource: encodeURI(`${cfg.bucket}/${from}`),
+          Key: to,
+        }),
+      );
+      await client.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: from }));
+
+      return json({ ok: true, path: to, publicUrl: publicObjectUrl(cfg.publicUrl, to) });
     }
 
     return json({ error: `Unknown action: ${action}` }, 400);

@@ -3,8 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Video, X, Image, Loader2, File, Link2, Film } from "lucide-react";
-import LessonRecorder from "./LessonRecorder";
+import { Upload, Video, X, Image, Loader2, File, Link2, Film, Circle } from "lucide-react";
+import LessonRecorder from "@/components/video-library/LessonRecorder";
 import { uploadUserFile } from "@/lib/cloud-storage";
 import { VideoLibraryPicker } from "@/components/video-library/VideoLibraryPicker";
 
@@ -195,15 +195,19 @@ export default function ChapterVideoUpload({
             className="h-6 px-2 text-[10px]"
             onClick={() => { setSourceMode("record"); setShowRecorder(true); }}
           >
-            🎥 Record
+            <Circle className="h-3 w-3 fill-red-500 text-red-500" /> Record
           </Button>
         </div>
       </div>
 
       {sourceMode === "record" ? (
         <LessonRecorder
-          onRecordingComplete={(url) => {
+          onRecordingComplete={(url, result) => {
             onContentChange(url);
+            // The recorder timed the take. Without this the lesson row shows no
+            // runtime, and the probe below cannot supply one either — a WebM
+            // written by MediaRecorder reports its duration as Infinity.
+            if (result?.durationSeconds) onDurationChange?.(result.durationSeconds);
             setSourceMode("upload");
             setShowRecorder(false);
           }}

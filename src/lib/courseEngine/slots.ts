@@ -168,3 +168,25 @@ export const FOUNDATION_VIDEO_COUNT = 5;
 export const FOUNDATION_DAY_COUNT = 3;
 export const BONUS_COUNT = 6;
 export const STEP_COUNT = 6;
+
+/**
+ * The Inner Circle Vault, as it starts life on every new course.
+ *
+ * A weekly call is the default because it is the cadence people can actually
+ * hold: monthly is too sparse for momentum and daily is a job. The coach can
+ * change any of it, but the vault is created switched on — an offer with no
+ * recurring reason to stay is a course rather than a business.
+ */
+export const DEFAULT_INNER_CIRCLE = {
+  name: "Inner Circle Vault",
+  call: {
+    cadence: "weekly" as const,
+    title: "Weekly Inner Circle Call",
+  },
+  includes: [
+    "Replays of every Inner Circle call",
+    "The templates and swipe files as they are made",
+    "Member wins and teardowns",
+    "Direct questions answered on the call",
+  ],
+};

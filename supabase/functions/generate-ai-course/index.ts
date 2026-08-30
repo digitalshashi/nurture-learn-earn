@@ -24,7 +24,8 @@ serve(async (req) => {
   if (authError) return authError;
 
   try {
-    const { action, topic, audience, level, duration, language, instructions } = await req.json();
+    const { action, topic, audience, level, duration, language, instructions, source } =
+      await req.json();
 
     if (action !== "generate") return json({ error: "Invalid action" }, 400);
     if (!topic) return json({ error: "A topic is required." }, 400);
@@ -54,7 +55,22 @@ Target Audience: ${audience || "General"}
 Skill Level: ${level || "Beginner"}
 Course Duration: ${duration || "4 weeks"}
 Language: ${language || "English"}
-${instructions ? `Additional Instructions: ${instructions}` : ""}`;
+${instructions ? `Additional Instructions: ${instructions}` : ""}
+${
+  source?.trim()
+    ? [
+        "",
+        "The coach supplied their own material below. Build the course from what is in it:",
+        "use their vocabulary, their examples and their order. Do not summarise it back, and do",
+        "not invent facts, numbers or claims that are not in it.",
+        "",
+        "--- BEGIN COACH MATERIAL ---",
+        // Capped here as well as in the app: this endpoint takes any body.
+        String(source).slice(0, 80_000),
+        "--- END COACH MATERIAL ---",
+      ].join("\n")
+    : ""
+}`;
 
     const result = await generateText(resolved, {
       system: "You are an expert course creator. Always return valid JSON only, no markdown.",

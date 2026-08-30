@@ -5,9 +5,11 @@
 // so the shape can be asserted in a test rather than discovered by publishing
 // and looking.
 //
-// Ten sections come out: three foundation days, six bonuses, and the live
-// classes. That mirrors the price ladder — a coach who sells the foundation
-// alone can unpublish the rest without unpicking anything.
+// Sections come out in the order a student meets them: three foundation days,
+// six bonuses, the Inner Circle Vault, then the live classes. That mirrors the
+// price ladder — a coach who sells the foundation alone can unpublish the rest
+// without unpicking anything. The vault and the live classes are both
+// optional, so the count is not fixed.
 
 import type { CoursePayload } from "./types";
 
@@ -89,7 +91,33 @@ export function toCourseOutline(payload: CoursePayload): CourseOutline {
     });
   }
 
-  if (payload.live.sessions.length) {
+  // The vault sits between the finite material and the live room: it is what a
+  // student keeps access to after the six steps are done.
+  if (payload.inner_circle?.enabled) {
+    const circle = payload.inner_circle;
+    sections.push({
+      title: circle.name,
+      chapters: [
+        {
+          title: circle.call.title,
+          video_description: circle.call.purpose,
+          content: joinParagraphs([
+            `Runs ${circle.call.cadence}.`,
+            "Add the joining link and the recurring time to this lesson.",
+          ]),
+        },
+        {
+          title: "What is inside the vault",
+          video_description: circle.description,
+          content: circle.includes.map((item) => `• ${item}`).join(" "),
+        },
+      ],
+    });
+  }
+
+  // Live classes are opt-out. A recorded-only programme should not publish an
+  // empty section promising classes that are never going to run.
+  if (payload.live.included && payload.live.sessions.length) {
     sections.push({
       title: "Live Classes",
       chapters: payload.live.sessions.map((session) => {

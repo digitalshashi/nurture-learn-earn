@@ -16,7 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import LessonRecorder from "@/components/course-manage/LessonRecorder";
+import LessonRecorder from "@/components/video-library/LessonRecorder";
 import { uploadUserFile } from "@/lib/cloud-storage";
 import { saveCurriculum } from "@/lib/courseSave";
 import { PLAYABLE_VIDEO_ACCEPT } from "@/lib/videoFormats";
@@ -456,12 +456,22 @@ function ChapterEditor({
           }}
         />
 
-        {/* Lesson Recorder */}
-        {(chapter.video_type === "record" || showRecorder) && !chapter.video_url && (
+        {/* Lesson Recorder.
+            The `!chapter.video_url` guard that used to be here meant choosing
+            "Record Lesson" on a lesson that already had a video showed nothing
+            at all — the option was in the menu and pressing it did nothing, so
+            re-recording a lesson was impossible. Re-recording is exactly when
+            you reach for the recorder. */}
+        {(chapter.video_type === "record" || showRecorder) && (
           <LessonRecorder
-            onRecordingComplete={(url) => {
+            onRecordingComplete={(url, result) => {
               onUpdate(sIdx, cIdx, "video_url", url);
               onUpdate(sIdx, cIdx, "video_type", "upload");
+              // The recorder timed the take, so the lesson gets a real runtime
+              // without anyone typing one in.
+              if (result?.durationSeconds) {
+                onUpdate(sIdx, cIdx, "duration_seconds", result.durationSeconds);
+              }
               setShowRecorder(false);
             }}
             onClose={() => {

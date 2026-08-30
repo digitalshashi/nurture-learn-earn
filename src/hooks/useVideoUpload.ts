@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { uploadUserFile } from "@/lib/cloud-storage";
 import { probeVideo, type VideoProbe } from "@/lib/videoProbe";
 import { unplayableVideoReason } from "@/lib/videoFormats";
+import { mediaKindOf } from "@/lib/mediaLibrary";
 
 export type UploadStage = "idle" | "uploading" | "processing" | "done" | "error";
 
@@ -79,7 +80,12 @@ export function useVideoUpload() {
         // on it. Without a transcoding step this is the last chance to catch
         // it: afterwards the file is stored, attached to a lesson, and simply
         // shows a black frame.
-        const unplayable = unplayableVideoReason(file.name);
+        //
+        // Only videos are judged this way. The media library uploads PDFs,
+        // images and audio through this same hook, and a workbook is not a
+        // broken video — the check used to reject every one of them.
+        const unplayable =
+          mediaKindOf(file.name) === "video" ? unplayableVideoReason(file.name) : null;
         if (unplayable) {
           setJob({ ...IDLE, ...base, stage: "error", error: unplayable });
           continue;

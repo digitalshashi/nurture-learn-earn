@@ -21,6 +21,8 @@
 // goes up unchanged. A picture that uploads in the wrong format beats a
 // picture that does not upload.
 
+import { readFileBytes } from "@/lib/fileBytes";
+
 export const WEBP_TYPE = "image/webp";
 
 /** Raster formats worth converting, by MIME type. */
@@ -166,31 +168,9 @@ export function countGifFrames(bytes: Uint8Array): number {
   return frames;
 }
 
-/**
- * The bytes of a blob, via FileReader where Blob.arrayBuffer is missing.
- *
- * Safari only gained Blob.arrayBuffer in 14. Without the fallback, every GIF
- * on an older Safari looks unreadable, and unreadable is treated as animated —
- * so nothing would convert on those browsers.
- */
-async function readBytes(file: Blob): Promise<Uint8Array> {
-  if (typeof file.arrayBuffer === "function") {
-    return new Uint8Array(await file.arrayBuffer());
-  }
-
-  const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as ArrayBuffer);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(file);
-  });
-
-  return new Uint8Array(buffer);
-}
-
 export async function isAnimatedGif(file: Blob): Promise<boolean> {
   try {
-    return countGifFrames(await readBytes(file)) > 1;
+    return countGifFrames(await readFileBytes(file)) > 1;
   } catch {
     // Unreadable is not worth guessing about; treat it as animated so it is
     // passed through untouched rather than flattened to a single frame.

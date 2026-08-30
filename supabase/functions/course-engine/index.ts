@@ -26,6 +26,8 @@ import {
 import { parseModelJson, strictParseJson } from "../_shared/jsonReply.ts";
 import { checkSteps, DEFAULT_BONUSES, FOUNDATION_SLOTS, type Step } from "../_shared/courseSkeleton.ts";
 import {
+  analysePrompt,
+  ANALYSE_SYSTEM,
   bonusesPrompt,
   foundationDayPrompt,
   livePrompt,
@@ -183,6 +185,18 @@ function checkBonuses(reply: BonusesReply): string[] {
   return problems;
 }
 
+/** What analyse_source returns: the five inputs, plus the steps if it found them. */
+interface AnalysisReply {
+  topic?: string;
+  audience?: string;
+  starting_pain?: string;
+  desired_result?: string;
+  coach_name?: string;
+  course_name?: string;
+  earning_model?: string;
+  steps?: Step[];
+}
+
 interface LiveReply {
   sessions?: { day?: number; step_ref?: number; title?: string; taught?: string; outcome?: string }[];
 }
@@ -336,6 +350,44 @@ serve(async (req) => {
         live: { sessions: live.value?.sessions ?? [] },
         warnings,
         tokens_used: parts.reduce((total, part) => total + part.tokens, 0),
+        model: resolved.model,
+        provider: resolved.credential.provider,
+      });
+    }
+
+    // ------------------------------------------ reading a coach's codex ---
+    if (action === "analyse_source") {
+      const material = String(body?.material ?? "").trim();
+      if (!material) return json({ error: "There is no material to read." }, 400);
+
+      // The steps are checked but not required: a document that describes a
+      // programme without naming six steps is still worth reading for the
+      // inputs, and the coach picks the steps at the checkpoint as usual.
+      const attempt = await withRetry<AnalysisReply>(
+        "The document",
+        (note) =>
+          ask(
+            withBudget(resolved, 2500),
+            ANALYSE_SYSTEM,
+            analysePrompt(material, note),
+            "The document",
+            (value) => typeof (value as { topic?: unknown })?.topic === "string",
+          ),
+        (reply) => (reply.steps?.length ? checkSteps(reply.steps) : []),
+      );
+
+      if (!attempt.value) {
+        return json({ error: attempt.warning ?? "The document could not be read." }, 422);
+      }
+
+      const { steps, ...fields } = attempt.value;
+
+      return json({
+        fields,
+        // Only hand back six valid steps. A partial set would half-fill the
+        // checkpoint and read as though the coach had approved it.
+        steps: steps?.length && checkSteps(steps).length === 0 ? steps : null,
+        tokens_used: attempt.tokens,
         model: resolved.model,
         provider: resolved.credential.provider,
       });

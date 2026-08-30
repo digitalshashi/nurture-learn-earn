@@ -25,12 +25,7 @@ export interface LibraryVideo {
 }
 
 /** Bytes as something a human reads: "742 KB", "1.4 GB". */
-export function formatFileSize(bytes: number): string {
-  if (!bytes) return "—";
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
+export { formatFileSize } from "@/lib/mediaLibrary";
 
 /** Newest first — the video you just uploaded is the one you are looking for. */
 export async function listLibraryVideos(userId: string): Promise<LibraryVideo[]> {

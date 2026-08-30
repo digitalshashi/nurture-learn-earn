@@ -11,6 +11,8 @@ import { Loader2, Sparkles, Edit2, RotateCcw, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { SourceMaterial } from "@/components/course-engine/SourceMaterial";
+import { combineDocuments, type ExtractedDocument } from "@/lib/documentText";
 
 interface Lesson {
   lesson_title: string;
@@ -41,6 +43,7 @@ export default function AICourseGenerator() {
   const [duration, setDuration] = useState("4 weeks");
   const [language, setLanguage] = useState("English");
   const [instructions, setInstructions] = useState("");
+  const [documents, setDocuments] = useState<ExtractedDocument[]>([]);
 
   // State
   const [generating, setGenerating] = useState(false);
@@ -56,7 +59,18 @@ export default function AICourseGenerator() {
     setCourse(null);
     try {
       const { data, error } = await supabase.functions.invoke("generate-ai-course", {
-        body: { action: "generate", topic, audience, level, duration, language, instructions },
+        body: {
+          action: "generate",
+          topic,
+          audience,
+          level,
+          duration,
+          language,
+          instructions,
+          // Read from the coach's own files in the browser; the files never
+          // leave their machine, only the text does.
+          source: documents.length ? combineDocuments(documents).text : undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -158,6 +172,15 @@ export default function AICourseGenerator() {
               <CardTitle className="text-sm">Describe your course</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-xl border border-border p-4">
+                <SourceMaterial
+                  documents={documents}
+                  onChange={setDocuments}
+                  label="Have material already? Build the course from it"
+                  hint="PDF, Word, PowerPoint, Excel or text. Read in your browser — the file itself is never uploaded, only the words in it."
+                />
+              </div>
+
               <div>
                 <Label>Course Topic *</Label>
                 <Input placeholder="e.g. AI for Content Creators" value={topic} onChange={(e) => setTopic(e.target.value)} />

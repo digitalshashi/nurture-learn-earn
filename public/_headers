@@ -13,8 +13,13 @@
   # parties in the Referer header.
   Referrer-Policy: strict-origin-when-cross-origin
 
-  # Nothing in the app uses these; deny them by default.
-  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
+  # The lesson recorder needs all three: a screen share, a webcam and a mic.
+  # This used to read `microphone=(), camera=()` — a site-wide ban the browser
+  # enforces *before* it ever prompts, so every recording in the course builder
+  # and the video library failed with "Permission denied" whatever the user
+  # clicked. `(self)` grants them to this origin only; a third-party iframe
+  # embedded in a page still gets nothing.
+  Permissions-Policy: geolocation=(), microphone=(self), camera=(self), display-capture=(self), payment=(), usb=(), interest-cohort=()
 
   # Force HTTPS for a year. Add `preload` only once you are certain every
   # subdomain is HTTPS-only — it is hard to reverse.

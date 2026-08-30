@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, CheckCircle2, Wand2 } from "lucide-react";
 import {
   suggestPositioning,
@@ -11,6 +13,7 @@ import {
   toInput,
   validatePayload,
   type CoursePayload,
+  type InnerCircleCall,
 } from "@/lib/courseEngine";
 
 interface OverviewTabProps {
@@ -29,6 +32,9 @@ export function OverviewTab({ payload, onChange }: OverviewTabProps) {
 
   const setPositioning = (patch: Partial<CoursePayload["positioning"]>) =>
     onChange({ ...payload, positioning: { ...payload.positioning, ...patch } });
+
+  const setCircle = (patch: Partial<CoursePayload["inner_circle"]>) =>
+    onChange({ ...payload, inner_circle: { ...payload.inner_circle, ...patch } });
 
   return (
     <div className="space-y-4">
@@ -195,6 +201,112 @@ export function OverviewTab({ payload, onChange }: OverviewTabProps) {
             </div>
           ))}
         </CardContent>
+      </Card>
+
+      <Card className="card-shadow">
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <CardTitle className="text-sm">{payload.inner_circle.name}</CardTitle>
+              <CardDescription>
+                What students keep after the six steps are finished. Added to every course, with a
+                standing call — the recorded material ends, this does not.
+              </CardDescription>
+            </div>
+            <Switch
+              checked={payload.inner_circle.enabled}
+              onCheckedChange={(enabled) =>
+                onChange({ ...payload, inner_circle: { ...payload.inner_circle, enabled } })
+              }
+              aria-label="Include the Inner Circle Vault"
+            />
+          </div>
+        </CardHeader>
+
+        {payload.inner_circle.enabled && (
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Vault name</label>
+                <Input
+                  value={payload.inner_circle.name}
+                  onChange={(event) => setCircle({ name: event.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">How often the call runs</label>
+                <Select
+                  value={payload.inner_circle.call.cadence}
+                  onValueChange={(cadence) =>
+                    setCircle({
+                      call: {
+                        ...payload.inner_circle.call,
+                        cadence: cadence as InnerCircleCall["cadence"],
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">What the vault is</label>
+              <Textarea
+                rows={2}
+                value={payload.inner_circle.description}
+                onChange={(event) => setCircle({ description: event.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">Call title</label>
+              <Input
+                value={payload.inner_circle.call.title}
+                onChange={(event) =>
+                  setCircle({ call: { ...payload.inner_circle.call, title: event.target.value } })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">What happens on the call</label>
+              <Textarea
+                rows={2}
+                value={payload.inner_circle.call.purpose}
+                onChange={(event) =>
+                  setCircle({ call: { ...payload.inner_circle.call, purpose: event.target.value } })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">
+                What is inside, one per line
+              </label>
+              <Textarea
+                rows={4}
+                value={payload.inner_circle.includes.join("\n")}
+                onChange={(event) =>
+                  setCircle({
+                    includes: event.target.value
+                      .split("\n")
+                      .map((line) => line.trim())
+                      .filter(Boolean),
+                  })
+                }
+              />
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       <Card className="card-shadow">

@@ -18,9 +18,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ArrowRight,
   Blocks,
+  FileCheck2,
   Layers,
   Loader2,
   PencilLine,
@@ -30,14 +32,28 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { errorMessage } from "@/lib/errorMessage";
-import { createBlueprint, deleteBlueprint, listBlueprints, type Blueprint } from "@/lib/blueprints";
+import {
+  createBlueprint,
+  deleteBlueprint,
+  listBlueprints,
+  type BlueprintSummary,
+} from "@/lib/blueprints";
+import { SourceMaterial } from "@/components/course-engine/SourceMaterial";
+import { Switch } from "@/components/ui/switch";
+import { analyseSourceWithAi } from "@/lib/blueprints";
+import { combineDocuments, type ExtractedDocument } from "@/lib/documentText";
 import {
   buildPayload,
   deriveStepsFromTopic,
+  detectCodex,
+  hasUsableFields,
+  type CodexFields,
   matchPreset,
+  readCodexFields,
   type BlueprintLanguage,
   type BlueprintMode,
   type CourseInput,
+  type TransformationStep,
 } from "@/lib/courseEngine";
 
 /**
@@ -113,11 +129,15 @@ export default function CourseEngine() {
   const [mode, setMode] = useState<BlueprintMode>("formula");
   const [input, setInput] = useState<CourseInput>(BLANK);
   const [planText, setPlanText] = useState("");
+  const [documents, setDocuments] = useState<ExtractedDocument[]>([]);
+  const [includeLive, setIncludeLive] = useState(true);
+  const [codexSteps, setCodexSteps] = useState<TransformationStep[] | null>(null);
+  const [reading, setReading] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
+  const [blueprints, setBlueprints] = useState<BlueprintSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pendingDelete, setPendingDelete] = useState<Blueprint | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<BlueprintSummary | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -134,6 +154,61 @@ export default function CourseEngine() {
   }, [user, toast]);
 
   const set = (patch: Partial<CourseInput>) => setInput((current) => ({ ...current, ...patch }));
+
+  const combined = documents.length ? combineDocuments(documents) : null;
+  const codex = combined ? detectCodex(combined.text) : null;
+
+  /**
+   * Fills only the fields the coach has left empty.
+   *
+   * Anything they typed themselves outranks anything read out of a file. A
+   * form that overwrites what someone just wrote is worse than one that fills
+   * nothing in at all.
+   */
+  const applyFields = (fields: CodexFields) =>
+    setInput((current) => {
+      const next = { ...current };
+      for (const [key, value] of Object.entries(fields)) {
+        const field = key as keyof CourseInput;
+        if (typeof value === "string" && value.trim() && !String(current[field] ?? "").trim()) {
+          (next as Record<string, unknown>)[field] = value.trim();
+        }
+      }
+      return next;
+    });
+
+  const onDocuments = (next: ExtractedDocument[]) => {
+    setDocuments(next);
+    if (!next.length) {
+      setCodexSteps(null);
+      return;
+    }
+    // Free and instant: whatever the document states outright, with no model
+    // call and no waiting. The AI read below is for everything it only implies.
+    const fields = readCodexFields(combineDocuments(next).text);
+    if (hasUsableFields(fields)) applyFields(fields);
+  };
+
+  const readWithAi = async () => {
+    if (!combined) return;
+    setReading(true);
+    try {
+      const result = await analyseSourceWithAi(combined.text);
+      applyFields(result.fields);
+      if (result.steps) setCodexSteps(result.steps);
+
+      toast({
+        title: "Read your document",
+        description: result.steps
+          ? "Filled in the details and took the six steps from it — check them on the next screen."
+          : "Filled in what it stated. It did not name six steps, so you will pick those next.",
+      });
+    } catch (e: unknown) {
+      toast({ title: "Could not read it", description: errorMessage(e), variant: "destructive" });
+    } finally {
+      setReading(false);
+    }
+  };
 
   // All five are required because every one of them is interpolated into the
   // copy the engine writes. A blank leaves a hole mid-sentence in 15 videos.
@@ -154,12 +229,20 @@ export default function CourseEngine() {
       const full: CourseInput = {
         ...input,
         ...(live_plan.length ? { live_plan } : {}),
+        ...(combined ? { source: combined.text } : {}),
       };
 
       // Every mode starts blank and goes through the steps checkpoint. Nothing
       // downstream is written until the six steps are approved, because
       // everything downstream is built out of them.
-      const payload = buildPayload(full, deriveStepsFromTopic(full), { mode, fill: "blank" });
+      const payload = buildPayload(full, codexSteps ?? deriveStepsFromTopic(full), {
+        mode,
+        fill: "blank",
+        includeLive,
+        isCodex: codex?.isCodex ?? false,
+        sourceFiles: documents,
+        sourceTruncated: combined?.truncated ?? false,
+      });
 
       const blueprint = await createBlueprint({
         coachId: user.id,
@@ -322,6 +405,73 @@ export default function CourseEngine() {
                 Optional. Your days are kept exactly as you wrote them and only tagged with the step
                 each one builds.
               </p>
+            </div>
+
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <SourceMaterial
+                documents={documents}
+                onChange={onDocuments}
+                label="Build it from your own material"
+                hint={
+                  mode === "ai"
+                    ? "Your Freedom Business Codex, a workbook, a deck, a transcript. Read in your browser — the file itself is never uploaded — and the course is written from what is in it."
+                    : "Your Freedom Business Codex, a workbook, a deck or a transcript. Read in your browser and kept with the blueprint; the AI actions in the editor write from it."
+                }
+              />
+
+              {codex?.isCodex && (
+                <Alert>
+                  <FileCheck2 className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <span className="font-medium">This looks like a Freedom Business Codex.</span>{" "}
+                    Anything it states plainly has been filled in below already. Have it read the
+                    whole document to take the six steps, the promise and the earning model from it
+                    too.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {documents.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={readWithAi} disabled={reading}>
+                    {reading ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {reading ? "Reading the document…" : "Read it and fill everything in"}
+                  </Button>
+                  {codexSteps && (
+                    <Badge variant="secondary" className="font-normal">
+                      Six steps taken from your document
+                    </Badge>
+                  )}
+                  <span className="text-xs text-muted-foreground">Uses your AI provider.</span>
+                </div>
+              )}
+            </div>
+
+            {/* ── What the programme includes ── */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">12 days of live classes</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Two live sessions per transformation step. Turn this off for a recorded-only
+                    programme — nothing else about the course changes.
+                  </p>
+                </div>
+                <Switch checked={includeLive} onCheckedChange={setIncludeLive} aria-label="Include live classes" />
+              </div>
+
+              <div className="rounded-lg bg-muted/40 p-3">
+                <p className="text-sm font-medium">Inner Circle Vault</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Added to every course, with a weekly Inner Circle call on the calendar. The three
+                  days and the bonuses finish; the vault is the reason people stay. Edit or remove
+                  it in the editor.
+                </p>
+              </div>
             </div>
 
             <Button onClick={handleCreate} disabled={!ready || creating} className="w-full">

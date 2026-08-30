@@ -358,16 +358,18 @@ describe("rendering and publishing", () => {
   it("lays the blueprint out as three day sections, six bonuses and the live classes", () => {
     const outline = toCourseOutline(buildFormulaPayload(INPUT));
 
-    expect(outline.sections).toHaveLength(10);
+    expect(outline.sections).toHaveLength(11);
     expect(outline.sections.slice(0, 3).map((section) => section.title)).toEqual([
       "Day 1 — Foundation & Belief Building",
       "Day 2 — Skills & Steps 1-3",
       "Day 3 — Steps 4-6 & The Next Level",
     ]);
-    expect(outline.sections[9].title).toBe("Live Classes");
+    expect(outline.sections[9].title).toBe("Inner Circle Vault");
+    expect(outline.sections[10].title).toBe("Live Classes");
 
-    // 15 foundation + 6 bonuses x (3 videos + 1 resource) + 12 live
-    expect(countChapters(outline)).toBe(15 + 24 + 12);
+    // 15 foundation + 6 bonuses x (3 videos + 1 resource) + vault call and
+    // contents + 12 live
+    expect(countChapters(outline)).toBe(15 + 24 + 2 + 12);
   });
 
   it("gives every published chapter a title, even from a blank blueprint", () => {
@@ -375,6 +377,75 @@ describe("rendering and publishing", () => {
     for (const section of outline.sections) {
       for (const chapter of section.chapters) expect(chapter.title.trim()).not.toBe("");
     }
+  });
+});
+
+describe("the Inner Circle Vault", () => {
+  it("is created with every course, with a weekly call", () => {
+    const payload = buildFormulaPayload(INPUT);
+
+    expect(payload.inner_circle.enabled).toBe(true);
+    expect(payload.inner_circle.name).toBe("Inner Circle Vault");
+    expect(payload.inner_circle.call.cadence).toBe("weekly");
+    expect(payload.inner_circle.call.title).toMatch(/weekly/i);
+    expect(payload.inner_circle.includes.length).toBeGreaterThan(0);
+  });
+
+  it("describes itself in the coach's own terms", () => {
+    const payload = buildFormulaPayload(INPUT);
+    expect(payload.inner_circle.description).toContain("Shashi Vanga");
+  });
+
+  it("drops out of the published course when switched off", () => {
+    const payload = buildFormulaPayload(INPUT);
+    payload.inner_circle.enabled = false;
+
+    const titles = toCourseOutline(payload).sections.map((section) => section.title);
+    expect(titles).not.toContain("Inner Circle Vault");
+  });
+
+  it("appears in the export", () => {
+    expect(renderMarkdown(buildFormulaPayload(INPUT))).toContain("Inner Circle Vault");
+  });
+});
+
+describe("live classes are optional", () => {
+  const recordedOnly = () => {
+    const payload = buildPayload(INPUT, deriveStepsFromTopic(INPUT), {
+      mode: "formula",
+      fill: "suggested",
+      includeLive: false,
+    });
+    return payload;
+  };
+
+  it("is a finished, publishable course with no sessions at all", () => {
+    const payload = recordedOnly();
+    payload.live.sessions = [];
+
+    // Without the opt-out this reported six uncovered steps and refused to
+    // publish — twelve classes the coach never agreed to run.
+    expect(payload.live.included).toBe(false);
+    expect(findBlanks(payload).filter((v) => v.rule.startsWith("live"))).toEqual([]);
+    expect(isPublishable(payload)).toBe(true);
+  });
+
+  it("publishes no Live Classes section", () => {
+    const payload = recordedOnly();
+    const titles = toCourseOutline(payload).sections.map((section) => section.title);
+
+    expect(titles).not.toContain("Live Classes");
+    expect(titles).toContain("Inner Circle Vault");
+  });
+
+  it("says so in the export instead of printing an empty part", () => {
+    const markdown = renderMarkdown(recordedOnly());
+    expect(markdown).toContain("Not included");
+    expect(markdown).toContain("recorded programme");
+  });
+
+  it("still defaults to included", () => {
+    expect(buildFormulaPayload(INPUT).live.included).toBe(true);
   });
 });
 

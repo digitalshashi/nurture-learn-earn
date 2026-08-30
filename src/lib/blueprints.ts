@@ -17,6 +17,7 @@ import {
   type GeneratedBonuses,
   type GeneratedFoundation,
   type GeneratedLive,
+  normalisePayload,
 } from "@/lib/courseEngine";
 
 export type BlueprintRow = Database["public"]["Tables"]["course_blueprints"]["Row"];
@@ -27,20 +28,36 @@ export interface Blueprint extends Omit<BlueprintRow, "payload"> {
   payload: CoursePayload | null;
 }
 
-const parse = (row: BlueprintRow): Blueprint => ({
-  ...row,
-  payload: (row.payload as unknown as CoursePayload) ?? null,
-});
+const parse = (row: BlueprintRow): Blueprint => {
+  const payload = (row.payload as unknown as CoursePayload) ?? null;
+  // Rows written before a field existed come back without it; the editor reads
+  // those fields directly, so filling the defaults here is what stops an older
+  // blueprint opening as a blank screen.
+  return { ...row, payload: payload ? normalisePayload(payload) : null };
+};
 
-export async function listBlueprints(coachId: string): Promise<Blueprint[]> {
+/** A blueprint row without its payload — everything the list screen shows. */
+export type BlueprintSummary = Omit<BlueprintRow, "payload">;
+
+/**
+ * The coach's blueprints, newest first.
+ *
+ * Deliberately not `select("*")`. The payload carries the whole course *and*
+ * up to 80k characters of uploaded source material, none of which this screen
+ * renders — pulling it for twenty rows would be megabytes of JSON to draw a
+ * list of names.
+ */
+export async function listBlueprints(coachId: string): Promise<BlueprintSummary[]> {
   const { data, error } = await supabase
     .from("course_blueprints")
-    .select("*")
+    .select(
+      "id, coach_id, name, mode, topic, audience, starting_pain, desired_result, coach_name, language, status, version, published_course_id, created_at, updated_at",
+    )
     .eq("coach_id", coachId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map(parse);
+  return data ?? [];
 }
 
 export async function getBlueprint(id: string): Promise<Blueprint | null> {
@@ -224,6 +241,35 @@ export async function publishBlueprint(
 }
 
 // ------------------------------------------------------------- the model ---
+
+/**
+ * Reads an uploaded codex and reports what it already states.
+ *
+ * Runs only when the coach asks for it, because it costs a model call. The
+ * free heuristics in courseEngine/codex.ts have usually filled the labelled
+ * fields already; this is for the six steps and everything the document only
+ * implies — the earning model, the promise, the order it teaches in.
+ */
+export async function analyseSourceWithAi(material: string) {
+  const { data, error } = await supabase.functions.invoke("course-engine", {
+    body: { action: "analyse_source", input: { topic: "codex" }, material },
+  });
+  if (error) throw new Error(await edgeErrorMessage(error, "The course engine did not respond."));
+  if (data?.error) throw new Error(data.error);
+  return data as {
+    fields: {
+      topic?: string;
+      audience?: string;
+      starting_pain?: string;
+      desired_result?: string;
+      coach_name?: string;
+      course_name?: string;
+      earning_model?: string;
+    };
+    steps: { number: number; name: string; achievement: string }[] | null;
+    tokens_used: number;
+  };
+}
 
 /** Stage 1, on the server. Throws with a message the coach can act on. */
 export async function deriveStepsWithAi(input: CourseInput) {

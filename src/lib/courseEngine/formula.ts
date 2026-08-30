@@ -10,6 +10,7 @@
 // fields: they are stamped on afterwards from FOUNDATION_SLOTS.
 
 import { deriveStepsFromTopic } from "./presets";
+import { combineSourceFiles } from "./source";
 import {
   BONUS_SLOTS,
   DEFAULT_BONUSES,
@@ -21,6 +22,7 @@ import {
   suggestCourseName,
   suggestFoundationVideo,
   suggestLive,
+  suggestInnerCircle,
   suggestPositioning,
   suggestValueStack,
   type SuggestionContext,
@@ -32,6 +34,7 @@ import type {
   CoursePayload,
   FoundationDay,
   LiveSession,
+  SourceFile,
   TransformationStep,
 } from "./types";
 
@@ -46,6 +49,12 @@ export interface BuildOptions {
   fill?: "suggested" | "blank";
   createdAt?: string;
   version?: number;
+  /** The coach material, stored on the blueprint and joined for prompts. */
+  sourceFiles?: SourceFile[];
+  sourceTruncated?: boolean;
+  isCodex?: boolean;
+  /** Live classes are opt-out: some coaches sell recorded-only. */
+  includeLive?: boolean;
 }
 
 const EMPTY_VIDEO = { title: "", covers: "", learner_actions: [] as string[] };
@@ -98,6 +107,17 @@ export function buildPayload(
   const live = suggestLive(ctx);
 
   return {
+    // Kept on the blueprint so a later regeneration still has the coach's
+    // material without them hunting for the original files.
+    ...(options.sourceFiles?.length
+      ? {
+          source: {
+            files: options.sourceFiles,
+            truncated: options.sourceTruncated ?? false,
+            ...(options.isCodex ? { isCodex: true } : {}),
+          },
+        }
+      : {}),
     meta: {
       course_name: suggestCourseName(input),
       topic: input.topic,
@@ -119,7 +139,11 @@ export function buildPayload(
     // The live plan is kept even in blank mode when the coach supplied one —
     // they already wrote it, so asking them to type it again is not "manual",
     // it is rude.
-    live: blank && live.source === "generated" ? { source: "generated", sessions: [] } : live,
+    live: {
+      included: options.includeLive ?? true,
+      ...(blank && live.source === "generated" ? { source: "generated" as const, sessions: [] } : live),
+    },
+    inner_circle: suggestInnerCircle(ctx),
     value_stack: blank
       ? []
       : suggestValueStack(ctx, live.sessions.length),
@@ -283,7 +307,9 @@ export function applyGeneratedLive(
   // or because the call failed. Keep what is there; only reach for the formula
   // when there is nothing to keep.
   if (!generated?.sessions?.length) {
-    return payload.live.sessions.length ? payload : { ...payload, live: suggestLive(ctx) };
+    return payload.live.sessions.length
+      ? payload
+      : { ...payload, live: { ...payload.live, ...suggestLive(ctx) } };
   }
 
   const cleaned: LiveSession[] = (generated?.sessions ?? [])
@@ -304,9 +330,11 @@ export function applyGeneratedLive(
     .sort((a, b) => a.day - b.day);
 
   const covered = new Set(cleaned.map((session) => session.step_ref));
-  if (cleaned.length < 6 || covered.size < 6) return { ...payload, live: suggestLive(ctx) };
+  if (cleaned.length < 6 || covered.size < 6) {
+    return { ...payload, live: { ...payload.live, ...suggestLive(ctx) } };
+  }
 
-  return { ...payload, live: { source: "generated", sessions: cleaned } };
+  return { ...payload, live: { ...payload.live, source: "generated", sessions: cleaned } };
 }
 
 /** The five inputs back out of a stored payload, for re-running suggestions. */
@@ -318,6 +346,9 @@ export function toInput(payload: CoursePayload): CourseInput {
     desired_result: payload.meta.desired_result,
     coach_name: payload.meta.coach_name,
     language: payload.meta.language,
+    ...(payload.source?.files?.length
+      ? { source: combineSourceFiles(payload.source.files).text }
+      : {}),
     ...(payload.live.source === "coach"
       ? { live_plan: payload.live.sessions.map((session) => session.title) }
       : {}),
@@ -343,5 +374,34 @@ export function refreshDerived(payload: CoursePayload): CoursePayload {
             null,
         }))
       : stack,
+  };
+}
+
+/**
+ * Brings a stored blueprint up to the current shape.
+ *
+ * Blueprints are jsonb, so a payload written before a field existed comes back
+ * without it — and the editor reads payload.inner_circle.name directly, which
+ * on an older row is a crash rather than a missing section. Every field added
+ * to CoursePayload after the first release needs a default here.
+ *
+ * Cheap enough to run on every load, and it means nothing has to be migrated
+ * in the database.
+ */
+export function normalisePayload(payload: CoursePayload): CoursePayload {
+  const ctx: SuggestionContext = { input: toInput(payload), steps: payload.steps ?? [] };
+
+  return {
+    ...payload,
+    live: {
+      // Absent means it was written before live classes could be turned off,
+      // and every one of those blueprints had them.
+      included: payload.live?.included ?? true,
+      source: payload.live?.source ?? "generated",
+      sessions: payload.live?.sessions ?? [],
+    },
+    inner_circle: payload.inner_circle ?? suggestInnerCircle(ctx),
+    value_stack: payload.value_stack ?? [],
+    bonuses: payload.bonuses ?? [],
   };
 }

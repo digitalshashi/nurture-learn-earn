@@ -9,7 +9,8 @@ import { PLAYABLE_VIDEO_ACCEPT } from "@/lib/videoFormats";
 import { formatFileSize, listLibraryVideos, type LibraryVideo } from "@/lib/videoLibrary";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { UploadProgress } from "./UploadProgress";
-import { Loader2, Mic, Search, Upload, Video } from "lucide-react";
+import LessonRecorder from "./LessonRecorder";
+import { Circle, Loader2, Mic, Search, Upload, Video } from "lucide-react";
 
 const VIDEO_ACCEPT = PLAYABLE_VIDEO_ACCEPT;
 
@@ -36,6 +37,7 @@ export function VideoLibraryPicker({
   const [search, setSearch] = useState("");
   const { job, upload, reset, isBusy } = useVideoUpload();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function VideoLibraryPicker({
     if (!open) {
       setSearch("");
       setSelectedId(null);
+      setRecording(false);
     }
   }, [open, user?.id]);
 
@@ -88,6 +91,39 @@ export function VideoLibraryPicker({
   }, [videos, search]);
 
   const selected = filtered.find((v) => v.id === selectedId);
+
+  // Recording lives inside the picker as well as on the library page: a coach
+  // filling in a chapter reaches for "Library" and finds they have nothing to
+  // attach yet, and making one right there beats sending them to another page.
+  if (recording) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Record a video</DialogTitle>
+            <DialogDescription>Record your screen or camera for this lesson.</DialogDescription>
+          </DialogHeader>
+          <LessonRecorder
+            saveLabel="Save & use for this lesson"
+            onClose={() => setRecording(false)}
+            onRecordingComplete={(url, result) => {
+              onSelect({
+                id: result.path,
+                key: result.path,
+                name: result.fileName,
+                folder: "recordings",
+                publicUrl: url,
+                createdAt: new Date().toISOString(),
+                size: result.size,
+                durationSeconds: result.durationSeconds,
+              });
+              onOpenChange(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -138,6 +174,15 @@ export function VideoLibraryPicker({
               </>
             )}
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-9"
+            disabled={isBusy}
+            onClick={() => setRecording(true)}
+          >
+            <Circle className="mr-1.5 h-3.5 w-3.5 fill-current" /> Record
+          </Button>
         </div>
 
         <UploadProgress job={job} />
@@ -155,7 +200,7 @@ export function VideoLibraryPicker({
               </p>
               <p className="text-xs text-muted-foreground">
                 {videos.length === 0
-                  ? "Upload one here, or from Products → Video Library."
+                  ? "Upload one or record one right here — both land in your video library."
                   : "Try a different name."}
               </p>
             </div>

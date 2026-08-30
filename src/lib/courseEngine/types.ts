@@ -55,6 +55,44 @@ export interface CourseInput {
    */
   live_plan?: string[];
   language?: BlueprintLanguage;
+  /**
+   * The coach's own material, already read out of their files.
+   *
+   * Only the AI paths can write from it — the formula composes from the five
+   * answers alone. It travels with the blueprint so a coach who generates
+   * again months later does not have to find the workbook again.
+   */
+  source?: string;
+}
+
+/** One file the coach handed over, with the text read out of it. */
+export interface SourceFile {
+  fileName: string;
+  /**
+   * The extracted text.
+   *
+   * The blueprint stores the files, never a pre-joined blob. Keeping both
+   * would hold two copies of up to 80k characters in one jsonb column, and
+   * they would drift the moment a file was removed — the list would shrink
+   * while the text a generation actually used stayed as it was.
+   */
+  text: string;
+  chars: number;
+  units: number | null;
+  unitLabel: "page" | "slide" | "sheet" | null;
+  truncated: boolean;
+}
+
+export interface SourceMaterial {
+  files: SourceFile[];
+  truncated: boolean;
+  /**
+   * Set when the material was recognised as a Freedom Business Codex — the
+   * master document that already carries a coach's niche, method and earning
+   * model. A codex can fill the whole blueprint on its own; a loose transcript
+   * is only context.
+   */
+  isCodex?: boolean;
 }
 
 /** One of exactly six, named in 2-4 plain words, ordered by dependency. */
@@ -118,6 +156,30 @@ export interface LiveSession {
   outcome: string;
 }
 
+export interface InnerCircleCall {
+  cadence: "weekly" | "fortnightly" | "monthly";
+  title: string;
+  purpose: string;
+}
+
+/**
+ * The continuity part of the offer.
+ *
+ * The three recorded days and the bonuses are finite: a student finishes them
+ * and is done. The vault is what they stay for — a place the coach keeps
+ * adding to, with a call on the calendar. It is created with every course
+ * because an offer with no recurring reason to remain is a course, not a
+ * business.
+ */
+export interface InnerCircle {
+  enabled: boolean;
+  name: string;
+  description: string;
+  call: InnerCircleCall;
+  /** What lives in the vault beyond the call — replays, templates, teardowns. */
+  includes: string[];
+}
+
 export interface Positioning {
   pain_statement: string;
   mission_statement: string;
@@ -159,14 +221,26 @@ export interface CoursePayload {
   /** Mirrors the row id once saved; absent on a payload that is still in memory. */
   id?: string;
   meta: BlueprintMeta;
+  /** What the coach uploaded to build this from. Absent when they typed it all. */
+  source?: SourceMaterial;
   positioning: Positioning;
   steps: TransformationStep[];
   foundation: { days: FoundationDay[] };
   bonuses: Bonus[];
   live: {
-    /** `coach` when the sessions came from a plan they already had. */
+    /**
+     * Live classes are optional.
+     *
+     * A recorded-only programme is a real product — plenty of coaches sell the
+     * three days and the bonuses and never run a call. When this is false the
+     * sessions are not published, not exported, and not counted against step
+     * coverage, rather than showing as twelve things the coach never agreed to.
+     */
+    included: boolean;
+    /** "coach" when the sessions came from a plan they already had. */
     source: "generated" | "coach";
     sessions: LiveSession[];
   };
+  inner_circle: InnerCircle;
   value_stack: ValueStackItem[];
 }

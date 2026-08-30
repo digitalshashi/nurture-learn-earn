@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, Plus, Trash2, Wand2 } from "lucide-react";
 import {
   stepCoverage,
@@ -35,7 +36,7 @@ export function LiveTab({ payload, onChange }: LiveTabProps) {
   const uncovered = uncoveredSteps(payload);
 
   const setSessions = (sessions: LiveSession[], source: "generated" | "coach" = payload.live.source) =>
-    onChange({ ...payload, live: { source, sessions } });
+    onChange({ ...payload, live: { ...payload.live, source, sessions } });
 
   const patchSession = (index: number, patch: Partial<LiveSession>) =>
     setSessions(payload.live.sessions.map((session, i) => (i === index ? { ...session, ...patch } : session)));
@@ -68,6 +69,31 @@ export function LiveTab({ payload, onChange }: LiveTabProps) {
 
   return (
     <div className="space-y-4">
+      <Card className="card-shadow">
+        <CardContent className="flex flex-wrap items-start justify-between gap-3 py-4">
+          <div>
+            <p className="text-sm font-medium">Include 12 days of live classes</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Two sessions per transformation step. Switched off, this is a recorded programme —
+              the days, the bonuses and the vault — and nothing here is published or exported.
+            </p>
+          </div>
+          <Switch
+            checked={payload.live.included}
+            onCheckedChange={(included) =>
+              onChange({ ...payload, live: { ...payload.live, included } })
+            }
+            aria-label="Include live classes"
+          />
+        </CardContent>
+      </Card>
+
+      {!payload.live.included ? (
+        <p className="text-sm text-muted-foreground">
+          Live classes are off. Switch them back on to plan the schedule.
+        </p>
+      ) : (
+      <>
       <Card className="card-shadow">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Step coverage</CardTitle>
@@ -216,6 +242,8 @@ export function LiveTab({ payload, onChange }: LiveTabProps) {
           </Button>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

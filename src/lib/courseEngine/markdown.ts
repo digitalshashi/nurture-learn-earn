@@ -109,6 +109,38 @@ export function renderMarkdown(payload: CoursePayload): string {
   out.push("");
 
   // ------------------------------------------------------- part 3: live ---
+  // ------------------------------------------------ the inner circle -----
+  if (payload.inner_circle?.enabled) {
+    const circle = payload.inner_circle;
+    out.push(`# ${circle.name}`);
+    out.push("");
+    out.push(circle.description);
+    out.push("");
+    out.push(`**${circle.call.title}** — runs ${circle.call.cadence}. ${circle.call.purpose}`);
+    out.push("");
+    for (const item of circle.includes) out.push(`- ${item}`);
+    out.push("");
+    out.push("---");
+    out.push("");
+  }
+
+  // Live classes are optional. Printing an empty Part 3 would read as an
+  // unfinished document rather than a deliberate recorded-only programme.
+  if (!payload.live.included) {
+    out.push("# Part 3 — Live Classes");
+    out.push("");
+    out.push(
+      "Not included. This is a recorded programme: the three foundation days, the six bonuses" +
+        (payload.inner_circle?.enabled ? ` and the ${payload.inner_circle.name}.` : "."),
+    );
+    out.push("");
+    out.push("---");
+    out.push("");
+    out.push("**Foundation builds belief → Bonuses give tools → The vault keeps them.**");
+    out.push("");
+    return out.join("\n");
+  }
+
   out.push("# Part 3 — The Live Classes (Implementation)");
   out.push("");
   out.push(

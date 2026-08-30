@@ -32,6 +32,12 @@ export interface CloudListItem {
   publicUrl: string | null;
 }
 
+export interface CloudListing {
+  items: CloudListItem[];
+  /** Sub-folder prefixes, returned only when a delimiter was asked for. */
+  folders: string[];
+}
+
 function sanitizeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 180);
 }
@@ -161,6 +167,55 @@ export async function deleteFromCloud(pathOrUrl: string): Promise<void> {
   });
 }
 
+interface RawListing {
+  items: CloudListItem[];
+  folders?: string[];
+  cursor?: string | null;
+}
+
+/**
+ * Walk a prefix to the end rather than stopping at the store's page size.
+ *
+ * A single ListObjectsV2 returns at most 1000 keys. A creator with more media
+ * than that used to see only the first page, with no indication the rest
+ * existed — so uploads simply disappeared from the library.
+ *
+ * `delimiter: "/"` makes the store report each immediate sub-folder once
+ * instead of every object beneath it, which is what the folder view needs.
+ * Omitting it walks the whole subtree, which is what search needs.
+ */
+export async function listCloudObjects(
+  prefix: string,
+  options?: { delimiter?: string; maxPages?: number },
+): Promise<CloudListing> {
+  const items: CloudListItem[] = [];
+  const folders: string[] = [];
+  let cursor: string | null | undefined;
+  // 20 pages is 20,000 objects — far past any real library, and a hard stop so
+  // a store that keeps handing back a cursor cannot spin here forever.
+  const maxPages = options?.maxPages ?? 20;
+
+  for (let page = 0; page < maxPages; page++) {
+    const data: RawListing = await invokeCloudStorage<RawListing>({
+      action: "list",
+      prefix,
+      maxKeys: 1000,
+      delimiter: options?.delimiter,
+      cursor: cursor || undefined,
+    });
+
+    items.push(...(data.items || []));
+    for (const folder of data.folders || []) {
+      if (!folders.includes(folder)) folders.push(folder);
+    }
+
+    cursor = data.cursor;
+    if (!cursor) break;
+  }
+
+  return { items, folders };
+}
+
 export async function listCloudFiles(
   prefix: string,
   maxKeys = 100,
@@ -171,6 +226,23 @@ export async function listCloudFiles(
     maxKeys,
   });
   return data.items || [];
+}
+
+/** Create an empty folder by writing its marker object. */
+export async function createCloudFolder(path: string): Promise<{ prefix: string }> {
+  return invokeCloudStorage<{ prefix: string }>({ action: "folder", path });
+}
+
+/** Server-side copy, then delete — the object never travels via the browser. */
+export async function moveCloudObject(
+  from: string,
+  to: string,
+): Promise<{ path: string; publicUrl: string }> {
+  return invokeCloudStorage<{ path: string; publicUrl: string }>({
+    action: "move",
+    from,
+    to,
+  });
 }
 
 export async function getCloudConfig(): Promise<{

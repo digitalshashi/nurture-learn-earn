@@ -244,13 +244,17 @@ export function findBlanks(payload: CoursePayload): Violation[] {
     });
   });
 
-  if (!payload.live.sessions.length) {
-    out.push(warn("blank.live", "live.sessions", "No live sessions planned yet."));
-  }
+  // A recorded-only programme is finished without a single session, so none of
+  // this is a gap when the coach has turned live classes off.
+  if (payload.live.included) {
+    if (!payload.live.sessions.length) {
+      out.push(warn("blank.live", "live.sessions", "No live sessions planned yet."));
+    }
 
-  for (const step of uncoveredSteps(payload)) {
-    const name = payload.steps.find((entry) => entry.number === step)?.name ?? `Step ${step}`;
-    out.push(warn("live.uncovered_step", "live.sessions", `No live session builds ${name}.`));
+    for (const step of uncoveredSteps(payload)) {
+      const name = payload.steps.find((entry) => entry.number === step)?.name ?? `Step ${step}`;
+      out.push(warn("live.uncovered_step", "live.sessions", `No live session builds ${name}.`));
+    }
   }
 
   return out;

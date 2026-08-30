@@ -15,6 +15,8 @@ export interface EngineInput {
   desired_result: string;
   coach_name: string;
   language?: string;
+  /** The coach's own material, already extracted from their files client-side. */
+  source?: string;
 }
 
 export interface Step {
@@ -58,6 +60,43 @@ function languageRule(language?: string): string {
   return "";
 }
 
+/**
+ * A hard ceiling on the material, independent of what the client sent.
+ *
+ * The app already caps extraction, but this endpoint is reachable with any
+ * body, and every one of the five parallel part calls carries the material —
+ * so an uncapped source would multiply straight into the coach's token bill.
+ */
+const MAX_SOURCE_CHARS = 80_000;
+
+/**
+ * The coach's own material, and what to do with it.
+ *
+ * The instruction matters as much as the text. Handed a document with no
+ * framing, a model does one of two things: summarises it back — producing a
+ * book report rather than a course — or ignores it and writes the generic
+ * course it would have written anyway. Both are failures the coach spots
+ * immediately, because uploading the file was the whole point.
+ */
+function sourceBlock(input: EngineInput): string {
+  const material = input.source?.trim();
+  if (!material) return "";
+
+  return [
+    "",
+    "The coach has supplied their own material, below. Build from it:",
+    "- Use their vocabulary, their examples and their framing, not generic ones.",
+    "- Follow the order and the emphasis of the material where it makes sense.",
+    "- Do not restate or summarise it. It is raw material for a course, not the course.",
+    "- Do not invent facts, numbers, prices or claims that are not in it.",
+    "- Where it is silent on something the format needs, write the sensible thing and keep it general.",
+    "",
+    "--- BEGIN COACH MATERIAL ---",
+    material.slice(0, MAX_SOURCE_CHARS),
+    "--- END COACH MATERIAL ---",
+  ].join("\n");
+}
+
 function inputsBlock(input: EngineInput): string {
   return [
     `Topic: ${input.topic}`,
@@ -99,6 +138,7 @@ export function stepsPrompt(input: EngineInput, note?: string): string {
     "- The achievement is a concrete outcome the student can point at, not a feeling.",
     "",
     inputsBlock(input),
+    sourceBlock(input),
     languageRule(input.language),
     "",
     jsonContract('{ "steps": [{ "number": 1, "name": "string", "achievement": "string" }] }'),
@@ -145,6 +185,7 @@ export function foundationDayPrompt(
       .join("\n"),
     "",
     inputsBlock(input),
+    sourceBlock(input),
     "",
     "The approved 6 steps, which you must not rename or renumber:",
     stepsBlock(steps),
@@ -175,6 +216,7 @@ export function bonusesPrompt(input: EngineInput, steps: Step[], note?: string):
     ).join("\n"),
     "",
     inputsBlock(input),
+    sourceBlock(input),
     "",
     "The approved 6 steps of the main course, for linking back:",
     stepsBlock(steps),
@@ -205,6 +247,7 @@ export function livePrompt(input: EngineInput, steps: Step[], note?: string): st
     "- Each session produces one finished, hands-on outcome the student leaves with. Not knowledge — a thing.",
     "",
     inputsBlock(input),
+    sourceBlock(input),
     "",
     "The approved 6 steps:",
     stepsBlock(steps),
@@ -267,6 +310,7 @@ export function slotPrompt(
     describe(),
     "",
     inputsBlock(input),
+    sourceBlock(input),
     "",
     "The approved 6 steps:",
     stepsBlock(steps),
@@ -283,3 +327,50 @@ export function slotPrompt(
 
 /** The whole slot table, for a prompt that needs to see the shape at once. */
 export const SLOT_TABLE = slotTableForPrompt();
+
+// ------------------------------------------- reading a coach's codex ------
+
+export const ANALYSE_SYSTEM =
+  "You read a coach's own programme document and extract what it already says. " +
+  "You return JSON only.";
+
+/**
+ * Turns a Freedom Business Codex into the inputs and the six steps.
+ *
+ * The codex is a template: the same headings, a different coach and a
+ * different niche each time. So the instruction is to report what this one
+ * says rather than to design anything — the earning model, the promise and
+ * the vocabulary belong to the coach who wrote it, and inventing a better
+ * version of them produces a course they will not recognise as theirs.
+ *
+ * Fields the document genuinely does not cover come back empty, not guessed.
+ * An empty field is a question the coach can answer in one line; a plausible
+ * wrong one is a mistake that ships.
+ */
+export function analysePrompt(material: string, note?: string): string {
+  return [
+    "Read the coach's document below and extract what it already states.",
+    "",
+    "Rules:",
+    "- Report what the document says. Do not improve it, do not rewrite it, do not add to it.",
+    "- Use the coach's own words and vocabulary wherever the document gives them.",
+    "- If the document names an earning or monetisation model, carry it into the steps it belongs to.",
+    "- Leave a field as an empty string if the document genuinely does not say. Never guess a name.",
+    "- The six steps must be the ones the document teaches, in its order, if it has them.",
+    "- If it has no clear six, derive them from what it does teach: 6 steps, 2 to 4 plain words each, ordered by dependency.",
+    "",
+    "--- BEGIN DOCUMENT ---",
+    material.slice(0, MAX_SOURCE_CHARS),
+    "--- END DOCUMENT ---",
+    "",
+    jsonContract(
+      '{ "topic": "string", "audience": "string", "starting_pain": "string", ' +
+        '"desired_result": "string", "coach_name": "string", ' +
+        '"course_name": "string", "earning_model": "string", ' +
+        '"steps": [{ "number": 1, "name": "string", "achievement": "string" }] }',
+    ),
+    "",
+    `Style:\n- ${STYLE_RULES}`,
+    note ? `\n${note}` : "",
+  ].join("\n");
+}

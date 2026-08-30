@@ -14,10 +14,17 @@
 // Without it, manual mode would be fifteen blank textareas and AI mode would
 // have nothing to fall back on when a generation half-fails.
 
-import { BONUS_SLOTS, DEFAULT_BONUSES, FOUNDATION_DAYS, VALUE_STACK_ITEMS } from "./slots";
+import {
+  BONUS_SLOTS,
+  DEFAULT_BONUSES,
+  DEFAULT_INNER_CIRCLE,
+  FOUNDATION_DAYS,
+  VALUE_STACK_ITEMS,
+} from "./slots";
 import type {
   Bonus,
   CourseInput,
+  InnerCircle,
   LiveSession,
   Positioning,
   TransformationStep,
@@ -332,4 +339,33 @@ export function suggestValueStack(ctx: SuggestionContext, sessionCount: number):
     description: descriptions[item],
     stated_value: null,
   }));
+}
+
+/**
+ * The Inner Circle Vault, described in the coach's own terms.
+ *
+ * Created enabled on every course. The three recorded days and the six bonuses
+ * are finite — a student finishes them and has no reason to come back — and
+ * the vault plus a standing weekly call is the part that keeps them.
+ */
+export function suggestInnerCircle(ctx: SuggestionContext): InnerCircle {
+  const { input } = ctx;
+
+  return {
+    enabled: true,
+    name: DEFAULT_INNER_CIRCLE.name,
+    description:
+      `The room ${inline(input.audience)} stay in after the six steps are done: ongoing ` +
+      `${inline(input.topic)} support, the newest material as it is made, and ` +
+      `${phrase(input.coach_name)} live every week.`,
+    call: {
+      cadence: DEFAULT_INNER_CIRCLE.call.cadence,
+      title: DEFAULT_INNER_CIRCLE.call.title,
+      purpose:
+        `A standing weekly call: what everyone is stuck on this week, one teardown, and ` +
+        `questions answered live. Attendance is the habit that makes ${inline(input.desired_result)} ` +
+        `happen instead of being planned.`,
+    },
+    includes: [...DEFAULT_INNER_CIRCLE.includes],
+  };
 }
