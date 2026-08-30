@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CourseReorderPanel } from "@/components/courses/CourseReorderPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DeleteCourseDialog } from "@/components/courses/DeleteCourseDialog";
 
 interface Course {
   id: string;
@@ -20,6 +21,7 @@ interface Course {
   access_level: string;
   display_order: number;
   coach_id: string;
+  is_published: boolean;
 }
 
 const LEVEL_HIERARCHY: Record<string, number> = { free: 0, silver: 1, gold: 2, diamond: 3 };
@@ -32,6 +34,9 @@ export default function Courses() {
   const [loading, setLoading] = useState(true);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [studentLevel, setStudentLevel] = useState("free");
+  // Only the owning coach may delete, so the menu item is theirs alone — an
+  // admin browsing somebody else's course should not find it here.
+  const [deleting, setDeleting] = useState<Course | null>(null);
 
   // Filters State
   const [courseTypeFilter, setCourseTypeFilter] = useState("all");
@@ -97,7 +102,7 @@ export default function Courses() {
     const { data } = await supabase
       .from("courses")
       .select(
-        "id, title, description, thumbnail_url, price, category, access_level, display_order, coach_id, service_id",
+        "id, title, description, thumbnail_url, price, category, access_level, display_order, coach_id, service_id, is_published",
       )
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false });
@@ -395,6 +400,12 @@ export default function Courses() {
                             navigate(`/course-manage/${course.id}${tab ? `?tab=${tab}` : ""}`)
                         : undefined
                     }
+                    // Offered only on a course this account owns. A student
+                    // browsing the catalogue, or a coach looking at somebody
+                    // else's course, would only ever get a refusal from RLS.
+                    onDelete={
+                      course.coach_id === user?.id ? () => setDeleting(course) : undefined
+                    }
                   />
                 );
               })}
@@ -408,6 +419,12 @@ export default function Courses() {
         onOpenChange={setReorderOpen}
         courses={courses}
         onReordered={fetchCourses}
+      />
+
+      <DeleteCourseDialog
+        course={deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        onDeleted={(id) => setCourses((current) => current.filter((c) => c.id !== id))}
       />
     </AppLayout>
   );

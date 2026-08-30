@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSeo } from "@/hooks/useSeo";
 import { serviceMeta } from "@/lib/seo";
 import { BRAND } from "@/lib/brand";
+import { pendingAffiliate } from "@/lib/affiliate/link";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import {
   PAYMENT_PROVIDERS,
@@ -482,6 +483,11 @@ export default function ServiceCheckout() {
             phone: billingPhone.trim(),
           },
           origin: window.location.origin,
+          // A paid purchase does not require an account — one is created once
+          // the money arrives — so there is no session to record an affiliate
+          // attribution against. The code rides on the order instead, and the
+          // commission trigger falls back to it.
+          affiliate_code: pendingAffiliate()?.code ?? null,
           custom_fields_data:
             Object.keys(customFieldValues).length > 0 ? customFieldValues : null,
         }),

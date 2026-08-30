@@ -243,10 +243,11 @@ export function AppSidebar() {
 
         {!collapsed && (
           <div className="mt-auto p-3">
-            {/* This card's own words are the Refer & Earn page; it pointed at
-                /affiliate, which is the separate per-course commission screen. */}
+            {/* This card's own words are the Refer & Earn page. /referral is
+                now the affiliates dashboard — the separate per-product
+                commission screen — so the invite bonus lives one level down. */}
             <button
-              onClick={() => navigate("/referral")}
+              onClick={() => navigate("/referral/invite")}
               className="w-full text-left rounded-lg bg-[#3D1B16] p-4 hover:bg-[#4A211B] transition-colors"
             >
               <p className="text-white font-semibold text-base">Refer & Earn</p>

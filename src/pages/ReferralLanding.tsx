@@ -54,7 +54,7 @@ export default function ReferralLanding() {
     };
   }, []);
 
-  if (!authLoading && user) return <Navigate to="/referral" replace />;
+  if (!authLoading && user) return <Navigate to="/referral/invite" replace />;
 
   if (loading || authLoading) {
     return (

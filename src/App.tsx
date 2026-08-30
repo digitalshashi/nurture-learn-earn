@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { TenantHome } from "@/components/TenantHome";
 import { SeoDefaults } from "@/components/SeoDefaults";
 import { useReferralCapture } from "@/hooks/useReferralCapture";
+import { useAffiliateCapture } from "@/hooks/useAffiliateCapture";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import CourseBuilder from "./pages/CourseBuilder";
@@ -51,6 +52,7 @@ import PlatformSettings from "./pages/PlatformSettings";
 import Billing from "./pages/Billing";
 import Referral from "./pages/Referral";
 import ReferralLanding from "./pages/ReferralLanding";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
 import PageBuilder from "./pages/PageBuilder";
 import PageEditor from "./pages/PageEditor";
 import PublicPage from "./pages/PublicPage";
@@ -59,7 +61,6 @@ import Broadcasts from "./pages/Broadcasts";
 import Banners from "./pages/Banners";
 import Coupons from "./pages/Coupons";
 import UnsubscribedUsers from "./pages/UnsubscribedUsers";
-import StudentAffiliate from "./pages/StudentAffiliate";
 import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 import NavigationSettings from "./pages/NavigationSettings";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -89,7 +90,18 @@ import CrmFollowUps from "./pages/CrmFollowUps";
 import CrmContactGroups from "./pages/CrmContactGroups";
 import CrmMetaLeads from "./pages/CrmMetaLeads";
 import CrmLeadProfile from "./pages/CrmLeadProfile";
-import QuestDashboard from "./pages/QuestDashboard";
+import { QuestShell } from "./components/quest/QuestShell";
+import QuestHome from "./pages/quest/QuestHome";
+import QuestProfileSetup from "./pages/quest/QuestProfileSetup";
+import QuestHandbook from "./pages/quest/QuestHandbook";
+import QuestRituals from "./pages/quest/QuestRituals";
+import QuestStories from "./pages/quest/QuestStories";
+import QuestPowerTools from "./pages/quest/QuestPowerTools";
+import QuestAwards from "./pages/quest/QuestAwards";
+import QuestLeaderboard from "./pages/quest/QuestLeaderboard";
+import QuestCertificates from "./pages/quest/QuestCertificates";
+import QuestHackathon from "./pages/quest/QuestHackathon";
+import QuestSupport from "./pages/quest/QuestSupport";
 import RolePermissions from "./pages/RolePermissions";
 import VideoLibrary from "./pages/VideoLibrary";
 import Support from "./pages/Support";
@@ -99,9 +111,17 @@ import GrowthBusiness from "./pages/GrowthBusiness";
 import GrowthBoosters from "./pages/GrowthBoosters";
 const queryClient = new QueryClient();
 
-/** Hooks need a component; this one exists only to run useReferralCapture inside the router. */
-function ReferralCapture() {
+/**
+ * Hooks need a component; this one exists only to run the two capture hooks
+ * inside the router.
+ *
+ * They are separate because they answer separate links: `/r/CODE` invites
+ * somebody to join the platform, `?affiliate=CODE` sends a buyer at one
+ * specific product. A visitor can arrive on both at once and each should count.
+ */
+function LinkCapture() {
   useReferralCapture();
+  useAffiliateCapture();
   return null;
 }
 
@@ -117,9 +137,9 @@ const App = () => (
           {/* Resets the head to the 1corehub defaults on every navigation;
               pages with their own metadata override it from their own effect. */}
           <SeoDefaults />
-          {/* A referral code in the URL is banked here, at the root, so it
-              counts whichever page the shared link happens to land on. */}
-          <ReferralCapture />
+          {/* A referral or affiliate code in the URL is banked here, at the
+              root, so it counts whichever page the shared link lands on. */}
+          <LinkCapture />
           <Routes>
             <Route path="/" element={<TenantHome />} />
             <Route path="/checkout/:idOrSlug" element={<ServiceCheckout />} />
@@ -191,7 +211,22 @@ const App = () => (
             <Route path="/partnerships" element={<ProtectedRoute featureKey="partnerships"><Partnerships /></ProtectedRoute>} />
             <Route path="/gamification" element={<ProtectedRoute featureKey="gamification"><Gamification /></ProtectedRoute>} />
             <Route path="/levelup" element={<ProtectedRoute featureKey="levelup"><LevelUp /></ProtectedRoute>} />
-            <Route path="/quest" element={<ProtectedRoute featureKey="quest"><QuestDashboard /></ProtectedRoute>} />
+            {/* Quest is a section, not a page: the shell mounts once as the
+                parent so its data loads a single time and the rail does not
+                reset on every navigation inside it. */}
+            <Route path="/quest" element={<ProtectedRoute featureKey="quest"><QuestShell /></ProtectedRoute>}>
+              <Route index element={<QuestHome />} />
+              <Route path="profile" element={<QuestProfileSetup />} />
+              <Route path="handbook" element={<QuestHandbook />} />
+              <Route path="rituals" element={<QuestRituals />} />
+              <Route path="stories" element={<QuestStories />} />
+              <Route path="power-tools" element={<QuestPowerTools />} />
+              <Route path="awards" element={<QuestAwards />} />
+              <Route path="leaderboard" element={<QuestLeaderboard />} />
+              <Route path="certificates" element={<QuestCertificates />} />
+              <Route path="hackathon" element={<QuestHackathon />} />
+              <Route path="support" element={<QuestSupport />} />
+            </Route>
             <Route path="/ai/content-generator" element={<ProtectedRoute featureKey="ai_suite"><AIContentGenerator /></ProtectedRoute>} />
             <Route path="/video-library" element={<ProtectedRoute featureKey="video_library"><VideoLibrary /></ProtectedRoute>} />
             <Route path="/levelup-upgrade" element={<ProtectedRoute featureKey="levelup"><LevelUpUpgrade /></ProtectedRoute>} />
@@ -203,9 +238,15 @@ const App = () => (
             <Route path="/settings/cloud" element={<ProtectedRoute featureKey="cloud_storage"><CloudStorage /></ProtectedRoute>} />
             <Route path="/settings/roles" element={<ProtectedRoute featureKey="platform_settings"><RolePermissions /></ProtectedRoute>} />
             <Route path="/billing" element={<ProtectedRoute featureKey="billing"><Billing /></ProtectedRoute>} />
-            <Route path="/referral" element={<ProtectedRoute featureKey="referral"><Referral /></ProtectedRoute>} />
+            {/* The affiliates dashboard answers to both names: /referral is
+                where it was asked for, /affiliate is where the sidebar and
+                every existing bookmark already point. */}
+            <Route path="/referral" element={<ProtectedRoute featureKey="referral"><AffiliateDashboard /></ProtectedRoute>} />
+            {/* Refer & Earn — the platform-wide invite bonus, a different offer
+                from the per-product commissions above. */}
+            <Route path="/referral/invite" element={<ProtectedRoute featureKey="referral"><Referral /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-            <Route path="/affiliate" element={<ProtectedRoute featureKey="affiliate"><StudentAffiliate /></ProtectedRoute>} />
+            <Route path="/affiliate" element={<ProtectedRoute featureKey="affiliate"><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="/affiliate/manage" element={<ProtectedRoute featureKey="affiliate"><CoachAffiliateManagement /></ProtectedRoute>} />
             <Route path="/navigation-settings" element={<ProtectedRoute featureKey="navigation_settings"><NavigationSettings /></ProtectedRoute>} />
             <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />

@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { DeleteCourseDialog } from "@/components/courses/DeleteCourseDialog";
 import {
   BarChart3,
   BookOpen,
@@ -37,6 +38,7 @@ import {
   Plus,
   Search,
   Sparkles,
+  Trash2,
   Users,
 } from "lucide-react";
 
@@ -88,6 +90,7 @@ export default function CourseManageIndex() {
   const [loading, setLoading] = useState(true);
 
   const isCoachOrAdmin = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
+  const [deleting, setDeleting] = useState<ManagedCourse | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -305,6 +308,17 @@ export default function CourseManageIndex() {
                               <DropdownMenuItem onClick={() => navigate(`/course-player/${course.id}`)}>
                                 <Eye className="mr-2 h-3.5 w-3.5" /> Preview landing page
                               </DropdownMenuItem>
+                              {course.coach_id === user?.id && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => setDeleting(course)}
+                                  >
+                                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete course
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -365,6 +379,12 @@ export default function CourseManageIndex() {
           )}
         </div>
       </div>
+
+      <DeleteCourseDialog
+        course={deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        onDeleted={(id) => setCourses((current) => current.filter((c) => c.id !== id))}
+      />
     </AppLayout>
   );
 }
