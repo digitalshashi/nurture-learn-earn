@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, Clock, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Calendar, Clock, Trash2, ExternalLink, Upload, Loader2, X, Pencil, Trophy } from "lucide-react";
 import { CurrencyIcon } from "@/components/CurrencyIcon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,7 @@ interface EventRow {
   id: string;
   title: string;
   description: string | null;
+  cover_image_url: string | null;
   meeting_link: string | null;
   start_time: string;
   end_time: string;
@@ -51,6 +52,7 @@ interface EventRow {
   course_id: string | null;
   status: string;
   meeting_type: string;
+  attendance_points: number;
 }
 
 interface ServiceOption {
@@ -66,6 +68,8 @@ const defaultForm = {
   start_time: "",
   end_time: "",
   service_id: "",
+  cover_image_url: "",
+  attendance_points: 10,
   // Recurrence
   frequency: "does_not_repeat",
   interval_value: 1,
@@ -86,7 +90,23 @@ export default function Events() {
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [form, setForm] = useState({ ...defaultForm });
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleCoverUpload = async (file: File) => {
+    if (!user) return;
+    setUploadingCover(true);
+    try {
+      const { uploadUserFile } = await import("@/lib/cloud-storage");
+      const result = await uploadUserFile(user.id, "covers", file);
+      setForm((prev) => ({ ...prev, cover_image_url: result.publicUrl }));
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -184,6 +204,37 @@ export default function Events() {
     }
     setLoading(true);
 
+    // Editing updates the single occurrence in place rather than
+    // regenerating the whole recurrence series.
+    if (editingId) {
+      const { error } = await supabase
+        .from("events")
+        .update({
+          title: form.title,
+          description: form.description || null,
+          meeting_link: form.meeting_link || null,
+          meeting_type: form.meeting_type,
+          start_time: new Date(form.start_time).toISOString(),
+          end_time: new Date(form.end_time).toISOString(),
+          service_id: form.service_id || null,
+          cover_image_url: form.cover_image_url || null,
+          attendance_points: form.attendance_points,
+        })
+        .eq("id", editingId);
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Event updated!" });
+        setOpen(false);
+        setEditingId(null);
+        setForm({ ...defaultForm });
+        loadData();
+      }
+      setLoading(false);
+      return;
+    }
+
     const isRecurring = form.frequency !== "does_not_repeat";
     const occurrences = generateOccurrences();
     const recurrenceRule = isRecurring
@@ -199,6 +250,8 @@ export default function Events() {
       start_time: occ.start.toISOString(),
       end_time: occ.end.toISOString(),
       service_id: form.service_id || null,
+      cover_image_url: form.cover_image_url || null,
+      attendance_points: form.attendance_points,
       recurring: isRecurring,
       recurrence_rule: recurrenceRule,
       total_occurrences: occ.total,
@@ -218,6 +271,29 @@ export default function Events() {
     setLoading(false);
   };
 
+  const openCreate = () => {
+    setEditingId(null);
+    setForm({ ...defaultForm });
+    setOpen(true);
+  };
+
+  const openEdit = (ev: EventRow) => {
+    setEditingId(ev.id);
+    setForm({
+      ...defaultForm,
+      title: ev.title,
+      description: ev.description || "",
+      meeting_link: ev.meeting_link || "",
+      meeting_type: ev.meeting_type,
+      start_time: format(new Date(ev.start_time), "yyyy-MM-dd'T'HH:mm"),
+      end_time: format(new Date(ev.end_time), "yyyy-MM-dd'T'HH:mm"),
+      service_id: ev.service_id || "",
+      cover_image_url: ev.cover_image_url || "",
+      attendance_points: ev.attendance_points,
+    });
+    setOpen(true);
+  };
+
   const handleDelete = async (id: string) => {
     await supabase.from("events").delete().eq("id", id);
     toast({ title: "Event deleted" });
@@ -229,14 +305,51 @@ export default function Events() {
       <div className="max-w-7xl mx-auto py-6 px-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold font-display">Events & Consultations</h1>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditingId(null); setForm({ ...defaultForm }); } }}>
             <DialogTrigger asChild>
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4 mr-1" /> Create Event</Button>
+              <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Create Event</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Create Event</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? "Edit Event" : "Create Event"}</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-2">
                 <div><Label>Event Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Leadership Council Call" /></div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label>Event Image</Label>
+                    <label>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.avif"
+                        className="hidden"
+                        disabled={uploadingCover}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleCoverUpload(file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-border bg-secondary hover:bg-secondary/80 cursor-pointer">
+                        {uploadingCover ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        {uploadingCover ? "Uploading..." : "Upload image"}
+                      </span>
+                    </label>
+                  </div>
+                  {form.cover_image_url && (
+                    <div className="relative mt-2 border border-border rounded-lg p-2">
+                      <img src={form.cover_image_url} alt="Event cover" className="max-h-40 mx-auto rounded" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => setForm((prev) => ({ ...prev, cover_image_url: "" }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Start Time</Label><Input type="datetime-local" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} /></div>
                   <div><Label>End Time</Label><Input type="datetime-local" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} /></div>
@@ -263,7 +376,22 @@ export default function Events() {
                 </div>
                 <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></div>
 
+                <div>
+                  <Label className="flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> Attendance Points</Label>
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    Points a member earns on the leaderboard when they mark themselves present.
+                  </p>
+                  <Input
+                    type="number"
+                    min={0}
+                    className="w-24"
+                    value={form.attendance_points}
+                    onChange={(e) => setForm({ ...form, attendance_points: Math.max(0, parseInt(e.target.value) || 0) })}
+                  />
+                </div>
+
                 {/* Recurring Settings */}
+                {!editingId && (
                 <div className="space-y-3 border-t border-border pt-3">
                   <div className="flex items-center justify-between">
                     <Label className="font-semibold">Recurring Event</Label>
@@ -409,9 +537,10 @@ export default function Events() {
                     </div>
                   )}
                 </div>
+                )}
 
                 <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleCreate} disabled={loading}>
-                  {loading ? "Creating..." : "Create Event"}
+                  {loading ? (editingId ? "Saving..." : "Creating...") : (editingId ? "Save Changes" : "Create Event")}
                 </Button>
               </div>
             </DialogContent>
@@ -459,7 +588,16 @@ export default function Events() {
                   <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No events yet. Create your first event.</TableCell></TableRow>
                 ) : events.map((ev) => (
                   <TableRow key={ev.id}>
-                    <TableCell className="font-medium text-sm">{ev.title}</TableCell>
+                    <TableCell className="font-medium text-sm">
+                      <div className="flex items-center gap-2">
+                        {ev.cover_image_url ? (
+                          <img src={ev.cover_image_url} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted shrink-0" />
+                        )}
+                        <span>{ev.title}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm capitalize">{ev.meeting_type.replace("_", " ")}</TableCell>
                     <TableCell className="text-sm">{format(new Date(ev.start_time), "MMM d, yyyy h:mm a")}</TableCell>
                     <TableCell className="text-sm">{format(new Date(ev.end_time), "MMM d, yyyy h:mm a")}</TableCell>
@@ -478,6 +616,9 @@ export default function Events() {
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(ev)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(ev.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

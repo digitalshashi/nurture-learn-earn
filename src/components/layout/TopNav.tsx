@@ -51,7 +51,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useSearch } from "@/contexts/SearchContext";
 import { BRAND } from "@/lib/brand";
+import { normalizeUrl } from "@/lib/safeUrl";
 import { cn } from "@/lib/utils";
+
+/**
+ * Custom nav items (Member navigation settings) can point anywhere; only a
+ * bare "/path" is one of our own routes. Anything else — "instagram.com",
+ * "https://...", etc. — is an external site and gets routed through the
+ * capsule page instead of `react-router`'s `Link`, which would otherwise
+ * try (and fail) to resolve it as an internal route.
+ */
+function isExternalLink(link: string): boolean {
+  return !link.startsWith("/");
+}
+
+function capsuleHref(label: string, link: string): string {
+  const params = new URLSearchParams({ url: normalizeUrl(link), label });
+  return `/capsule?${params.toString()}`;
+}
 
 /**
  * Every tab is the same width, so the active indicator can be placed by index
@@ -139,14 +156,17 @@ function TabIcon({ name }: { name: string }) {
 }
 
 /** A tab owns its sub-routes: /courses stays lit on /courses/anything. */
-function isTabActive(pathname: string, link: string) {
+function isTabActive(pathname: string, search: string, link: string) {
+  if (isExternalLink(link)) {
+    return pathname === "/capsule" && new URLSearchParams(search).get("url") === normalizeUrl(link);
+  }
   return pathname === link || pathname.startsWith(link + "/");
 }
 
 export function TopNav() {
   const { user, signOut, roles } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const { openSearch } = useSearch();
   const { state, isMobile, openMobile, toggleSidebar } = useSidebar();
   const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
@@ -239,7 +259,7 @@ export function TopNav() {
   // than the desktop rail's.
   const sidebarOpen = isMobile ? openMobile : state === "expanded";
 
-  const activeIndex = visibleItems.findIndex((item) => isTabActive(pathname, item.link));
+  const activeIndex = visibleItems.findIndex((item) => isTabActive(pathname, search, item.link));
 
   // On a route outside the tabs the bar fades where it stands rather than
   // snapping back to tab 0, so returning to a tab slides from the last one.
@@ -290,10 +310,11 @@ export function TopNav() {
       >
         {visibleItems.map((item, i) => {
           const active = i === activeIndex;
+          const to = isExternalLink(item.link) ? capsuleHref(item.label, item.link) : item.link;
           return (
             <Link
               key={item.label + i}
-              to={item.link}
+              to={to}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex h-full w-[116px] shrink-0 flex-col items-center justify-center gap-1 px-3",

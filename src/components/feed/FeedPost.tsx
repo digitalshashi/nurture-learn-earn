@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { extractEmbeds, removeEmbedUrls, parseEmbed, directMediaKind } from "@/lib/link-embed";
+import { safeUrl } from "@/lib/safeUrl";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
 import { PostImage } from "@/components/feed/PostImage";
 import { PostVideo } from "@/components/feed/PostVideo";
@@ -288,7 +289,7 @@ export function FeedPost({
         {cleanContent && <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{cleanContent}</p>}
 
         {linkUrl && !richEmbeds.some((e) => e.url === linkUrl) && (
-          <a href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline break-all mb-3 block">
+          <a href={safeUrl(linkUrl)} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline break-all mb-3 block">
             🔗 {linkUrl}
           </a>
         )}

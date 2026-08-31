@@ -2778,6 +2778,35 @@ export type Database = {
           },
         ]
       }
+      event_attendance: {
+        Row: {
+          event_id: string
+          id: string
+          marked_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          marked_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          marked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           event_id: string
@@ -2809,7 +2838,9 @@ export type Database = {
       }
       events: {
         Row: {
+          attendance_points: number
           course_id: string | null
+          cover_image_url: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -2827,7 +2858,9 @@ export type Database = {
           total_occurrences: number | null
         }
         Insert: {
+          attendance_points?: number
           course_id?: string | null
+          cover_image_url?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -2845,7 +2878,9 @@ export type Database = {
           total_occurrences?: number | null
         }
         Update: {
+          attendance_points?: number
           course_id?: string | null
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -2887,6 +2922,7 @@ export type Database = {
           duration_days: number | null
           id: string
           is_active: boolean | null
+          points_per_submission: number
           title: string
           xp_reward: number | null
         }
@@ -2897,6 +2933,7 @@ export type Database = {
           duration_days?: number | null
           id?: string
           is_active?: boolean | null
+          points_per_submission?: number
           title: string
           xp_reward?: number | null
         }
@@ -2907,10 +2944,49 @@ export type Database = {
           duration_days?: number | null
           id?: string
           is_active?: boolean | null
+          points_per_submission?: number
           title?: string
           xp_reward?: number | null
         }
         Relationships: []
+      }
+      challenge_submissions: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          note: string | null
+          submission_type: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          submission_type?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          submission_type?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       goals: {
         Row: {
@@ -4919,30 +4995,54 @@ export type Database = {
       }
       support_settings: {
         Row: {
+          ai_chat_enabled: boolean | null
+          ai_chat_name: string | null
+          ai_chat_url: string | null
           coach_id: string
           created_at: string
+          direct_chat_enabled: boolean | null
           id: string
+          phone_number: string | null
           sender_email: string | null
           support_email: string | null
+          support_hours: string | null
           updated_at: string
+          whatsapp_message: string | null
+          whatsapp_number: string | null
           widget_enabled: boolean | null
         }
         Insert: {
+          ai_chat_enabled?: boolean | null
+          ai_chat_name?: string | null
+          ai_chat_url?: string | null
           coach_id: string
           created_at?: string
+          direct_chat_enabled?: boolean | null
           id?: string
+          phone_number?: string | null
           sender_email?: string | null
           support_email?: string | null
+          support_hours?: string | null
           updated_at?: string
+          whatsapp_message?: string | null
+          whatsapp_number?: string | null
           widget_enabled?: boolean | null
         }
         Update: {
+          ai_chat_enabled?: boolean | null
+          ai_chat_name?: string | null
+          ai_chat_url?: string | null
           coach_id?: string
           created_at?: string
+          direct_chat_enabled?: boolean | null
           id?: string
+          phone_number?: string | null
           sender_email?: string | null
           support_email?: string | null
+          support_hours?: string | null
           updated_at?: string
+          whatsapp_message?: string | null
+          whatsapp_number?: string | null
           widget_enabled?: boolean | null
         }
         Relationships: []

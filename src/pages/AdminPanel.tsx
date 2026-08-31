@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, BookOpen } from "lucide-react";
+import { Shield, Users, BookOpen, LifeBuoy, ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from "@/hooks/useTabParam";
@@ -22,6 +23,7 @@ interface UserWithRole {
 }
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
   const { hasRole } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -29,7 +31,7 @@ export default function AdminPanel() {
   // Everything an admin owns, in one place. Each section is the same panel the
   // standalone Settings route renders, so nothing moved out of Settings — it
   // is reachable from both.
-  const [tab, setTab] = useTabParam(["users", "roles", "platform", "security"] as const);
+  const [tab, setTab] = useTabParam(["users", "roles", "platform", "support", "security"] as const);
 
   useEffect(() => {
     loadUsers();
@@ -109,6 +111,7 @@ export default function AdminPanel() {
             <TabsTrigger value="users">Users & roles</TabsTrigger>
             <TabsTrigger value="roles">Permissions</TabsTrigger>
             <TabsTrigger value="platform">Platform</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -145,6 +148,22 @@ export default function AdminPanel() {
 
           <TabsContent value="roles"><RolePermissionsPanel /></TabsContent>
           <TabsContent value="platform"><PlatformSettingsPanel /></TabsContent>
+
+          <TabsContent value="support">
+            <Card className="card-shadow">
+              <CardHeader><CardTitle className="text-base">Support Hub content</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Customize the stuck areas, FAQ topics, and contact email members see on the Support page — or draft
+                  any of it with AI first.
+                </p>
+                <Button onClick={() => navigate("/support-manage")}>
+                  <LifeBuoy className="h-4 w-4 mr-2" /> Manage support content <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="security"><SecuritySettingsPanel /></TabsContent>
         </Tabs>
       </div>

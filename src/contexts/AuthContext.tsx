@@ -4,7 +4,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import { checkDomainAccess } from "@/hooks/useTenantDomain";
 import { clearPendingReferral, pendingReferralCode } from "@/lib/referral";
 
-type AppRole = "super_admin" | "admin" | "coach" | "student";
+export type AppRole = "super_admin" | "admin" | "coach" | "student";
 
 interface AuthContextType {
   user: User | null;

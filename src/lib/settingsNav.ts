@@ -26,6 +26,8 @@ export interface SettingsItem {
   feature?: FeatureKey;
   /** Restricts the item to admins / super admins. */
   role?: "admin" | "super_admin";
+  /** Hard-hidden for these roles regardless of `feature` permission. */
+  hideForRoles?: Array<"student">;
   description: string;
 }
 
@@ -69,6 +71,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
         to: "/settings?tab=payments",
         icon: CreditCard,
         feature: "my_settings",
+        hideForRoles: ["student"],
         description: "Razorpay and Instamojo keys, and your default currency",
       },
     ],
@@ -81,6 +84,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
         to: "/settings?tab=ai",
         icon: Sparkles,
         feature: "my_settings",
+        hideForRoles: ["student"],
         description: "Connect OpenAI, Anthropic, Gemini and more, and pick the text, image and video models",
       },
       {
@@ -88,6 +92,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
         to: "/settings?tab=zoom",
         icon: Video,
         feature: "my_settings",
+        hideForRoles: ["student"],
         description: "Connect Zoom for live sessions",
       },
       {

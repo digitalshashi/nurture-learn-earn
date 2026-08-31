@@ -9,6 +9,21 @@
  */
 const ALLOWED_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
 
+/**
+ * Adds a `https://` scheme to user-typed URLs that are missing one (e.g.
+ * "instagram.com/user"). Without this, an anchor rendered with the raw
+ * value is treated by the browser as a path relative to the current page —
+ * clicking it navigates inside the SPA instead of out to the real site,
+ * which surfaces as this app's own 404 page instead of an external link.
+ */
+export function normalizeUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function safeUrl(raw: string | null | undefined): string | undefined {
   if (!raw) return undefined;
 

@@ -17,6 +17,7 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
   const { hasPermission } = usePermissions();
 
   const visible = (item: SettingsItem) => {
+    if (item.hideForRoles?.some((r) => hasRole(r))) return false;
     if (item.role === "super_admin") return hasRole("super_admin");
     if (item.role === "admin") return hasRole("admin") || hasRole("super_admin");
     return item.feature ? hasPermission(item.feature) : true;

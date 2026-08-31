@@ -63,6 +63,7 @@ import Coupons from "./pages/Coupons";
 import UnsubscribedUsers from "./pages/UnsubscribedUsers";
 import CoachAffiliateManagement from "./pages/CoachAffiliateManagement";
 import NavigationSettings from "./pages/NavigationSettings";
+import CapsulePage from "./pages/CapsulePage";
 import SuperAdmin from "./pages/SuperAdmin";
 import EmailSettings from "./pages/EmailSettings";
 import Services from "./pages/Services";
@@ -105,6 +106,7 @@ import QuestSupport from "./pages/quest/QuestSupport";
 import RolePermissions from "./pages/RolePermissions";
 import VideoLibrary from "./pages/VideoLibrary";
 import Support from "./pages/Support";
+import SupportManage from "./pages/SupportManage";
 import GrowthGoal from "./pages/GrowthGoal";
 import GrowthActions from "./pages/GrowthActions";
 import GrowthBusiness from "./pages/GrowthBusiness";
@@ -171,7 +173,7 @@ const App = () => (
             <Route path="/channels" element={<ProtectedRoute featureKey="channels"><Channels /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute featureKey="analytics"><Analytics /></ProtectedRoute>} />
             <Route path="/workshops" element={<ProtectedRoute featureKey="workshops"><Workshops /></ProtectedRoute>} />
-            <Route path="/events" element={<ProtectedRoute featureKey="events"><Events /></ProtectedRoute>} />
+            <Route path="/events" element={<ProtectedRoute featureKey="events" blockRoles={["student"]}><Events /></ProtectedRoute>} />
             <Route path="/student-events" element={<ProtectedRoute featureKey="events"><StudentEvents /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute featureKey="customers"><Customers /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute featureKey="customers"><Leads /></ProtectedRoute>} />
@@ -231,7 +233,7 @@ const App = () => (
             <Route path="/video-library" element={<ProtectedRoute featureKey="video_library"><VideoLibrary /></ProtectedRoute>} />
             <Route path="/levelup-upgrade" element={<ProtectedRoute featureKey="levelup"><LevelUpUpgrade /></ProtectedRoute>} />
             <Route path="/leaderboard" element={<ProtectedRoute featureKey="leaderboard"><Leaderboard /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute featureKey="my_settings"><SettingsPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute featureKey="my_settings" blockRoles={["student"]}><SettingsPage /></ProtectedRoute>} />
             <Route path="/settings/platform" element={<ProtectedRoute featureKey="platform_settings"><PlatformSettings /></ProtectedRoute>} />
             <Route path="/settings/security" element={<ProtectedRoute featureKey="security_settings"><SecuritySettings /></ProtectedRoute>} />
             <Route path="/settings/team" element={<ProtectedRoute featureKey="team_management"><TeamManagement /></ProtectedRoute>} />
@@ -249,6 +251,7 @@ const App = () => (
             <Route path="/affiliate" element={<ProtectedRoute featureKey="affiliate"><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="/affiliate/manage" element={<ProtectedRoute featureKey="affiliate"><CoachAffiliateManagement /></ProtectedRoute>} />
             <Route path="/navigation-settings" element={<ProtectedRoute featureKey="navigation_settings"><NavigationSettings /></ProtectedRoute>} />
+            <Route path="/capsule" element={<ProtectedRoute><CapsulePage /></ProtectedRoute>} />
             <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
             <Route path="/settings/email" element={<ProtectedRoute featureKey="marketing"><EmailSettings /></ProtectedRoute>} />
             <Route path="/profile/:userId" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
@@ -256,6 +259,7 @@ const App = () => (
             <Route path="/messages" element={<ProtectedRoute featureKey="messages"><Messages /></ProtectedRoute>} />
             <Route path="/messages/:recipientId" element={<ProtectedRoute featureKey="messages"><Messages /></ProtectedRoute>} />
             <Route path="/support" element={<ProtectedRoute featureKey="support"><Support /></ProtectedRoute>} />
+            <Route path="/support-manage" element={<ProtectedRoute featureKey="support"><SupportManage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </CurrencyProvider>

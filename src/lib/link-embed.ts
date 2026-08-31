@@ -43,7 +43,7 @@ const TRUSTED_DOMAINS = [
  * `.m3u8` is deliberately absent: a bare <video> cannot play HLS outside
  * Safari, so a stream stays a link rather than becoming a dead player.
  */
-const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".m4v", ".ogv"];
+const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".m4v", ".ogg", ".ogv"];
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".bmp", ".svg"];
 
 export function directMediaKind(url: string): "video" | "image" | null {
@@ -60,6 +60,24 @@ export function directMediaKind(url: string): "video" | "image" | null {
   return null;
 }
 
+// Sites known to send X-Frame-Options / frame-ancestors headers that block
+// embedding. Browsers give no reliable programmatic signal when an iframe is
+// blocked this way, so for these we skip the iframe attempt and go straight
+// to a direct-link card instead of showing a permanently blank frame.
+const FRAME_BLOCKED_DOMAINS = [
+  "google.com", "www.google.com",
+  "facebook.com", "www.facebook.com",
+  "linkedin.com", "www.linkedin.com",
+  "amazon.com", "www.amazon.com",
+  "github.com", "www.github.com",
+  "reddit.com", "www.reddit.com",
+  "netflix.com", "www.netflix.com",
+  "apple.com", "www.apple.com",
+  "microsoft.com", "www.microsoft.com",
+  "spotify.com", "www.spotify.com",
+  "notion.so", "www.notion.so",
+];
+
 function getDomain(url: string): string {
   try {
     return new URL(url).hostname.toLowerCase();
@@ -71,6 +89,11 @@ function getDomain(url: string): string {
 function isTrustedDomain(url: string): boolean {
   const domain = getDomain(url);
   return TRUSTED_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
+}
+
+function isFrameBlockedDomain(url: string): boolean {
+  const domain = getDomain(url);
+  return FRAME_BLOCKED_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
 }
 
 export function extractUrls(text: string): string[] {
@@ -143,12 +166,21 @@ export function parseEmbed(url: string): EmbedData | null {
     // Instagram
     if (hostname.includes("instagram.com")) {
       const match = parsed.pathname.match(/\/(p|reel|reels|tv)\/([^/?]+)/);
-      if (!match) return null;
+      if (match) {
+        return {
+          type: "instagram",
+          url,
+          embedUrl: `https://www.instagram.com/${match[1]}/${match[2]}/embed`,
+          videoId: match[2],
+          platformIcon: "📷",
+          platformName: "Instagram",
+        };
+      }
+      // Not a post/reel URL (e.g. a profile link) — fall back to a direct
+      // link card instead of dropping the URL entirely.
       return {
-        type: "instagram",
+        type: "generic",
         url,
-        embedUrl: `https://www.instagram.com/${match[1]}/${match[2]}/embed`,
-        videoId: match[2],
         platformIcon: "📷",
         platformName: "Instagram",
       };
@@ -157,11 +189,18 @@ export function parseEmbed(url: string): EmbedData | null {
     // Twitter / X
     if (hostname.includes("twitter.com") || hostname.includes("x.com")) {
       const match = parsed.pathname.match(/\/(\w+)\/status\/(\d+)/);
-      if (!match) return null;
+      if (match) {
+        return {
+          type: "twitter",
+          url,
+          videoId: match[2],
+          platformIcon: "𝕏",
+          platformName: "X (Twitter)",
+        };
+      }
       return {
-        type: "twitter",
+        type: "generic",
         url,
-        videoId: match[2],
         platformIcon: "𝕏",
         platformName: "X (Twitter)",
       };
@@ -193,10 +232,13 @@ export function parseEmbed(url: string): EmbedData | null {
       };
     }
 
-    // Generic link (non-embeddable but trusted or any URL)
+    // Generic link — attempt to show it in an iframe as part of the
+    // platform itself unless it's a known frame-blocking site, in which
+    // case we go straight to a direct-link card.
     return {
       type: "generic",
       url,
+      embedUrl: isFrameBlockedDomain(url) ? undefined : url,
       platformIcon: "🔗",
       platformName: getDomain(url),
     };

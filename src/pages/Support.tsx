@@ -33,17 +33,25 @@ import {
   Building2,
   CheckCircle2,
   Circle,
+  Compass,
   Cpu,
   ExternalLink,
   FileText,
   Handshake,
+  Heart,
   HelpCircle,
   Loader2,
   Mail,
+  MessageCircle,
+  MessageSquare,
   PenLine,
+  Phone,
   Rocket,
   Search,
+  Send,
+  Settings2,
   Sparkles,
+  Clock,
   Tag,
   Target,
   TrendingUp,
@@ -52,6 +60,7 @@ import {
   Users,
   Video,
   Wrench,
+  Zap,
   icons,
   type LucideIcon,
 } from "lucide-react";
@@ -100,7 +109,20 @@ interface FaqArticle {
   sort_order: number;
 }
 
-const ICON_MAP: Record<string, LucideIcon> = {
+interface SupportSettings {
+  coach_id: string | null;
+  support_email: string;
+  whatsapp_number: string;
+  whatsapp_message: string;
+  phone_number: string;
+  support_hours: string;
+  direct_chat_enabled: boolean;
+  ai_chat_name: string;
+  ai_chat_url: string;
+  ai_chat_enabled: boolean;
+}
+
+export const ICON_MAP: Record<string, LucideIcon> = {
   target: Target,
   tag: Tag,
   cpu: Cpu,
@@ -120,7 +142,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "help-circle": HelpCircle,
 };
 
-function AreaIcon({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
+export function AreaIcon({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
   const FromMap = ICON_MAP[name];
   if (FromMap) return <FromMap className={className} style={style} />;
   const pascal = name
@@ -161,7 +183,8 @@ const tint = (color: string, percent = 14) =>
 const readable = (color: string) => `color-mix(in srgb, ${color} 72%, hsl(var(--foreground)))`;
 
 export default function Support() {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  const canManage = hasRole("coach") || hasRole("admin") || hasRole("super_admin");
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -181,6 +204,18 @@ export default function Support() {
   const [openArticleId, setOpenArticleId] = useState<string | null>(null);
 
   const [supportEmail, setSupportEmail] = useState("");
+  const [supportSettings, setSupportSettings] = useState<SupportSettings>({
+    coach_id: null,
+    support_email: "",
+    whatsapp_number: "",
+    whatsapp_message: "",
+    phone_number: "",
+    support_hours: "",
+    direct_chat_enabled: true,
+    ai_chat_name: "Coach AI",
+    ai_chat_url: "",
+    ai_chat_enabled: true,
+  });
   const [contactOpen, setContactOpen] = useState(false);
   const [contactSubject, setContactSubject] = useState("");
   const [contactMessage, setContactMessage] = useState("");
@@ -214,7 +249,11 @@ export default function Support() {
         .eq("user_id", user.id)
         .eq("completed", true),
       supabase.from("support_user_stuck" as any).select("area_id").eq("user_id", user.id).maybeSingle(),
-      supabase.from("support_settings" as any).select("support_email").limit(1).maybeSingle(),
+      supabase
+        .from("support_settings" as any)
+        .select("coach_id, support_email, whatsapp_number, whatsapp_message, phone_number, support_hours, direct_chat_enabled, ai_chat_name, ai_chat_url, ai_chat_enabled")
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     const done = new Set<string>(
@@ -227,8 +266,23 @@ export default function Support() {
     if ((stuckRes.data as any)?.area_id) {
       setSelectedAreaId((stuckRes.data as any).area_id);
     }
-    if ((supportRes.data as any)?.support_email) {
-      setSupportEmail((supportRes.data as any).support_email);
+    if (supportRes.data) {
+      const d = supportRes.data as any;
+      setSupportSettings({
+        coach_id: d?.coach_id || null,
+        support_email: d?.support_email || "",
+        whatsapp_number: d?.whatsapp_number || "",
+        whatsapp_message: d?.whatsapp_message || "",
+        phone_number: d?.phone_number || "",
+        support_hours: d?.support_hours || "",
+        direct_chat_enabled: d?.direct_chat_enabled !== false,
+        ai_chat_name: d?.ai_chat_name || "Coach AI",
+        ai_chat_url: d?.ai_chat_url || "",
+        ai_chat_enabled: d?.ai_chat_enabled !== false,
+      });
+      if (d?.support_email) {
+        setSupportEmail(d.support_email);
+      }
     }
   }, [user]);
 
@@ -272,6 +326,7 @@ export default function Support() {
       .on("postgres_changes", { event: "*", schema: "public", table: "support_stuck_resources" }, () => loadContent())
       .on("postgres_changes", { event: "*", schema: "public", table: "support_faq_topics" }, () => loadContent())
       .on("postgres_changes", { event: "*", schema: "public", table: "support_faq_articles" }, () => loadContent())
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_settings" }, () => loadUserState())
       .on(
         "postgres_changes",
         {
@@ -435,6 +490,52 @@ export default function Support() {
     setFaqSearch("");
   };
 
+  const getWhatsappUrl = (customMsg?: string) => {
+    const rawNumber = supportSettings.whatsapp_number || "";
+    const cleanDigits = rawNumber.replace(/[^0-9]/g, "");
+    if (!cleanDigits) return "";
+    const msg =
+      customMsg ||
+      (selectedArea
+        ? `Hi! I need help with "${selectedArea.title}" on the platform.`
+        : supportSettings.whatsapp_message || "Hi, I have a question and would like some support.");
+    return `https://wa.me/${cleanDigits}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const handleOpenWhatsapp = (customMsg?: string) => {
+    const url = getWhatsappUrl(customMsg);
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      toast({
+        title: "WhatsApp not configured",
+        description: "No WhatsApp number has been set by the coach yet.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenDirectChat = () => {
+    if (supportSettings.coach_id) {
+      navigate(`/messages/${supportSettings.coach_id}`);
+    } else {
+      navigate("/messages");
+    }
+    setContactOpen(false);
+  };
+
+  const handleOpenCall = () => {
+    if (supportSettings.phone_number) {
+      window.open(`tel:${supportSettings.phone_number}`, "_self");
+    } else {
+      toast({
+        title: "Phone number not configured",
+        description: "No phone support number is available at this time.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleContact = async () => {
     if (!contactSubject.trim() || !contactMessage.trim()) {
       toast({ title: "Add a subject and message", variant: "destructive" });
@@ -477,60 +578,82 @@ export default function Support() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto py-6 px-4 pb-16">
-        {/* Hero */}
-        {/* The gradient was two pasted-in hex values from another product.
-            These are the accent's own dark shades, so the hero moves with the
-            theme instead of drifting away from it. */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-accent-deep via-accent-strong to-accent p-6 sm:p-8 mb-8 text-accent-foreground">
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_55%)]" />
-          <div className="relative">
-            <Badge className="bg-accent-foreground/15 text-accent-foreground border-0 mb-3">
-              Support Hub
-            </Badge>
-            <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-              Where are you stuck right now?
-            </h1>
-            <p className="mt-2 text-accent-foreground/85 text-sm sm:text-base max-w-2xl">
-              Pick the area that matches what you&apos;re feeling. Each one has a clear checklist and the exact
-              resources to move you forward.
-            </p>
-            <p className="mt-4 text-sm text-accent-foreground/70 italic">
-              You don&apos;t need to feel fully confident to take action. Confidence comes after action.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
+      <div className="max-w-6xl mx-auto py-5 px-4 pb-16">
+        {/* Top Header Bar */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2.5 text-left hover:opacity-80 transition-opacity focus-visible:outline-none"
+          >
+            <div className="h-8 w-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground bg-card shadow-xs">
+              <ArrowLeft className="h-4 w-4" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-500 text-lg leading-none">⚡</span>
+              <div>
+                <h2 className="text-base font-bold text-foreground leading-none">
+                  Support Hub
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Find your stuck point. Get unstuck.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-2.5">
+            {supportSettings.ai_chat_enabled && (
               <Button
-                variant="secondary"
                 size="sm"
-                className="bg-accent-foreground text-accent-deep hover:bg-accent-foreground/90 focus-visible:ring-accent-foreground"
-                onClick={() => document.getElementById("faq-section")?.scrollIntoView({ behavior: "smooth" })}
+                className="rounded-full bg-[#5B4DF5] hover:bg-[#4d3ee0] text-white px-4 py-2 text-xs font-semibold shadow-xs transition-all hover:shadow-md border-0"
+                onClick={() => {
+                  if (supportSettings.ai_chat_url) {
+                    window.open(supportSettings.ai_chat_url, "_blank", "noopener,noreferrer");
+                  } else {
+                    navigate("/ai-content");
+                  }
+                }}
               >
-                <BookOpen className="h-4 w-4 mr-1.5" />
-                Browse FAQ
+                <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                Chat with {supportSettings.ai_chat_name || "Sidz.ai"}
+                <ExternalLink className="h-3 w-3 ml-1.5 opacity-80" />
               </Button>
+            )}
+
+            {canManage && (
               <Button
                 variant="outline"
                 size="sm"
-                className="border-accent-foreground/40 bg-transparent text-accent-foreground hover:bg-accent-foreground/15 hover:text-accent-foreground hover:border-accent-foreground/70 focus-visible:ring-accent-foreground"
-                onClick={() => setContactOpen(true)}
+                className="rounded-full h-8 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => navigate("/support-manage")}
               >
-                <Mail className="h-4 w-4 mr-1.5" />
-                Contact support
+                <Settings2 className="h-3.5 w-3.5 mr-1" />
+                Manage
               </Button>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Stuck areas grid OR detail */}
         {!selectedArea ? (
-          <section className="mb-12">
-            <div className="flex items-end justify-between mb-4 gap-3">
-              <div>
-                <h2 className="text-lg font-bold font-display">Choose your stuck area</h2>
-                <p className="text-sm text-muted-foreground">Your selection and checklist progress save automatically.</p>
+          <section className="mb-6">
+            {/* Header / Eyebrow */}
+            <div className="mb-5">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary tracking-wider uppercase mb-1">
+                <Compass className="h-3.5 w-3.5" />
+                <span>STUCK MAP</span>
               </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-foreground">
+                Where are you stuck right now?
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-muted-foreground max-w-2xl">
+                Pick the area that matches what you&apos;re feeling. Each one has a clear checklist and the exact resources to move you forward.
+              </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+            {/* 5-Column Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-3.5">
               {areas.map((area) => {
                 const items = checklist.filter((c) => c.area_id === area.id);
                 const done = items.filter((c) => progress.has(c.id)).length;
@@ -541,14 +664,14 @@ export default function Support() {
                     type="button"
                     onClick={() => selectArea(area)}
                     className={cn(
-                      "text-left rounded-xl border bg-card p-4 card-shadow transition-all",
-                      "hover:border-accent/50 hover:bg-accent-tint/30 hover:shadow-md",
+                      "text-left rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all flex flex-col justify-between min-h-[145px]",
+                      "hover:border-accent/50 hover:shadow-md hover:-translate-y-0.5",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     )}
                   >
-                    <div className="flex items-start gap-3">
+                    <div>
                       <div
-                        className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0"
+                        className="h-10 w-10 rounded-xl flex items-center justify-center mb-3 shrink-0"
                         style={{ backgroundColor: tint(area.color) }}
                       >
                         <AreaIcon
@@ -557,31 +680,39 @@ export default function Support() {
                           style={{ color: readable(area.color) }}
                         />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-sm">{area.title}</h3>
-                          {pct === 100 && items.length > 0 && (
-                            <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{area.description}</p>
-                        {items.length > 0 && (
-                          <div className="mt-3">
-                            <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
-                              <span>
-                                {done}/{items.length} steps
-                              </span>
-                              <span>{pct}%</span>
-                            </div>
-                            <Progress value={pct} className="h-1.5" />
-                          </div>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-sm text-foreground leading-snug">{area.title}</h3>
+                        {pct === 100 && items.length > 0 && (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
                         )}
                       </div>
+                      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-snug">
+                        {area.description}
+                      </p>
                     </div>
+                    {items.length > 0 && done > 0 && (
+                      <div className="mt-3 pt-2 border-t border-border/50">
+                        <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                          <span>{done}/{items.length} done</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <Progress value={pct} className="h-1" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </div>
+
+            {/* Motivational Quote Banner */}
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-foreground/90 my-6 py-1 font-normal">
+              <Heart className="h-4 w-4 text-rose-500 shrink-0 fill-rose-500/20" />
+              <span>
+                You don&apos;t need to feel fully confident to take action.{" "}
+                <strong className="font-bold text-foreground">Confidence comes after action.</strong>
+              </span>
+            </div>
+
             {areas.length === 0 && (
               <Card className="card-shadow">
                 <CardContent className="py-12 text-center text-muted-foreground text-sm">
@@ -739,27 +870,27 @@ export default function Support() {
         )}
 
         {/* FAQ */}
-        <section id="faq-section" className="scroll-mt-20">
-          <div className="mb-4">
-            <h2 className="text-lg font-bold font-display">Browse FAQ Topics</h2>
-            <p className="text-sm text-muted-foreground">Common questions members have already asked.</p>
+        <section id="faq-section" className="scroll-mt-20 mt-4">
+          <div className="mb-3">
+            <h2 className="text-lg sm:text-xl font-bold font-display italic">Browse FAQ Topics</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Common questions members have already asked.</p>
           </div>
 
-          <div className="relative mb-5 max-w-xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative mb-5 w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={faqSearch}
               onChange={(e) => {
                 setFaqSearch(e.target.value);
                 if (e.target.value) setActiveTopicId(null);
               }}
-              placeholder="Search for help…"
-              className="pl-9 h-11 bg-card"
+              placeholder="Search for help..."
+              className="pl-10 h-11 rounded-2xl bg-card border-border/80 text-sm shadow-xs"
             />
           </div>
 
           {/* Topic cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-6">
             {faqTopics.map((topic) => {
               const count = articleCountByTopic[topic.id] || 0;
               const active = activeTopicId === topic.id;
@@ -769,22 +900,22 @@ export default function Support() {
                   type="button"
                   onClick={() => openTopic(topic)}
                   className={cn(
-                    "text-left rounded-xl border bg-card p-4 card-shadow transition-all",
-                    "hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    active && "border-accent bg-accent-tint ring-1 ring-accent/30",
+                    "text-left rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition-all",
+                    "hover:border-accent/40 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active && "border-accent bg-accent-tint/30 ring-1 ring-accent/30",
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                        "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
                         active ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground",
                       )}
                     >
                       <AreaIcon name={topic.icon_name} className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{topic.title}</p>
+                      <p className="font-bold text-sm text-foreground truncate">{topic.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {count} {count === 1 ? "article" : "articles"}
                       </p>
@@ -868,12 +999,31 @@ export default function Support() {
                 Reach out to support or ask the community — you don&apos;t have to figure it out alone.
               </p>
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 shrink-0">
               <Button variant="outline" onClick={() => navigate("/feed")}>
                 Ask community
               </Button>
+              {supportSettings.whatsapp_number && (
+                <Button
+                  className="bg-[#25D366] text-white hover:bg-[#25D366]/90 border-0 font-medium"
+                  onClick={() => handleOpenWhatsapp()}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1.5" />
+                  WhatsApp
+                </Button>
+              )}
+              {supportSettings.direct_chat_enabled && (
+                <Button
+                  variant="outline"
+                  onClick={handleOpenDirectChat}
+                  className="border-accent text-accent hover:bg-accent hover:text-accent-foreground font-medium"
+                >
+                  <MessageSquare className="h-4 w-4 mr-1.5" />
+                  Live Chat
+                </Button>
+              )}
               <Button
-                className="bg-accent text-accent-foreground hover:bg-accent/90"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
                 onClick={() => setContactOpen(true)}
               >
                 Contact support
@@ -883,45 +1033,147 @@ export default function Support() {
         </Card>
       </div>
 
-      {/* Contact dialog */}
+      {/* Multi-Channel Contact Dialog */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Contact support</DialogTitle>
+            <DialogTitle className="text-xl font-display font-bold">Contact Support</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            {supportEmail && (
-              <p className="text-xs text-muted-foreground">
-                Messages go to <span className="font-medium text-foreground">{supportEmail}</span>
-              </p>
+
+          <div className="space-y-4 pt-1">
+            {supportSettings.support_hours && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-accent-tint/40 px-3 py-1.5 rounded-lg border border-accent/20">
+                <Clock className="h-4 w-4 text-accent shrink-0" />
+                <span>{supportSettings.support_hours}</span>
+              </div>
             )}
-            <div className="space-y-1.5">
-              <Label htmlFor="support-subject">Subject</Label>
-              <Input
-                id="support-subject"
-                value={contactSubject}
-                onChange={(e) => setContactSubject(e.target.value)}
-                placeholder={selectedArea ? `${selectedArea.title} — need help` : "How can we help?"}
-              />
+
+            {/* Quick Direct Channels */}
+            <div className="space-y-2.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Instant Support Channels
+              </p>
+
+              {/* WhatsApp Option */}
+              {supportSettings.whatsapp_number ? (
+                <div className="rounded-xl border border-[#25D366]/40 bg-[#25D366]/5 p-3.5 flex items-center justify-between gap-3 hover:bg-[#25D366]/10 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                      <MessageCircle className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                        WhatsApp Chat
+                        <Badge variant="outline" className="text-[10px] text-[#25D366] border-[#25D366]/40 py-0">Fastest</Badge>
+                      </h4>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {supportSettings.whatsapp_number}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-[#25D366] text-white hover:bg-[#25D366]/90 border-0 shrink-0 font-medium"
+                    onClick={() => handleOpenWhatsapp()}
+                  >
+                    Open WhatsApp
+                  </Button>
+                </div>
+              ) : null}
+
+              {/* Direct In-App Chat */}
+              {supportSettings.direct_chat_enabled && (
+                <div className="rounded-xl border border-accent/30 bg-accent-tint/20 p-3.5 flex items-center justify-between gap-3 hover:bg-accent-tint/30 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-accent text-accent-foreground flex items-center justify-center shrink-0 shadow-xs">
+                      <MessageSquare className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold">Direct In-App Chat</h4>
+                      <p className="text-xs text-muted-foreground truncate">
+                        Chat directly inside the platform inbox
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-accent text-accent hover:bg-accent hover:text-accent-foreground shrink-0 font-medium"
+                    onClick={handleOpenDirectChat}
+                  >
+                    Start Chat
+                  </Button>
+                </div>
+              )}
+
+              {/* Mobile Phone Option */}
+              {supportSettings.phone_number ? (
+                <div className="rounded-xl border border-border bg-card p-3.5 flex items-center justify-between gap-3 hover:bg-secondary/30 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-secondary text-foreground flex items-center justify-center shrink-0">
+                      <Phone className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold">Phone Call Support</h4>
+                      <p className="text-xs text-muted-foreground font-mono truncate">
+                        {supportSettings.phone_number}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 font-medium"
+                    onClick={handleOpenCall}
+                  >
+                    Call Now
+                  </Button>
+                </div>
+              ) : null}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="support-message">Message</Label>
-              <Textarea
-                id="support-message"
-                value={contactMessage}
-                onChange={(e) => setContactMessage(e.target.value)}
-                placeholder="Describe where you're stuck and what you've already tried…"
-                rows={5}
-              />
+
+            {/* Email Support Form */}
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3 mt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-accent" />
+                  <span className="text-sm font-semibold">Send Email Message</span>
+                </div>
+                {supportEmail && (
+                  <span className="text-xs text-muted-foreground truncate max-w-[200px]">{supportEmail}</span>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="support-subject" className="text-xs">Subject</Label>
+                <Input
+                  id="support-subject"
+                  value={contactSubject}
+                  onChange={(e) => setContactSubject(e.target.value)}
+                  placeholder={selectedArea ? `${selectedArea.title} — need help` : "How can we help?"}
+                  className="h-9 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="support-message" className="text-xs">Message</Label>
+                <Textarea
+                  id="support-message"
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  placeholder="Describe where you're stuck and what you've already tried…"
+                  rows={4}
+                  className="text-xs"
+                />
+              </div>
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={handleContact}
+                disabled={sendingContact}
+                size="sm"
+              >
+                {sendingContact ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-3.5 w-3.5 mr-1.5" /> Send Email Ticket</>}
+              </Button>
             </div>
-            <ScrollArea className="max-h-0" />
-            <Button
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={handleContact}
-              disabled={sendingContact}
-            >
-              {sendingContact ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send message"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

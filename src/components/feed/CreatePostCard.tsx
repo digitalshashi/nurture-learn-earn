@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { extractEmbeds, parseEmbed } from "@/lib/link-embed";
 import { errorMessage } from "@/lib/errorMessage";
+import { normalizeUrl } from "@/lib/safeUrl";
 import { LinkEmbed } from "@/components/feed/LinkEmbed";
 import { PostImage } from "@/components/feed/PostImage";
 import { PostVideo } from "@/components/feed/PostVideo";
@@ -73,9 +74,9 @@ export function CreatePostCard({ onPostCreated, channelId }: CreatePostCardProps
       const { error } = await supabase.from("posts").insert({
         user_id: user!.id,
         content: content.trim() || null,
-        image_url: imageUrl || null,
-        video_url: videoUrl || null,
-        link_url: linkUrl || null,
+        image_url: imageUrl ? normalizeUrl(imageUrl) : null,
+        video_url: videoUrl ? normalizeUrl(videoUrl) : null,
+        link_url: linkUrl ? normalizeUrl(linkUrl) : null,
         is_feed_post: !channelId,
         channel_id: channelId || null,
         comments_enabled: commentsEnabled,

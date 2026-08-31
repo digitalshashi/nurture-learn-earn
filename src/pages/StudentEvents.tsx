@@ -22,8 +22,13 @@ import {
   Video,
   Check,
   X,
+  Trophy,
+  PartyPopper,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +42,7 @@ interface EventItem {
   id: string;
   title: string;
   description: string | null;
+  cover_image_url: string | null;
   meeting_link: string | null;
   meeting_type: string;
   start_time: string;
@@ -46,6 +52,9 @@ interface EventItem {
   total_occurrences: number | null;
   source: "event" | "workshop";
   registered: boolean;
+  createdBy: string | null;
+  attendancePoints: number;
+  present: boolean;
 }
 
 type Phase = "live" | "upcoming" | "completed";
@@ -68,6 +77,7 @@ export default function StudentEvents() {
   // Section lives in the URL so links, refreshes and analytics all point
   // at the section actually being viewed.
   const [activeTab, setActiveTab] = useTabParam(["upcoming", "mine", "completed"] as const);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -91,6 +101,7 @@ export default function StudentEvents() {
       workshopQuery,
       { data: eventRegs },
       { data: workshopRegs },
+      { data: attendanceRows },
     ] = await Promise.all([
       supabase.from("enrollments").select("course_id").eq("user_id", userId),
       (() => {
@@ -110,10 +121,12 @@ export default function StudentEvents() {
       })(),
       supabase.from("event_registrations").select("event_id").eq("user_id", userId),
       supabase.from("workshop_attendees" as any).select("occurrence_id").eq("user_id", userId),
+      supabase.from("event_attendance" as any).select("event_id").eq("user_id", userId),
     ]);
 
     const registeredEvents = new Set((eventRegs || []).map((r: any) => r.event_id));
     const registeredWorkshops = new Set((workshopRegs || []).map((r: any) => r.occurrence_id));
+    const markedPresent = new Set((attendanceRows || []).map((r: any) => r.event_id));
     const enrolledCourseIds = (enrollments || []).map((e: any) => e.course_id);
 
     const mappedEvents: EventItem[] = (eventsQuery.data || [])
@@ -122,6 +135,7 @@ export default function StudentEvents() {
         id: ev.id,
         title: ev.title,
         description: ev.description,
+        cover_image_url: ev.cover_image_url,
         meeting_link: ev.meeting_link,
         meeting_type: ev.meeting_type || "custom",
         start_time: ev.start_time,
@@ -131,12 +145,16 @@ export default function StudentEvents() {
         total_occurrences: ev.total_occurrences,
         source: "event" as const,
         registered: registeredEvents.has(ev.id),
+        createdBy: ev.created_by,
+        attendancePoints: ev.attendance_points ?? 0,
+        present: markedPresent.has(ev.id),
       }));
 
     const mappedWorkshops: EventItem[] = ((workshopQuery as any).data || []).map((o: any) => ({
       id: o.id,
       title: o.workshops?.title || "Workshop",
       description: null,
+      cover_image_url: null,
       meeting_link: o.meeting_link || o.workshops?.meeting_link || null,
       meeting_type: o.workshops?.meeting_type || "custom",
       start_time: o.start_time,
@@ -146,6 +164,9 @@ export default function StudentEvents() {
       total_occurrences: o.total_occurrences,
       source: "workshop" as const,
       registered: registeredWorkshops.has(o.id),
+      createdBy: null,
+      attendancePoints: 0,
+      present: false,
     }));
 
     setEvents(
@@ -234,6 +255,52 @@ export default function StudentEvents() {
     setBusyId(null);
   };
 
+  const markPresent = async (ev: EventItem) => {
+    if (!userId || ev.present || ev.source !== "event") return;
+    setBusyId(ev.id);
+
+    // Flip locally first so the button animates immediately.
+    setEvents((list) => list.map((e) => (e.id === ev.id ? { ...e, present: true } : e)));
+
+    const { error } = await supabase
+      .from("event_attendance" as any)
+      .insert({ event_id: ev.id, user_id: userId } as any);
+
+    if (error) {
+      setEvents((list) => list.map((e) => (e.id === ev.id ? { ...e, present: false } : e)));
+      toast({ title: "Couldn't mark present", description: error.message, variant: "destructive" });
+      setBusyId(null);
+      return;
+    }
+
+    if (ev.attendancePoints > 0) {
+      await supabase.from("xp_transactions").insert({
+        user_id: userId,
+        action: "event_attendance",
+        xp_amount: ev.attendancePoints,
+        description: `Attended ${ev.title}`,
+      });
+    }
+
+    toast({
+      title: "Marked present!",
+      description: ev.attendancePoints > 0 ? `+${ev.attendancePoints} points added to your leaderboard score.` : undefined,
+    });
+    setBusyId(null);
+  };
+
+  const handleDeleteEvent = async (ev: EventItem) => {
+    if (ev.source !== "event") return;
+    if (!window.confirm(`Delete "${ev.title}"? This can't be undone.`)) return;
+    const { error } = await supabase.from("events").delete().eq("id", ev.id);
+    if (error) {
+      toast({ title: "Couldn't delete event", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEvents((list) => list.filter((e) => e.id !== ev.id));
+    toast({ title: "Event deleted" });
+  };
+
   const handleJoin = (ev: EventItem) => {
     const url = safeUrl(ev.meeting_link);
     if (url) window.open(url, "_blank", "noopener,noreferrer");
@@ -298,6 +365,7 @@ export default function StudentEvents() {
   const EventCard = ({ ev }: { ev: EventItem }) => {
     const phase = phaseOf(ev, now);
     const start = parseISO(ev.start_time);
+    const isOwner = ev.source === "event" && !!user && ev.createdBy === user.id;
 
     return (
       <Card
@@ -325,6 +393,14 @@ export default function StudentEvents() {
                 {format(start, "a")}
               </span>
             </div>
+
+            {ev.cover_image_url && (
+              <img
+                src={ev.cover_image_url}
+                alt=""
+                className="hidden sm:block w-24 shrink-0 object-cover border-r"
+              />
+            )}
 
             <div className="flex-1 min-w-0 p-4">
               <div className="flex items-start justify-between gap-3">
@@ -390,6 +466,37 @@ export default function StudentEvents() {
                   </>
                 )}
 
+                {ev.source === "event" && phase === "live" && (
+                  <Button
+                    size="sm"
+                    disabled={ev.present || busyId === ev.id}
+                    onClick={() => markPresent(ev)}
+                    className={cn(
+                      "h-8 text-xs transition-all duration-300",
+                      ev.present
+                        ? "bg-success text-success-foreground hover:bg-success scale-105"
+                        : "bg-background border border-success text-success hover:bg-success/10",
+                    )}
+                  >
+                    {ev.present ? (
+                      <span className="flex items-center animate-in zoom-in-50 duration-300">
+                        <PartyPopper className="h-3.5 w-3.5 mr-1" /> Present
+                        {ev.attendancePoints > 0 && ` · +${ev.attendancePoints}`}
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <Check className="h-3.5 w-3.5 mr-1" /> Mark Present
+                        {ev.attendancePoints > 0 && (
+                          <span className="ml-1 flex items-center gap-0.5 text-[10px]">
+                            <Trophy className="h-3 w-3" />
+                            {ev.attendancePoints}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </Button>
+                )}
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto" aria-label="More actions">
@@ -406,6 +513,19 @@ export default function StudentEvents() {
                     <DropdownMenuItem onClick={() => copyLink(ev)}>
                       <Copy className="h-3.5 w-3.5 mr-2" /> Copy meeting link
                     </DropdownMenuItem>
+                    {isOwner && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate("/events")}>
+                          <Pencil className="h-3.5 w-3.5 mr-2" /> Edit event
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteEvent(ev)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete event
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
