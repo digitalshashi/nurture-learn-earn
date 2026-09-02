@@ -15,6 +15,7 @@ dist-ssr
 .claude
 .wrangler
 scripts/.env.migration
+scripts/.env.pipeline
 supabase/.temp
 
 # Editor directories and files
